@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Metal+Mania&family=Archivo+Black&family=Archivo:wght@500;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#0b1020;font-family:'Archivo',sans-serif;color:#fff}a{color:#29e1ff}a:hover{color:#fff}button{font:inherit;cursor:pointer}select,input{font:inherit}</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;gap:16px;padding:12px 20px;background:linear-gradient(180deg,#1b2440,#141c2e);border-bottom:2px solid #7b5cff;flex-wrap:wrap">
+    <img src="assets/wordmark-bare-bones-cut.png" alt="Bare Bones" style="width:120px;height:51px;display:block">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <div style="font-family:'Metal Mania',cursive;font-size:28px;line-height:1">Card Builder</div>
+      <div style="font-family:'Archivo Black';font-size:11px;letter-spacing:2px;color:#ff3ad1">TD CONTROL · JEWEL XI · 20-HOLE SHOTGUN</div>
+    </div>
+    <div style="flex:1"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:8px;border:2px solid #29e1ff;color:#29e1ff;font-family:'Archivo Black';font-size:13px;cursor:pointer">IMPORT DGS CSV<input type="file" accept=".csv,text/csv" onChange="{{ onImport }}" style="display:none"></label>
+      <button onClick="{{ exportCsv }}" style="min-height:40px;padding:0 14px;border-radius:8px;border:2px solid #fff;background:transparent;color:#fff;font-family:'Archivo Black';font-size:13px">EXPORT CSV</button>
+      <button onClick="{{ pushToApp }}" style="min-height:40px;padding:0 14px;border-radius:8px;border:0;background:linear-gradient(90deg,#29e1ff,#7b5cff,#ff3ad1);color:#000;font-family:'Archivo Black';font-size:13px">SEND TO SCORING APP</button>
+    </div>
+  </div>
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:10px 20px;background:#1d2746;border-bottom:1px solid #2a3558;font-size:14px;font-weight:700;color:#c6ff3d">{{ toast }}</div>
+  </sc-if>
+
+  <div style="flex:1;display:grid;grid-template-columns:minmax(260px,320px) minmax(0,1fr);min-height:0">
+    <div style="padding:18px;border-right:2px solid #1d2746;display:flex;flex-direction:column;gap:18px;background:#101728">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-family:'Archivo Black';font-size:12px;letter-spacing:2px;opacity:.7">ROUND</div>
+        <div style="display:flex;border:2px solid #7b5cff;border-radius:8px;overflow:hidden">
+          <sc-for list="{{ roundBtns }}" as="b" hint-placeholder-count="2">
+            <button onClick="{{ b.onClick }}" style="flex:1;border:0;min-height:38px;background:{{ b.bg }};color:#fff;font-family:'Archivo Black';font-size:12px">{{ b.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-family:'Archivo Black';font-size:12px;letter-spacing:2px;opacity:.7">PM WAVE DIVISIONS (tap to move)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <sc-for list="{{ waveChips }}" as="c" hint-placeholder-count="15">
+            <button onClick="{{ c.onClick }}" style="border-radius:999px;padding:5px 10px;border:2px solid {{ c.border }};background:{{ c.bg }};color:{{ c.color }};font-family:'Archivo Black';font-size:11px">{{ c.label }}</button>
+          </sc-for>
+        </div>
+        <div style="font-size:12px;opacity:.6">Pink = PM (1:00pm) · outline = AM (9:00am)</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-family:'Archivo Black';font-size:12px;letter-spacing:2px;opacity:.7">CARD SIZE</div>
+        <div style="display:flex;gap:6px">
+          <sc-for list="{{ sizeBtns }}" as="b" hint-placeholder-count="3">
+            <button onClick="{{ b.onClick }}" style="flex:1;min-height:38px;border-radius:8px;border:2px solid {{ b.border }};background:{{ b.bg }};color:{{ b.color }};font-family:'Archivo Black';font-size:14px">{{ b.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-family:'Archivo Black';font-size:12px;letter-spacing:2px;opacity:.7">SORT WITHIN DIVISION</div>
+        <select value="{{ sortBy }}" onChange="{{ onSort }}" style="min-height:40px;border-radius:8px;border:2px solid #2a3558;background:#0b1020;color:#fff;padding:0 8px">
+          <sc-for list="{{ sortOpts }}" as="o" hint-placeholder-count="4"><option value="{{ o }}">{{ o }}</option></sc-for>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="3">
+          <button onClick="{{ t.onClick }}" style="display:flex;align-items:center;gap:10px;border:0;background:transparent;color:#fff;text-align:left;padding:0">
+            <span style="width:40px;height:22px;border-radius:999px;background:{{ t.track }};position:relative;flex:none"><span style="position:absolute;top:3px;left:{{ t.knob }}px;width:16px;height:16px;border-radius:50%;background:#fff"></span></span>
+            <span style="font-size:13px;font-weight:700;line-height:1.3">{{ t.label }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-family:'Archivo Black';font-size:12px;letter-spacing:2px;opacity:.7">DOUBLE-UP HOLES FIRST (B groups)</div>
+        <input value="{{ doubleText }}" onChange="{{ onDouble }}" style="min-height:40px;border-radius:8px;border:2px solid #2a3558;background:#0b1020;color:#fff;padding:0 10px">
+        <div style="font-size:12px;opacity:.6">Used once all 20 holes have a card. Long holes back up least.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-family:'Archivo Black';font-size:12px;letter-spacing:2px;opacity:.7">SKIP AS START HOLES</div>
+        <input value="{{ skipText }}" onChange="{{ onSkip }}" placeholder="e.g. 20" style="min-height:40px;border-radius:8px;border:2px solid #2a3558;background:#0b1020;color:#fff;padding:0 10px">
+      </div>
+      <button onClick="{{ generate }}" style="min-height:52px;border-radius:10px;border:0;background:{{ genBg }};color:#000;font-family:'Archivo Black';font-size:15px;letter-spacing:1px">{{ genLabel }}</button>
+      <div style="font-size:12px;line-height:1.4;opacity:.65">Locked cards stay put when you regenerate. Click a player, then "Move here" on any card to swap them by hand.</div>
+    </div>
+
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:16px;min-width:0">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;border:2px solid #29e1ff;border-radius:8px;overflow:hidden">
+          <sc-for list="{{ waveTabs }}" as="w" hint-placeholder-count="2">
+            <button onClick="{{ w.onClick }}" style="border:0;min-height:40px;padding:0 16px;background:{{ w.bg }};color:{{ w.color }};font-family:'Archivo Black';font-size:13px">{{ w.label }}</button>
+          </sc-for>
+        </div>
+        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;padding:4px 12px;border-left:2px solid #2a3558">
+            <div style="font-family:'Archivo Black';font-size:20px;line-height:1;color:{{ s.color }}">{{ s.v }}</div>
+            <div style="font-size:11px;letter-spacing:1px;opacity:.6">{{ s.k }}</div>
+          </div>
+        </sc-for>
+        <div style="flex:1"></div>
+        <input value="{{ q }}" onChange="{{ onQ }}" placeholder="Find player…" style="min-height:40px;width:200px;border-radius:8px;border:2px solid #2a3558;background:#101728;color:#fff;padding:0 10px">
+      </div>
+      <sc-for list="{{ warnings }}" as="w" hint-placeholder-count="0">
+        <div style="padding:10px 14px;border-radius:8px;background:rgba(255,75,62,0.15);border:2px solid #ff4b3e;font-size:13px;font-weight:700">⚠ {{ w }}</div>
+      </sc-for>
+      <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;background:#ffd23f;color:#000;font-weight:700;font-size:14px">
+          <span>Moving: {{ selName }}</span><span style="flex:1"></span>
+          <button onClick="{{ clearSel }}" style="border:2px solid #000;background:transparent;border-radius:6px;min-height:32px;padding:0 10px;font-weight:700">Cancel</button>
+        </div>
+      </sc-if>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+        <sc-for list="{{ cardView }}" as="c" hint-placeholder-count="12">
+          <div style="border-radius:12px;background:#101728;border:2px solid {{ c.border }};display:flex;flex-direction:column;overflow:hidden">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:{{ c.headBg }}">
+              <div style="width:40px;height:40px;border-radius:50%;background:#000;border:3px solid {{ c.ring }};display:flex;align-items:center;justify-content:center;font-family:'Archivo Black';font-size:15px;flex:none">{{ c.holeLabel }}</div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+                <div style="font-family:'Archivo Black';font-size:13px">{{ c.title }}</div>
+                <div style="font-size:11px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.divs }}</div>
+              </div>
+              <button onClick="{{ c.toggleLock }}" title="Lock card" style="width:34px;height:34px;border-radius:8px;border:2px solid {{ c.lockBorder }};background:{{ c.lockBg }};color:{{ c.lockColor }};font-size:14px;padding:0">{{ c.lockIcon }}</button>
+            </div>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ c.players }}" as="p" hint-placeholder-count="4">
+                <button onClick="{{ p.onClick }}" style="display:grid;grid-template-columns:minmax(0,1fr) 44px 38px;align-items:center;gap:6px;padding:7px 10px;border:0;border-top:1px solid #1d2746;background:{{ p.bg }};color:{{ p.color }};text-align:left">
+                  <span style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span>
+                  <span style="font-size:11px;font-weight:700;color:{{ p.divColor }}">{{ p.div }}</span>
+                  <span style="font-size:11px;opacity:.7;text-align:right">{{ p.metric }}</span>
+                </button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ c.canDrop }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ c.drop }}" style="margin:8px;min-height:34px;border-radius:8px;border:2px dashed #ffd23f;background:transparent;color:#ffd23f;font-family:'Archivo Black';font-size:12px">MOVE HERE</button>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:60px 20px;text-align:center;opacity:.7;font-size:15px">No cards yet — import the Disc Golf Scene CSV (or use the sample field) and hit Generate.</div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const DIVS = ['MPO','FPO','MP40','FP40','MP50','MP55','MA1','FA1','MA40','MA50','MA60','MA2','FA2','MA3','FA3'];
+const PM_DEFAULT = ['MPO','FPO','MP40','FP40','MP50','MP55','MA1','MA40'];
+const KEY = 'jewelxi-cards-v1', APPKEY = 'jewelxi-scoring-v1';
+function rng(seed) { let s = seed % 233280; return () => (s = (s * 9301 + 49297) % 233280) / 233280; }
+function samplePlayers() {
+  const f = ['Rusty','Axl','Vince','Slash','Lita','Joan','Ozzy','Dee','Bret','Sebastian','Jon','Tommy','Nikki','Kip','Stephen','Doro','Lemmy','Rikki','Tawny','Kix','Pat','Jani','Dave','Ronnie','Cherie','Sammy','David','Eddie','Mick','Stevie'];
+  const l = ['Hyzer','Anhyzer','Chainz','Putterman','Roller','Skip','Flex','Grip','Stack','Glide','Fade','Turnover','Tee','Basket','Mando','Scramble','Birdie','Bogey','Ace','Thumber'];
+  const mix = [['MPO',14],['FPO',4],['MP40',8],['FP40',3],['MP50',5],['MP55',3],['MA1',16],['FA1',5],['MA40',12],['MA50',6],['MA60',3],['MA2',14],['FA2',4],['MA3',10],['FA3',3]];
+  const r = rng(42), out = []; let i = 0;
+  const base = { MPO: 960, FPO: 880, MP40: 920, FP40: 840, MP50: 900, MP55: 880, MA1: 900, FA1: 800, MA40: 880, MA50: 860, MA60: 820, MA2: 840, FA2: 740, MA3: 780, FA3: 680 };
+  mix.forEach(([div, n]) => { for (let k = 0; k < n; k++) { out.push({ id: 's' + i, name: f[Math.floor(r() * f.length)] + ' ' + l[Math.floor(r() * l.length)], div, rating: Math.round(base[div] + (r() - 0.5) * 80), reg: i, pdga: '' }); i++; } });
+  return out;
+}
+function parseCsv(text) {
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) { const c = text[i];
+    if (q) { if (c === '"' && text[i + 1] === '"') { cur += '"'; i++; } else if (c === '"') q = false; else cur += c; }
+    else if (c === '"') q = true; else if (c === ',') { row.push(cur); cur = ''; } else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; } else cur += c; }
+  if (cur || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim()));
+}
+class Component extends DCLogic {
+  state = (() => { let d; try { d = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+    return d || { players: samplePlayers(), source: 'sample', round: 1, pm: PM_DEFAULT, size: 4, sortBy: 'Rating (high → low)', keepDivs: true, mergeSmall: true, balance: true, doubleText: '6, 15, 14, 19', skipText: '', seed: 7, cards: { 1: [], 2: [] }, wave: 'AM', sel: null, q: '', dirty: true, toast: '' }; })();
+  componentDidUpdate() { const { toast, ...rest } = this.state; try { localStorage.setItem(KEY, JSON.stringify(rest)); } catch (e) {} }
+  set(p) { this.setState({ ...p, dirty: true }); }
+  flash(t) { this.setState({ toast: t }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 4000); }
+  r1Scores() { try { const d = JSON.parse(localStorage.getItem(APPKEY)); const out = {}; if (!d) return out;
+    d.players.forEach(p => { const pp = (d.paper || {})[p.id + '-1']; const a = ((d.scores || {})[p.id] || {})[1] || []; out[p.id] = pp != null ? pp : a.length === 20 ? a.reduce((x, y) => x + y, 0) : null; }); return out; } catch (e) { return {}; } }
+  generate() {
+    const S = this.state, round = S.round, r = rng(S.seed + round * 101), r1 = S.sortBy.startsWith('R1') ? this.r1Scores() : {};
+    const nums = t => t.split(/[^0-9]+/).map(Number).filter(n => n >= 1 && n <= 20);
+    const skip = new Set(nums(S.skipText)), dbl = nums(S.doubleText);
+    const prev = S.cards[round] || [], locked = prev.filter(c => c.locked), lockedIds = new Set(locked.flatMap(c => c.ids));
+    const out = [...locked];
+    ['AM', 'PM'].forEach(wave => {
+      const pool = S.players.filter(p => (S.pm.includes(p.div) ? 'PM' : 'AM') === wave && !lockedIds.has(p.id));
+      const sorter = { 'Rating (high → low)': (a, b) => b.rating - a.rating, 'Registration order': (a, b) => a.reg - b.reg, 'Random': () => r() - 0.5, 'R1 score (for R2)': (a, b) => (r1[a.id] ?? 999) - (r1[b.id] ?? 999) || b.rating - a.rating }[S.sortBy];
+      let groups = S.keepDivs ? DIVS.map(d => pool.filter(p => p.div === d)).filter(g => g.length) : [pool.slice()];
+      if (S.sortBy === 'Random') groups.forEach(g => g.forEach((_, i) => { const j = Math.floor(r() * (i + 1)); [g[i], g[j]] = [g[j], g[i]]; }));
+      else groups.forEach(g => g.sort(sorter));
+      if (S.keepDivs && S.mergeSmall) { const small = groups.filter(g => g.length < 3), big = groups.filter(g => g.length >= 3); if (small.length) groups = [...big, small.flat()]; }
+      const cards = [];
+      groups.forEach(g => { const k = Math.max(1, Math.ceil(g.length / S.size)); const per = S.balance ? Array.from({ length: k }, (_, i) => Math.floor(g.length / k) + (i < g.length % k ? 1 : 0)) : Array.from({ length: k }, (_, i) => Math.min(S.size, g.length - i * S.size));
+        let at = 0; per.forEach(n => { cards.push({ ids: g.slice(at, at + n).map(p => p.id), wave, locked: false }); at += n; }); });
+      const taken = {}; out.filter(c => c.wave === wave).forEach(c => { taken[c.hole] = (taken[c.hole] || 0) + 1; });
+      const order = []; for (let pass = 0; pass < 4; pass++) { const base = pass === 0 ? Array.from({ length: 20 }, (_, i) => i + 1) : [...dbl, ...Array.from({ length: 20 }, (_, i) => i + 1).filter(n => !dbl.includes(n))]; base.filter(n => !skip.has(n)).forEach(n => order.push([n, pass])); }
+      let oi = 0; cards.forEach(c => { while (oi < order.length && (taken[order[oi][0]] || 0) > order[oi][1]) oi++; const [n] = order[oi] || [1]; taken[n] = (taken[n] || 0) + 1; c.hole = n; c.group = taken[n]; oi++; out.push(c); });
+    });
+    out.forEach(c => { c.key = c.wave + '-' + c.hole + '-' + c.group; });
+    this.setState({ cards: { ...S.cards, [round]: out }, dirty: false, sel: null });
+    this.flash('Generated ' + out.length + ' cards for Round ' + round + '.');
+  }
+  renderVals() {
+    const S = this.state, round = S.round, cards = S.cards[round] || [], byId = Object.fromEntries(S.players.map(p => [p.id, p]));
+    const waveOf = p => S.pm.includes(p.div) ? 'PM' : 'AM', letters = ['', 'A', 'B', 'C', 'D'];
+    const holeLabel = c => { const dup = cards.filter(o => o.wave === c.wave && o.hole === c.hole).length > 1; return c.hole + (dup ? letters[c.group] : ''); };
+    const q = S.q.trim().toLowerCase(), r1 = S.sortBy.startsWith('R1') ? this.r1Scores() : {};
+    const waveCards = cards.filter(c => c.wave === S.wave).sort((a, b) => a.hole - b.hole || a.group - b.group);
+    const cardView = waveCards.map(c => {
+      const ps = c.ids.map(id => byId[id]).filter(Boolean), divs = [...new Set(ps.map(p => p.div))], hit = q && ps.some(p => p.name.toLowerCase().includes(q));
+      return { holeLabel: holeLabel(c), title: 'Hole ' + holeLabel(c) + ' · ' + ps.length + ' players', divs: divs.join(' · '),
+        border: hit ? '#ffd23f' : c.locked ? '#c6ff3d' : ps.length < 3 || ps.length > 5 ? '#ff4b3e' : '#2a3558', headBg: c.locked ? 'rgba(198,255,61,0.12)' : '#1d2746', ring: divs.length > 1 ? '#ffd23f' : '#29e1ff',
+        lockIcon: c.locked ? '🔒' : '🔓', lockBg: c.locked ? '#c6ff3d' : 'transparent', lockColor: c.locked ? '#000' : '#fff', lockBorder: c.locked ? '#c6ff3d' : '#3a4568',
+        toggleLock: () => this.setState({ cards: { ...S.cards, [round]: cards.map(o => o === c ? { ...o, locked: !o.locked } : o) } }),
+        canDrop: !!S.sel && !c.ids.includes(S.sel),
+        drop: () => { const next = cards.map(o => ({ ...o, ids: o.ids.filter(id => id !== S.sel) })); next[cards.indexOf(c)].ids.push(S.sel); this.setState({ cards: { ...S.cards, [round]: next }, sel: null }); this.flash('Moved ' + byId[S.sel].name + ' to hole ' + holeLabel(c) + '.'); },
+        players: ps.map(p => ({ name: p.name, div: p.div, divColor: '#ff3ad1', metric: S.sortBy.startsWith('R1') && r1[p.id] != null ? r1[p.id] : p.rating || '',
+          bg: S.sel === p.id ? '#ffd23f' : q && p.name.toLowerCase().includes(q) ? 'rgba(255,210,63,0.2)' : 'transparent', color: S.sel === p.id ? '#000' : '#fff',
+          onClick: () => this.setState({ sel: S.sel === p.id ? null : p.id }) })) };
+    });
+    const inWave = S.players.filter(p => waveOf(p) === S.wave), assigned = new Set(cards.flatMap(c => c.ids));
+    const unassigned = inWave.filter(p => !assigned.has(p.id)).length, doubled = waveCards.filter(c => c.group > 1).length;
+    const warnings = [];
+    if (unassigned && cards.length) warnings.push(unassigned + ' ' + S.wave + ' players are not on a card — regenerate or move them.');
+    if (waveCards.length > 40) warnings.push(waveCards.length + ' cards for 20 holes — more than 2 per hole. Consider card size 5 or adding a wave.');
+    if (waveCards.some(c => c.ids.length > 5)) warnings.push('A card has more than 5 players.');
+    const tg = (label, k) => ({ label, track: S[k] ? '#29e1ff' : '#3a4568', knob: S[k] ? 21 : 3, onClick: () => this.set({ [k]: !S[k] }) });
+    return {
+      roundBtns: [1, 2].map(n => ({ label: n === 1 ? 'R1 · SAT' : 'R2 · SUN', bg: round === n ? '#7b5cff' : 'transparent', onClick: () => this.setState({ round: n, sortBy: n === 2 && S.sortBy === 'Rating (high → low)' ? 'R1 score (for R2)' : S.sortBy }) })),
+      waveChips: DIVS.map(d => { const on = S.pm.includes(d); return { label: d, border: '#ff3ad1', bg: on ? '#ff3ad1' : 'transparent', color: on ? '#000' : '#ff3ad1', onClick: () => this.set({ pm: on ? S.pm.filter(x => x !== d) : [...S.pm, d] }) }; }),
+      sizeBtns: [3, 4, 5].map(n => ({ label: n, border: S.size === n ? '#29e1ff' : '#2a3558', bg: S.size === n ? '#29e1ff' : 'transparent', color: S.size === n ? '#000' : '#fff', onClick: () => this.set({ size: n }) })),
+      sortBy: S.sortBy, sortOpts: ['Rating (high → low)', 'R1 score (for R2)', 'Registration order', 'Random'], onSort: e => this.set({ sortBy: e.target.value }),
+      toggles: [tg('Keep divisions together', 'keepDivs'), tg('Merge tiny divisions (1–2 players) onto shared cards', 'mergeSmall'), tg('Balance card sizes (4-4-3, not 4-4-4-1)', 'balance')],
+      doubleText: S.doubleText, onDouble: e => this.set({ doubleText: e.target.value }), skipText: S.skipText, onSkip: e => this.set({ skipText: e.target.value }),
+      generate: () => { if (S.sortBy === 'Random') this.setState({ seed: S.seed + 1 }, () => this.generate()); else this.generate(); },
+      genLabel: S.dirty ? 'GENERATE CARDS · R' + round : 'REGENERATE · R' + round, genBg: S.dirty ? 'linear-gradient(90deg,#ffd23f,#ff3ad1)' : '#29e1ff',
+      waveTabs: ['AM', 'PM'].map(w => ({ label: w === 'AM' ? 'AM WAVE · 9:00' : 'PM WAVE · 1:00', bg: S.wave === w ? '#29e1ff' : 'transparent', color: S.wave === w ? '#000' : '#fff', onClick: () => this.setState({ wave: w }) })),
+      stats: [{ k: 'PLAYERS', v: inWave.length, color: '#fff' }, { k: 'CARDS', v: waveCards.length, color: '#29e1ff' }, { k: 'DOUBLED HOLES', v: doubled, color: doubled ? '#ffd23f' : '#fff' }, { k: 'SOURCE', v: S.source === 'sample' ? 'Sample' : 'CSV', color: S.source === 'sample' ? '#ff8a7a' : '#c6ff3d' }],
+      warnings, cardView, empty: cardView.length === 0, q: S.q, onQ: e => this.setState({ q: e.target.value }),
+      hasSel: !!S.sel, selName: S.sel ? byId[S.sel].name + ' (' + byId[S.sel].div + ')' : '', clearSel: () => this.setState({ sel: null }),
+      hasToast: !!S.toast, toast: S.toast,
+      onImport: e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => { const rows = parseCsv(t); if (rows.length < 2) return this.flash('That CSV looks empty.');
+        const H = rows[0].map(h => h.trim().toLowerCase()), col = (...ks) => H.findIndex(h => ks.some(k => h === k || h.includes(k)));
+        const cN = col('name', 'player'), cF = col('first'), cL = col('last'), cD = col('division', 'div', 'class'), cR = col('rating'), cP = col('pdga');
+        const players = rows.slice(1).map((r, i) => ({ id: 'c' + i, name: (cF >= 0 && cL >= 0 ? (r[cF] + ' ' + r[cL]) : r[cN] || '').trim(), div: ((r[cD] || '').match(/[A-Z]{2,3}\d{0,2}/) || [''])[0], rating: parseInt(r[cR], 10) || 0, pdga: cP >= 0 ? r[cP] : '', reg: i }))
+          .filter(p => p.name && p.div && p.div !== 'SPON');
+        this.setState({ players, source: 'csv', cards: { 1: [], 2: [] }, dirty: true, sel: null }); this.flash('Imported ' + players.length + ' players (sponsor-only entries skipped).'); }); e.target.value = ''; },
+      exportCsv: () => { const lines = [['Round', 'Wave', 'Start Hole', 'Player', 'Division', 'Rating', 'PDGA']];
+        cards.slice().sort((a, b) => a.wave.localeCompare(b.wave) || a.hole - b.hole || a.group - b.group).forEach(c => c.ids.forEach(id => { const p = byId[id]; if (p) lines.push([round, c.wave, holeLabel(c), p.name, p.div, p.rating, p.pdga]); }));
+        const blob = new Blob([lines.map(l => l.map(x => '"' + String(x ?? '').replace(/"/g, '""') + '"').join(',')).join('\n')], { type: 'text/csv' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'jewel-xi-cards-R' + round + '.csv'; a.click(); },
+      pushToApp: () => { let d; try { d = JSON.parse(localStorage.getItem(APPKEY)); } catch (e) {} d = d || { scores: {}, sign: {}, sub: {}, paper: {} };
+        const labels = cards.map(c => c.wave + ' · Hole ' + holeLabel(c)), info = {};
+        cards.forEach((c, i) => { info[labels[i]] = { start: c.hole, wave: c.wave, round }; });
+        const prevIds = new Set((d.players || []).map(p => p.id));
+        d.players = S.players.map(p => { const ci = cards.findIndex(c => c.ids.includes(p.id)); return { id: p.id, name: p.name, div: p.div, card: ci >= 0 ? labels[ci] : '' }; });
+        d.cards = labels; d.cardInfo = info; d.scores = Object.fromEntries(Object.entries(d.scores || {}).filter(([k]) => d.players.some(p => p.id === k)));
+        try { localStorage.setItem(APPKEY, JSON.stringify(d)); } catch (e) {}
+        this.flash('Sent ' + cards.length + ' Round ' + round + ' cards to the scoring app.'); }
+    };
+  }
+}
+</script>
+</body>
+</html>

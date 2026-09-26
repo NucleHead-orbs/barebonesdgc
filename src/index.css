@@ -1,0 +1,22 @@
+/* Design tokens: Jewel XI handoff ("Electric" palette). Values are final; match them. */
+:root {
+  --page: #0b1020; --app: #141c2e; --surface: #101728; --raised: #1d2746;
+  --border: #2a3558; --border-subtle: #222c4a; --control-muted: #3a4568; --tile-empty: #1a2238;
+  --cyan: #29e1ff; --violet: #7b5cff; --magenta: #ff3ad1;
+  --gold: #ffd23f; --under: #c6ff3d; --over: #ff8a7a; --error: #ff4b3e;
+  --text: #ffffff; --text-muted: #8a93b0; --text-placeholder: #6b7596;
+  --cta: linear-gradient(90deg, #29e1ff, #7b5cff, #ff3ad1);
+  --sponsor: linear-gradient(180deg, #e6c46a, #a47d2c);
+  --font-display: 'Metal Mania', cursive;
+  --font-label: 'Archivo Black', 'Arial Black', sans-serif;
+  --font-body: 'Archivo', system-ui, sans-serif;
+  --font-quote: 'Permanent Marker', cursive;
+  --r-dot: 6px; --r-input: 10px; --r-card: 12px; --r-hole: 14px; --r-pill: 999px;
+  --hit: 44px; --hit-score: 56px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; min-height: 100%; }
+body { background: var(--page); color: var(--text); font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

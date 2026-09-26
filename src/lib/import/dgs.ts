@@ -1,0 +1,117 @@
+/**
+ * Disc Golf Scene registration export -> player import rows.
+ * Verified against the real Jewel X export (2025-11-01).
+ *
+ * Privacy rule: only Division, Name (or First+Last), PDGA#, Registration date,
+ * and an optional Rating column are ever read. Email, phone, address, and
+ * payment columns never leave the file. The players table is public-read.
+ */
+import Papa from 'papaparse';
+
+export type Field = 'division' | 'name' | 'first' | 'last' | 'pdga' | 'regDate' | 'rating';
+export type Mapping = Partial<Record<Field, string>>; // field -> exact header text
+
+export interface ImportRow {
+  name: string;
+  div_code: string;
+  pdga: string | null;
+  rating: number | null;
+  reg_order: number;
+}
+
+export interface SkippedRow {
+  line: number; // 1-based line in the file (header = 1)
+  name: string;
+  reason: 'footer' | 'no_name' | 'sponsor_only' | 'unknown_division';
+  detail?: string;
+}
+
+export interface DgsParseResult {
+  headers: string[];
+  mapping: Mapping;
+  rows: ImportRow[];
+  skipped: SkippedRow[];
+  blocking: string[]; // import must not proceed while non-empty
+}
+
+// Exact DGS headers first; loose matches only as a fallback for other exports.
+const RULES: Record<Field, { exact: string[]; loose: (h: string) => boolean }> = {
+  division: { exact: ['division'], loose: (h) => /\b(div|division|class)\b/.test(h) },
+  name: { exact: ['name'], loose: (h) => h === 'player' || h === 'player name' || h === 'full name' },
+  first: { exact: ['first name'], loose: (h) => h.includes('first') },
+  last: { exact: ['last name'], loose: (h) => h.includes('last') },
+  pdga: { exact: ['pdga#'], loose: (h) => h.includes('pdga') },
+  regDate: { exact: ['registration date mdt'], loose: (h) => h.startsWith('registration date') || h === 'registered' },
+  rating: { exact: ['rating'], loose: (h) => h.includes('rating') },
+};
+
+export function detectMapping(headers: string[]): Mapping {
+  const norm = headers.map((h) => h.replace(/^\uFEFF/, '').trim().toLowerCase());
+  const taken = new Set<number>();
+  const m: Mapping = {};
+  for (const pass of ['exact', 'loose'] as const) {
+    for (const f of Object.keys(RULES) as Field[]) {
+      if (m[f]) continue;
+      const i = norm.findIndex((h, idx) =>
+        !taken.has(idx) && (pass === 'exact' ? RULES[f].exact.includes(h) : RULES[f].loose(h)));
+      if (i >= 0) { m[f] = headers[i]; taken.add(i); }
+    }
+  }
+  return m;
+}
+
+const clean = (v: unknown) => String(v ?? '').replace(/\s+/g, ' ').trim();
+export const nameKey = (n: string) => clean(n).toLowerCase();
+
+export function parseDgsCsv(text: string, divisionCodes: string[], override?: Mapping): DgsParseResult {
+  const parsed = Papa.parse<Record<string, string>>(text.replace(/^\uFEFF/, ''), { header: true, skipEmptyLines: 'greedy' });
+  const headers = parsed.meta.fields ?? [];
+  const mapping = { ...detectMapping(headers), ...override };
+  const blocking: string[] = [];
+  if (!mapping.division) blocking.push('No division column found. Pick it in the column mapping.');
+  if (!mapping.name && !(mapping.first && mapping.last)) blocking.push('No name column found. Pick Name, or First name + Last name.');
+  if (blocking.length) return { headers, mapping, rows: [], skipped: [], blocking };
+
+  const known = new Set(divisionCodes);
+  const kept: Array<{ row: Omit<ImportRow, 'reg_order'>; date: string; line: number }> = [];
+  const skipped: SkippedRow[] = [];
+
+  parsed.data.forEach((r, i) => {
+    const line = i + 2;
+    const rawDiv = clean(r[mapping.division!]);
+    const name = mapping.name ? clean(r[mapping.name]) : clean(`${r[mapping.first!] ?? ''} ${r[mapping.last!] ?? ''}`);
+    if (/^totals?$/i.test(rawDiv)) return void skipped.push({ line, name, reason: 'footer' });
+    if (!name) return void skipped.push({ line, name, reason: 'no_name' });
+    const div = (rawDiv.toUpperCase().match(/[A-Z]{2,4}\d{0,2}/) ?? [''])[0];
+    if (div === 'SPON') return void skipped.push({ line, name, reason: 'sponsor_only' });
+    if (!known.has(div)) return void skipped.push({ line, name, reason: 'unknown_division', detail: rawDiv });
+    const pdga = mapping.pdga ? clean(r[mapping.pdga]).replace(/\D/g, '') || null : null;
+    const ratingRaw = mapping.rating ? parseInt(clean(r[mapping.rating]), 10) : NaN;
+    kept.push({
+      row: { name, div_code: div, pdga, rating: Number.isFinite(ratingRaw) && ratingRaw > 0 ? ratingRaw : null },
+      date: mapping.regDate ? clean(r[mapping.regDate]) : '',
+      line,
+    });
+  });
+
+  // Registration order comes from the date, never file order (DGS groups by division).
+  // Undated rows go last, in file order.
+  const ordered = kept.slice().sort((a, b) =>
+    (a.date ? 0 : 1) - (b.date ? 0 : 1) || a.date.localeCompare(b.date) || a.line - b.line);
+  const rows = ordered.map((k, i) => ({ ...k.row, reg_order: i + 1 }));
+
+  // Two different people with one name would merge on re-import. Stop and make the TD disambiguate.
+  const seen = new Map<string, number>();
+  for (const r of rows) seen.set(nameKey(r.name), (seen.get(nameKey(r.name)) ?? 0) + 1);
+  const dupes = [...seen].filter(([, n]) => n > 1).map(([k]) => rows.find((r) => nameKey(r.name) === k)!.name);
+  if (dupes.length) blocking.push(`Same name appears more than once: ${dupes.join(', ')}. Add a suffix (e.g. "Jr") in Disc Golf Scene or the file, then re-import.`);
+
+  const pdgaSeen = new Map<string, string>();
+  for (const r of rows) if (r.pdga) {
+    const other = pdgaSeen.get(r.pdga);
+    if (other && other !== r.name) blocking.push(`PDGA# ${r.pdga} is on both ${other} and ${r.name}.`);
+    pdgaSeen.set(r.pdga, r.name);
+  }
+
+  return { headers, mapping, rows, skipped, blocking };
+}
