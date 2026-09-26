@@ -49,9 +49,11 @@ Make a user the TD:
 update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role":"td"}' where email = '...';
 ```
 
-### Deploy (Cloudflare Pages)
-Build `npm run build`, output `dist`. Env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_PUBLIC_ORIGIN` (where printed QR codes point, e.g. `https://barebonesdiscgolf.club`; defaults to the current site).
-`public/_redirects` handles SPA routes. Apex domain requires the zone's nameservers on Cloudflare.
+### Deploy (Cloudflare Workers, static assets)
+Workers Builds on `main`: build `npm run build`, deploy `npx wrangler deploy` (config in `wrangler.jsonc`, output `dist`).
+SPA routes (`/td`, `/jewel`, `/c/<token>`) are handled by `assets.not_found_handling = "single-page-application"`. Do not add `public/_redirects`: that's a Pages feature and Workers rejects it as an infinite loop.
+**Build variables** (Workers → Settings → Build → Variables; Vite bakes them in at build time): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_PUBLIC_ORIGIN` (where printed QR codes point: `https://barebonesdiscgolf.club`).
+Domain: `barebonesdiscgolf.club` (nameservers on Cloudflare since 2026-09-26). Attach it under the Worker's Domains & Routes.
 
 ## Build order
 1. ✅ Schema, RLS, RPCs, seed, acceptance tests — live on Supabase, security advisor clean except the 8 intended public RPCs
