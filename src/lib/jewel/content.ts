@@ -48,7 +48,7 @@ export const CLUB = {
   heroKicker: 'Disc golf club · Mesa, AZ',
   heroLines: ["Don't be a Dick,", 'Be a Boner.'] as const,
   heroBody: 'We throw plastic, drink beer and talk trash. Leagues all year, one stupid-big tournament every November. Come bend like the boner.',
-  facebookUrl: '', // TODO(TD): Facebook group URL. Hero button + footer link stay hidden until set.
+  facebookUrl: 'https://www.facebook.com/groups/453290991445526/', // hero button + footer link
   art: {
     skeleton: '/assets/brand/logo-skeleton.webp',          // 52×52 header lockup (keyed from Mike's art, 2026-09-27)
     skeletonMoon: '/assets/brand/logo-skeleton-moon.webp', // home hero, right column

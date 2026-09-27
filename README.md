@@ -23,7 +23,7 @@ One app, one Cloudflare Pages deploy: the Bare Bones club site and the Jewel XI 
 - **Offline writes:** `src/lib/offline/queue.ts`. Every tap lands in IndexedDB before it touches the network.
 - **Design tokens:** `src/index.css`. Master brand on `:root`, Jewel XI skin on `[data-theme="jewel-xi"]` (+ `data-palette`, `data-bg`). Components read semantic tokens only. Sources: `design/club-website/README.md` (club site) and `design/README.md` (Jewel XI).
 - **Components:** `src/components/ui.tsx` (primitives), `event.tsx` (the ONE course guide + sponsor panel/grid, shared by `/jewel-xi/*` and the scoring app), `site.tsx` (headers, footer, layouts).
-- **Missing from the club design bundle** (only its README arrived): Boner Nation copy, Facebook URL, venue a.k.a. names. Fields exist in `src/lib/jewel/content.ts` (`CLUB`, `JEWEL_OVERVIEW`); blank = element hidden, never faked.
+- **Missing from the club design bundle** (only its README arrived): Boner Nation copy, venue a.k.a. names. Fields exist in `src/lib/jewel/content.ts` (`CLUB`, `JEWEL_OVERVIEW`); blank = element hidden, never faked.
 
 ## Rules the system enforces
 - Players never write tables directly. All scoring goes through token-gated RPCs; tokens are not publicly readable.
