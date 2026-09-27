@@ -42,13 +42,13 @@ export function Home() {
         </InsetFrame>
       </div>
 
-      {CLUB.bonerNationCopy && (
+      {CLUB.art.bonerNation && (
         <section className="sec">
           <div className="sec-inner two-col">
-            {CLUB.art.bonerNation && <img src={CLUB.art.bonerNation} alt="The Boner Nation crew" style={{ width: '100%', borderRadius: 14, border: '4px solid var(--ink)' }} />}
+            <img src={CLUB.art.bonerNation} alt="Boner Nation: the skeleton pouring one out for the crew, names on the discs" loading="lazy" style={{ width: '100%', maxWidth: 520, borderRadius: 14, border: '4px solid var(--ink)', justifySelf: 'center' }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <SectionHeading title="Boner Nation" size="l" />
-              <p className="lead">{CLUB.bonerNationCopy}</p>
+              {CLUB.bonerNationCopy && <p className="lead">{CLUB.bonerNationCopy}</p>}
               <div><Button to="/sponsors" variant="outline">Sponsors & Fan Club</Button></div>
             </div>
           </div>

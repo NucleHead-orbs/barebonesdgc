@@ -52,9 +52,9 @@ export const CLUB = {
   art: {
     skeleton: '/assets/brand/logo-skeleton.webp',          // 52×52 header lockup (keyed from Mike's art, 2026-09-27)
     skeletonMoon: '/assets/brand/logo-skeleton-moon.webp', // home hero, right column
-    bonerNation: '',  // TODO: /assets/art/boner-nation-crew.png
+    bonerNation: '/assets/art/boner-nation-crew.webp', // the crew, names on the discs
   },
-  bonerNationCopy: '', // TODO: mascot-origin copy from the design bundle. Section hidden until set.
+  bonerNationCopy: '', // TODO: mascot-origin copy. Paragraph hidden until set (section shows with the art).
 };
 
 export const JEWEL_TEASER = {
