@@ -78,3 +78,12 @@ export const TOUR = [
   { date: 'Nov 21', title: 'Round 1' },
   { date: 'Nov 22', title: 'Round 2', note: 'Raffle + awards' },
 ];
+
+/** Boner Nation gallery (Home). Files in public/assets/art: <name>.webp (full) + <name>-thumb.webp (360px square). */
+export const GALLERY: Array<{ name: string; alt: string }> = [
+  { name: 'boner-nation-crew', alt: 'Boner Nation: the skeleton pouring one out for the crew, names on the discs' },
+  { name: 'boner-nation-reggae', alt: 'Boner Nation: reggae skeleton with a guitar on the beach' },
+  { name: 'grip-and-rip', alt: 'Bare Bones Disc Golf Club: skeleton rising from a grave, "Grip & Rip" headstone' },
+  { name: 'bare-bones-pigtails', alt: 'Bare Bones Disc Golf Club: purple skeleton with pigtails' },
+  { name: 'merry-christmas-boners', alt: 'Merry Christmas from the Boners: the skeleton on Santa\'s lap' },
+];

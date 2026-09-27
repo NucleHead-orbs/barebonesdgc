@@ -1,0 +1,9 @@
+.gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.gal-thumb { padding: 0; border: 3px solid var(--ink); border-radius: var(--r-card); overflow: hidden; background: var(--bg-surface); cursor: zoom-in; aspect-ratio: 1; transition: transform .15s var(--ease); }
+.gal-thumb:hover { transform: translateY(-2px); }
+.gal-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gal-dlg { padding: 0; border: 3px solid var(--ink); border-radius: var(--r-card); background: #000; max-width: min(92vw, 900px); max-height: 92vh; overflow: visible; }
+.gal-dlg::backdrop { background: rgba(0, 0, 0, .8); }
+.gal-dlg img { display: block; max-width: min(92vw, 900px); max-height: 88vh; width: auto; height: auto; border-radius: 9px; }
+.gal-x { position: absolute; top: -18px; right: -18px; width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--ink); background: var(--accent-a); color: var(--on-accent); font-size: 26px; line-height: 1; cursor: pointer; }
+@media (max-width: 480px) { .gal-x { top: 6px; right: 6px; } }

@@ -1,6 +1,7 @@
 /** Club website pages (design/club-website/README.md "Screens / Views"). */
 import { useState } from 'react';
-import { CLUB, EVENT, JEWEL_OVERVIEW, JEWEL_TEASER, SCHEDULE, TOUR } from '../../lib/jewel/content';
+import { CLUB, EVENT, GALLERY, JEWEL_OVERVIEW, JEWEL_TEASER, SCHEDULE, TOUR } from '../../lib/jewel/content';
+import { Gallery } from '../../components/Gallery';
 import { loadDivisions } from '../../lib/jewel/api';
 import { Banner, Button, Card, Chip, InsetFrame, SectionHeading, TourList } from '../../components/ui';
 import { CourseGuide, SponsorGrid, SponsorPanel } from '../../components/event';
@@ -52,6 +53,7 @@ export function Home() {
               <div><Button to="/sponsors" variant="outline">Sponsors & Fan Club</Button></div>
             </div>
           </div>
+          <div className="sec-inner" style={{ marginTop: 32 }}><Gallery items={GALLERY} /></div>
         </section>
       )}
 
