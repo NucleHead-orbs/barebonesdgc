@@ -5,13 +5,15 @@ One app, one Cloudflare Pages deploy: the Bare Bones club site and the Jewel XI 
 | Route | What | Who |
 |---|---|---|
 | `/` | Club site | Public |
-| `/jewel` | Leaderboard, course guide, schedule, sponsors | Public |
+| `/jewel` | Leaderboard, course guide, schedule, sponsors (tabs: `#leaders` `#score` `#course` `#info`) | Public |
 | `/c/:token` | Scorecard for one card (the QR code) | Anyone holding the card's QR |
 | `/td` | Card Builder, paper totals, unlocks | TD login only |
 
 ## Sources of truth
 - **Data:** Supabase project `jjywfkonerwbhpesyyxa` (West US). `supabase/migrations/` is the only schema definition. Never edit tables in the dashboard.
 - **Holes/divisions:** migration `20260926000100_jewel_seed.sql` (from the design handoff's `HOLES` array). Reference data is versioned, not hand-entered.
+- **Sponsors:** Disc Golf Scene's "Jewel hole sponsor" column → `td_import_sponsors` (adds only, never overwrites, lands hidden) → TD sets public name / hole / tier / logo and flips Visible in `/td` → Sponsors. Logos in the public `sponsor-logos` storage bucket (TD-only writes). Public sees approved sponsors only (RLS).
+- **Event copy (schedule, register link, tagline):** `src/lib/jewel/content.ts`. House rules are empty until the TD supplies them; the section stays hidden meanwhile.
 - **Card labels (`7`, `7A`):** computed by `td_publish_round` in the database. The client never builds a label; unpublished cards show "Hole 7 · group 2".
 - **Card Builder glue:** `src/lib/td/builder.ts` (moves, locks, publish payload, import preview, error messages). A hand move locks the card the player lands on, so it survives Regenerate.
 - **Card assignment:** `src/lib/cards/generate.ts` (pure, deterministic, seeded).
@@ -36,7 +38,7 @@ npm run build
 ```
 
 ### Database
-Apply `supabase/migrations/*.sql` in filename order. Both are live on the project as of 2026-09-26.
+Apply `supabase/migrations/*.sql` in filename order. All four are live on the project as of 2026-09-27.
 Local check against plain Postgres (no Supabase needed):
 ```bash
 psql -d jewel -f supabase/tests/00_supabase_stub.sql   # test only, never on Supabase
@@ -59,7 +61,7 @@ Domain: `barebonesdiscgolf.club` (nameservers on Cloudflare since 2026-09-26). A
 1. ✅ Schema, RLS, RPCs, seed, acceptance tests — live on Supabase, security advisor clean except the 8 intended public RPCs
 2. ✅ Card Builder (`/td`): DGS CSV import → generate → review → publish → QR sheet (code + unit tests done; live TD walkthrough pending)
 3. Scorecard (`/c/:token`): offline queue, sign-off, submit
-4. Leaderboard (Realtime), Course, Info
+4. ✅ Public `/jewel`: Leaderboard (loads on open; Realtime still to do), Course, Info, sponsors. ✅ Sponsors pipeline.
 5. PWA/service worker, TD dashboard (who hasn't submitted, paper entry)
 6. Field test at league rounds → Nov 15 warm-up dubs → Jewel XI Nov 21–22
 

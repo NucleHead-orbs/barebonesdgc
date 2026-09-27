@@ -74,3 +74,39 @@ export const importPlayers = (eventId: string, rows: ImportRow[]) => wrap(async 
 
 export const publishRound = (eventId: string, round: 1 | 2, cards: PublishCard[], force = false) => wrap(async (): Promise<PublishedCard[]> =>
   must(await supabase.rpc('td_publish_round', { p_event_id: eventId, p_round: round, p_cards: cards, p_force: force })) as PublishedCard[]);
+
+// ---------- sponsors (TD) ----------
+export interface Sponsor {
+  id: string; name: string; tier: string | null; hole: number | null; logo_url: string | null;
+  sort: number; source_name: string | null; hidden: boolean;
+}
+const SPONSOR_COLS = 'id, name, tier, hole, logo_url, sort, source_name, hidden';
+
+/** As the TD, RLS returns hidden (unapproved) sponsors too. */
+export const loadSponsors = (eventId: string) => wrap(async (): Promise<Sponsor[]> =>
+  list(await supabase.from('sponsors').select(SPONSOR_COLS).eq('event_id', eventId).order('sort')) as Sponsor[]);
+
+/** Adds hole sponsors found in a DGS file. Never overwrites TD edits; new ones land hidden. */
+export const importSponsors = (eventId: string, names: string[]) => wrap(async (): Promise<{ inserted: number; existing: number }> =>
+  must(await supabase.rpc('td_import_sponsors', { p_event_id: eventId, p_names: names })) as { inserted: number; existing: number });
+
+export type SponsorPatch = Partial<Pick<Sponsor, 'name' | 'tier' | 'hole' | 'logo_url' | 'sort' | 'hidden'>>;
+export const updateSponsor = (id: string, patch: SponsorPatch) => wrap(async (): Promise<Sponsor> =>
+  must(await supabase.from('sponsors').update(patch).eq('id', id).select(SPONSOR_COLS).single()) as Sponsor);
+
+/** Hand-added sponsor (not from DGS, e.g. the presenting sponsor). Starts hidden like imports. */
+export const addSponsor = (eventId: string, name: string, sort: number) => wrap(async (): Promise<Sponsor> =>
+  must(await supabase.from('sponsors').insert({ event_id: eventId, name, sort, hidden: true }).select(SPONSOR_COLS).single()) as Sponsor);
+
+export const deleteSponsor = (id: string) => wrap(async () => { must(await supabase.from('sponsors').delete().eq('id', id)); });
+
+export const LOGO_BUCKET = 'sponsor-logos';
+/** Upload to the public logo bucket; returns the public URL to store on the sponsor. */
+export const uploadLogo = (eventId: string, sponsorId: string, file: File) => wrap(async (): Promise<string> => {
+  const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' } as Record<string, string>)[file.type];
+  if (!ext) throw new Error('Logo must be a PNG, JPG or WebP.');
+  if (file.size > 2 * 1024 * 1024) throw new Error('Logo must be under 2 MB.');
+  const path = `${eventId}/${sponsorId}-${Date.now()}.${ext}`;
+  must(await supabase.storage.from(LOGO_BUCKET).upload(path, file, { contentType: file.type, upsert: false }));
+  return supabase.storage.from(LOGO_BUCKET).getPublicUrl(path).data.publicUrl;
+});

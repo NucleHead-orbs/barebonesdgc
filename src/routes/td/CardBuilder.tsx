@@ -8,6 +8,7 @@ import {
 } from '../../lib/td/builder';
 import ImportReview from './ImportReview';
 import QrSheet from './QrSheet';
+import SponsorsPanel from './SponsorsPanel';
 
 type Round = 1 | 2;
 type PerRound<T> = Record<Round, T>;
@@ -39,7 +40,8 @@ export default function CardBuilder({ email, onSignOut }: { email: string; onSig
   const [alert, setAlert] = useState<{ kind: RpcErrorKind | 'generate'; message: string } | null>(null);
   const [pending, setPending] = useState<{ fileName: string; text: string } | null>(null);
   const [busy, setBusy] = useState<'' | 'import' | 'publish'>('');
-  const [view, setView] = useState<'builder' | 'qr'>('builder');
+  const [view, setView] = useState<'builder' | 'qr' | 'sponsors'>('builder');
+  const [sponsors, setSponsors] = useState<api.Sponsor[]>([]);
 
   // ---- load everything once: event, players, R1 seeds, settings + published cards for both rounds
   useEffect(() => {
@@ -47,12 +49,14 @@ export default function CardBuilder({ email, onSignOut }: { email: string; onSig
       const e = await api.loadEvent();
       if (e.error || !e.data) return setFatal(rpcError(e.error).message);
       const id = e.data.id;
-      const [ps, seeds, s1, s2, p1, p2] = await Promise.all([
+      const [ps, seeds, s1, s2, p1, p2, sp] = await Promise.all([
         api.loadPlayers(id), api.loadR1Strokes(id), api.loadSettings(id, 1), api.loadSettings(id, 2), api.loadPublished(id, 1), api.loadPublished(id, 2),
+        api.loadSponsors(id),
       ]);
-      const bad = [ps, seeds, s1, s2, p1, p2].find((r) => r.error);
+      const bad = [ps, seeds, s1, s2, p1, p2, sp].find((r) => r.error);
       if (bad) return setFatal(rpcError(bad.error).message);
       setPlayers(ps.data!);
+      setSponsors(sp.data!);
       setR1(seeds.data!);
       const loaded = { 1: mergeSettings(s1.data, 1, e.data.holeCount), 2: mergeSettings(s2.data, 2, e.data.holeCount) };
       setSettings(loaded);
@@ -151,17 +155,21 @@ export default function CardBuilder({ email, onSignOut }: { email: string; onSig
     setPending({ fileName: f.name, text: await f.text() });
   };
 
-  const doImport = async (rows: ImportRow[]) => {
+  const doImport = async (rows: ImportRow[], sponsorNames: string[]) => {
     const diff = importDiff(rows, players);
     setBusy('import');
-    const r = await api.importPlayers(ev.id, rows);
+    const r = rows.length ? await api.importPlayers(ev.id, rows) : { data: { inserted: 0, updated: 0, skipped: [] } };
     if (r.error || !r.data) { setBusy(''); return setAlert(rpcError(r.error)); }
-    const ps = await api.loadPlayers(ev.id);
+    const sp = sponsorNames.length ? await api.importSponsors(ev.id, sponsorNames) : { data: { inserted: 0, existing: 0 } };
+    const [ps, sl] = await Promise.all([api.loadPlayers(ev.id), api.loadSponsors(ev.id)]);
     setBusy('');
     if (ps.data) setPlayers(ps.data);
+    if (sl.data) setSponsors(sl.data);
     setPending(null);
     const srv = r.data.skipped.length ? ` The server also skipped ${r.data.skipped.length} row(s).` : '';
-    flash(`Import done: ${diff.inserts.length} new, ${diff.updates.length} changed, ${diff.unchanged.length} unchanged.${srv}`);
+    if (sp.error || !sp.data) return setAlert({ ...rpcError(sp.error), message: `Players imported, but sponsors failed: ${rpcError(sp.error).message}` });
+    const spMsg = sp.data.inserted ? ` ${sp.data.inserted} new sponsor(s) waiting for approval in Sponsors.` : '';
+    flash(`Import done: ${diff.inserts.length} new, ${diff.updates.length} changed, ${diff.unchanged.length} unchanged.${srv}${spMsg}`);
   };
 
   const exportCsv = () => {
@@ -180,6 +188,12 @@ export default function CardBuilder({ email, onSignOut }: { email: string; onSig
     flash(`Moved ${byId.get(sel)?.name ?? 'player'} to ${cardName(c)}. That card is now locked.`);
     setSel(null);
   };
+
+  if (view === 'sponsors') {
+    return <Shell email={email} onSignOut={onSignOut}>
+      <SponsorsPanel eventId={ev.id} holeCount={ev.holeCount} sponsors={sponsors} onChange={setSponsors} onBack={() => setView('builder')} />
+    </Shell>;
+  }
 
   if (view === 'qr') {
     return <div className="td"><QrSheet round={round} cards={published[round]} names={names} onBack={() => setView('builder')} /></div>;
@@ -200,6 +214,9 @@ export default function CardBuilder({ email, onSignOut }: { email: string; onSig
     <Shell email={email} onSignOut={onSignOut} actions={<>
       <label className="td-btn cyan td-file">IMPORT DGS CSV<input type="file" accept=".csv,text/csv" onChange={onFile} disabled={!!busy} /></label>
       <button className="td-btn" onClick={exportCsv} disabled={!roundCards.length}>EXPORT CSV</button>
+      <button className="td-btn gold" onClick={() => setView('sponsors')}>
+        SPONSORS{sponsors.some((s) => s.hidden) ? ` · ${sponsors.filter((s) => s.hidden).length} NEW` : ''}
+      </button>
       <button className="td-btn gold" onClick={() => setView('qr')} disabled={!isPublished || unpublished}
         title={unpublished ? 'Publish your changes first: codes come from the published round.' : undefined}>QR SHEET</button>
       <button className="td-btn cta" onClick={() => void publish(false)} disabled={!roundCards.length || !!busy}>
@@ -266,7 +283,8 @@ export default function CardBuilder({ email, onSignOut }: { email: string; onSig
         <main className="td-main">
           {pending && (
             <ImportReview fileName={pending.fileName} text={pending.text} divCodes={ev.divOrder} existing={players}
-              busy={busy === 'import'} onImport={(rows) => void doImport(rows)} onCancel={() => setPending(null)} />
+              existingSponsors={sponsors.flatMap((s) => (s.source_name ? [s.source_name] : []))}
+              busy={busy === 'import'} onImport={(rows, sp) => void doImport(rows, sp)} onCancel={() => setPending(null)} />
           )}
           {alert && (
             <div className="td-warn" role="alert">

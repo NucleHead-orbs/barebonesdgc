@@ -62,3 +62,41 @@ describe('DGS import', () => {
     expect(parseDgsCsv('foo,bar\n1,2', DIVS).blocking.length).toBe(2);
   });
 });
+
+describe('DGS import: 2026 export layout + hole sponsors', () => {
+  // Header set of the real 2026-09-27 export (note "Registration date MST", no "T-shirt size $"). Synthetic people.
+  const H26 = 'Division,Name,"First name","Last name",PDGA#,Email,Phone,"Entry fee $","Ace Pool","Ace Pool $","Bare Bones members","Bare Bones members $","Jewel hole sponsor","Jewel hole sponsor $","T-shirt size",Address,City,State,ZIP,Country,"Registration date MST",Notes';
+  const csv26 = [H26,
+    'FA2,"Dee Driver",Dee,Driver,100001,d@example.com,,100,1,5,,,1,50,XXL,,,,,,"2026-09-27 00:02:18",',
+    'MA40,"Pat Putter",Pat,Putter,,p@example.com,,100,,,1,-5,,,XL,,,,,,"2026-09-26 21:04:45","private note"',
+    'MA40,Mononym,,Mononym,,,,,1,,1,,1,,Large,,,,,US,"2026-09-26 22:52:08",',
+    'SPON,"Acme Discs",Acme,Discs,,,,,,,,,1,50,XL,,,,,US,"2026-09-26 22:51:13","Full Hole - $100"',
+    'SPON,"Acme  discs",Acme,discs,,,,,,,,,1,50,XL,,,,,US,"2026-09-26 22:55:13",',
+    'Totals,,,,,,,300,3,10,2,-5,7,250,,,,,,,,',
+  ].join('\n');
+  const r = parseDgsCsv(csv26, DIVS);
+
+  it('maps the 2026 headers, including MST date and the sponsor flag', () => {
+    expect(r.mapping).toMatchObject({ division: 'Division', name: 'Name', pdga: 'PDGA#', regDate: 'Registration date MST', sponsor: 'Jewel hole sponsor' });
+    expect(r.blocking).toEqual([]);
+  });
+
+  it('imports players (a one-word name is fine) and skips SPON + footer', () => {
+    expect(r.rows.map((x) => x.name)).toEqual(['Pat Putter', 'Mononym', 'Dee Driver']);
+    expect(r.skipped.map((s) => s.reason).sort()).toEqual(['footer', 'sponsor_only', 'sponsor_only']);
+  });
+
+  it('collects hole sponsors from players AND SPON-only rows, once per name', () => {
+    expect(r.sponsors.map((s) => s.name)).toEqual(['Dee Driver', 'Mononym', 'Acme Discs']);
+  });
+
+  it('never carries sponsor dollars, notes, email or phone', () => {
+    const json = JSON.stringify({ rows: r.rows, sponsors: r.sponsors });
+    expect(json).not.toMatch(/example\.com|private note|Full Hole|\$|XXL/);
+    for (const s of r.sponsors) expect(Object.keys(s).sort()).toEqual(['line', 'name']);
+  });
+
+  it('no sponsor column means no sponsors (last year\'s export still works)', () => {
+    expect(parseDgsCsv('Division,Name\nMA1,Solo Sam', DIVS).sponsors).toEqual([]);
+  });
+});

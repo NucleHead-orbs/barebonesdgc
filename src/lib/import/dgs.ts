@@ -3,12 +3,13 @@
  * Verified against the real Jewel X export (2025-11-01).
  *
  * Privacy rule: only Division, Name (or First+Last), PDGA#, Registration date,
- * and an optional Rating column are ever read. Email, phone, address, and
+ * the "Jewel hole sponsor" flag, and an optional Rating column are ever read.
+ * Sponsor dollar amounts and Notes stay in the file. Email, phone, address, and
  * payment columns never leave the file. The players table is public-read.
  */
 import Papa from 'papaparse';
 
-export type Field = 'division' | 'name' | 'first' | 'last' | 'pdga' | 'regDate' | 'rating';
+export type Field = 'division' | 'name' | 'first' | 'last' | 'pdga' | 'regDate' | 'rating' | 'sponsor';
 export type Mapping = Partial<Record<Field, string>>; // field -> exact header text
 
 export interface ImportRow {
@@ -26,10 +27,17 @@ export interface SkippedRow {
   detail?: string;
 }
 
+/** A registrant flagged as a Jewel hole sponsor (players and SPON-only entries alike). */
+export interface SponsorRow {
+  name: string; // registrant name as listed; the TD sets the public display name in /td
+  line: number;
+}
+
 export interface DgsParseResult {
   headers: string[];
   mapping: Mapping;
   rows: ImportRow[];
+  sponsors: SponsorRow[];
   skipped: SkippedRow[];
   blocking: string[]; // import must not proceed while non-empty
 }
@@ -43,6 +51,7 @@ const RULES: Record<Field, { exact: string[]; loose: (h: string) => boolean }> =
   pdga: { exact: ['pdga#'], loose: (h) => h.includes('pdga') },
   regDate: { exact: ['registration date mdt'], loose: (h) => h.startsWith('registration date') || h === 'registered' },
   rating: { exact: ['rating'], loose: (h) => h.includes('rating') },
+  sponsor: { exact: ['jewel hole sponsor'], loose: (h) => h.includes('sponsor') && !h.includes('$') },
 };
 
 export function detectMapping(headers: string[]): Mapping {
@@ -62,6 +71,8 @@ export function detectMapping(headers: string[]): Mapping {
 
 const clean = (v: unknown) => String(v ?? '').replace(/\s+/g, ' ').trim();
 export const nameKey = (n: string) => clean(n).toLowerCase();
+/** DGS writes 1 for a purchased add-on; accept the obvious spellings too. */
+const isYes = (v: unknown) => /^(y|yes|x|true)$/i.test(clean(v)) || parseInt(clean(v), 10) > 0;
 
 export function parseDgsCsv(text: string, divisionCodes: string[], override?: Mapping): DgsParseResult {
   const parsed = Papa.parse<Record<string, string>>(text.replace(/^\uFEFF/, ''), { header: true, skipEmptyLines: 'greedy' });
@@ -70,11 +81,13 @@ export function parseDgsCsv(text: string, divisionCodes: string[], override?: Ma
   const blocking: string[] = [];
   if (!mapping.division) blocking.push('No division column found. Pick it in the column mapping.');
   if (!mapping.name && !(mapping.first && mapping.last)) blocking.push('No name column found. Pick Name, or First name + Last name.');
-  if (blocking.length) return { headers, mapping, rows: [], skipped: [], blocking };
+  if (blocking.length) return { headers, mapping, rows: [], sponsors: [], skipped: [], blocking };
 
   const known = new Set(divisionCodes);
   const kept: Array<{ row: Omit<ImportRow, 'reg_order'>; date: string; line: number }> = [];
   const skipped: SkippedRow[] = [];
+  const sponsors: SponsorRow[] = [];
+  const sponsorSeen = new Set<string>();
 
   parsed.data.forEach((r, i) => {
     const line = i + 2;
@@ -82,6 +95,11 @@ export function parseDgsCsv(text: string, divisionCodes: string[], override?: Ma
     const name = mapping.name ? clean(r[mapping.name]) : clean(`${r[mapping.first!] ?? ''} ${r[mapping.last!] ?? ''}`);
     if (/^totals?$/i.test(rawDiv)) return void skipped.push({ line, name, reason: 'footer' });
     if (!name) return void skipped.push({ line, name, reason: 'no_name' });
+    // Sponsor flag is read before any division filter: SPON-only registrants are sponsors too.
+    if (mapping.sponsor && isYes(r[mapping.sponsor]) && !sponsorSeen.has(nameKey(name))) {
+      sponsorSeen.add(nameKey(name));
+      sponsors.push({ name, line });
+    }
     const div = (rawDiv.toUpperCase().match(/[A-Z]{2,4}\d{0,2}/) ?? [''])[0];
     if (div === 'SPON') return void skipped.push({ line, name, reason: 'sponsor_only' });
     if (!known.has(div)) return void skipped.push({ line, name, reason: 'unknown_division', detail: rawDiv });
@@ -113,5 +131,5 @@ export function parseDgsCsv(text: string, divisionCodes: string[], override?: Ma
     pdgaSeen.set(r.pdga, r.name);
   }
 
-  return { headers, mapping, rows, skipped, blocking };
+  return { headers, mapping, rows, sponsors, skipped, blocking };
 }

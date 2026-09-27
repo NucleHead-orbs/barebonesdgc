@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { parseDgsCsv, type Field, type Mapping } from '../../lib/import/dgs';
+import { parseDgsCsv, nameKey, type Field, type Mapping } from '../../lib/import/dgs';
 import { importDiff, type ExistingPlayer } from '../../lib/td/builder';
 import type { ImportRow } from '../../lib/import/dgs';
 
 const FIELDS: Array<[Field, string]> = [
   ['division', 'Division'], ['name', 'Name'], ['first', 'First name'], ['last', 'Last name'],
-  ['pdga', 'PDGA#'], ['regDate', 'Registration date'], ['rating', 'Rating'],
+  ['pdga', 'PDGA#'], ['regDate', 'Registration date'], ['rating', 'Rating'], ['sponsor', 'Jewel hole sponsor'],
 ];
 const REASON: Record<string, string> = {
   footer: 'Totals footer', no_name: 'No name', sponsor_only: 'Sponsor only (SPON)', unknown_division: 'Unknown division',
@@ -16,14 +16,18 @@ const REASON: Record<string, string> = {
  * skipped rows with reasons, blocking problems, and a new / changed / unchanged preview.
  * The file text lives only in memory and is dropped on import or cancel.
  */
-export default function ImportReview({ fileName, text, divCodes, existing, busy, onImport, onCancel }: {
-  fileName: string; text: string; divCodes: string[]; existing: ExistingPlayer[]; busy: boolean;
-  onImport: (rows: ImportRow[]) => void; onCancel: () => void;
+export default function ImportReview({ fileName, text, divCodes, existing, existingSponsors, busy, onImport, onCancel }: {
+  fileName: string; text: string; divCodes: string[]; existing: ExistingPlayer[]; existingSponsors: string[]; busy: boolean;
+  onImport: (rows: ImportRow[], sponsorNames: string[]) => void; onCancel: () => void;
 }) {
   const [override, setOverride] = useState<Mapping>({});
   const parsed = useMemo(() => parseDgsCsv(text, divCodes, override), [text, divCodes, override]);
   const diff = useMemo(() => importDiff(parsed.rows, existing), [parsed.rows, existing]);
-  const nothingToDo = parsed.rows.length > 0 && diff.inserts.length === 0 && diff.updates.length === 0;
+  const knownSponsors = useMemo(() => new Set(existingSponsors.map(nameKey)), [existingSponsors]);
+  const newSponsors = parsed.sponsors.filter((s) => !knownSponsors.has(nameKey(s.name)));
+  const nothingToDo = (parsed.rows.length > 0 || parsed.sponsors.length > 0)
+    && diff.inserts.length === 0 && diff.updates.length === 0 && newSponsors.length === 0;
+  const total = diff.inserts.length + diff.updates.length;
 
   return (
     <section className="td-panel" aria-label="Import review">
@@ -45,7 +49,7 @@ export default function ImportReview({ fileName, text, divCodes, existing, busy,
             </label>
           ))}
         </div>
-        <div className="td-hint">Only these columns are read. Email, phone, address and payment columns never leave this file.</div>
+        <div className="td-hint">Only these columns are read. Email, phone, address, payment and notes columns never leave this file.</div>
       </div>
 
       {parsed.blocking.map((b) => <div key={b} className="td-warn" role="alert">⚠ {b}</div>)}
@@ -56,6 +60,7 @@ export default function ImportReview({ fileName, text, divCodes, existing, busy,
           <Stat v={diff.updates.length} k="CHANGED" color={diff.updates.length ? 'var(--gold)' : '#fff'} />
           <Stat v={diff.unchanged.length} k="UNCHANGED" color="#fff" />
           <Stat v={parsed.skipped.length} k="SKIPPED" color={parsed.skipped.length ? 'var(--over)' : '#fff'} />
+          <Stat v={newSponsors.length} k="NEW SPONSORS" color={newSponsors.length ? 'var(--gold)' : '#fff'} />
         </div>
       )}
 
@@ -64,6 +69,17 @@ export default function ImportReview({ fileName, text, divCodes, existing, busy,
           <div className="td-label">CHANGES TO EXISTING PLAYERS</div>
           <table className="td-table"><thead><tr><th>Player</th><th>Division</th><th>What changes</th></tr></thead>
             <tbody>{diff.updates.map((u) => <tr key={u.row.name}><td>{u.row.name}</td><td>{u.row.div_code}</td><td>{u.fields.join(', ')}</td></tr>)}</tbody>
+          </table>
+        </div>
+      )}
+
+      {parsed.sponsors.length > 0 && (
+        <div className="td-group">
+          <div className="td-label">HOLE SPONSORS IN THIS FILE</div>
+          <table className="td-table"><thead><tr><th>Registrant</th><th>Status</th></tr></thead>
+            <tbody>{parsed.sponsors.map((s) => (
+              <tr key={s.line}><td>{s.name}</td><td>{knownSponsors.has(nameKey(s.name)) ? 'Already in Sponsors' : 'New · lands hidden until you approve it in Sponsors'}</td></tr>
+            ))}</tbody>
           </table>
         </div>
       )}
@@ -82,9 +98,10 @@ export default function ImportReview({ fileName, text, divCodes, existing, busy,
       {nothingToDo && <div className="td-warn soft">Every player already matches the database. Importing changes nothing.</div>}
 
       <div className="td-actions">
-        <button className="td-btn cta" disabled={busy || parsed.blocking.length > 0 || parsed.rows.length === 0}
-          onClick={() => onImport(parsed.rows)}>
-          {busy ? 'IMPORTING…' : nothingToDo ? 'IMPORT (NO CHANGES)' : `IMPORT ${diff.inserts.length + diff.updates.length} PLAYERS`}
+        <button className="td-btn cta" disabled={busy || parsed.blocking.length > 0 || (parsed.rows.length === 0 && parsed.sponsors.length === 0)}
+          onClick={() => onImport(parsed.rows, parsed.sponsors.map((s) => s.name))}>
+          {busy ? 'IMPORTING…' : nothingToDo ? 'IMPORT (NO CHANGES)'
+            : `IMPORT ${total} PLAYER${total === 1 ? '' : 'S'}${newSponsors.length ? ` + ${newSponsors.length} SPONSOR${newSponsors.length === 1 ? '' : 'S'}` : ''}`}
         </button>
         <button className="td-btn" onClick={onCancel} disabled={busy}>CANCEL</button>
       </div>
