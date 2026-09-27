@@ -26,6 +26,7 @@ export function MasterLayout() {
           <nav className="mh-nav" aria-label="Main">
             <NavLink to="/" end>Home</NavLink>
             <NavLink to="/jewel-xi">Jewel XI</NavLink>
+            <NavLink to="/music">Music</NavLink>
             <NavLink to="/sponsors">Sponsors</NavLink>
           </nav>
           <Button href={EVENT.registerUrl} external size="sm">Register</Button>

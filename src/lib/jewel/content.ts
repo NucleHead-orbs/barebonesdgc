@@ -87,3 +87,16 @@ export const GALLERY: Array<{ name: string; alt: string }> = [
   { name: 'bare-bones-pigtails', alt: 'Bare Bones Disc Golf Club: purple skeleton with pigtails' },
   { name: 'merry-christmas-boners', alt: 'Merry Christmas from the Boners: the skeleton on Santa\'s lap' },
 ];
+
+/** Music page. Files in public/music: <slug>.mp3 + <slug>.webp (600px square cover). */
+export const MUSIC = {
+  artist: 'The Boneheaded Boy',
+  youtubeMusic: 'https://music.youtube.com/channel/UCiqbewAUHg4A_S3wVQMiAkg',
+  logo: '/music/bhb-logo.webp',
+  tracks: [
+    { slug: 'throw-it-like-andy-p', title: 'Throw It Like Andy P', length: '5:09' },
+    { slug: 'the-jewel-x', title: 'The Jewel X', length: '3:10' },
+    { slug: 'boner-nation', title: 'Boner Nation', length: '2:14' },
+    { slug: 'boners-rise', title: 'Boners Rise!', note: 'Cover', length: '2:40' },
+  ] as Array<{ slug: string; title: string; note?: string; length: string }>,
+};

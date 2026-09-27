@@ -6,6 +6,7 @@ One app, one Cloudflare Pages deploy: the Bare Bones club site and the Jewel XI 
 |---|---|---|
 | `/` | Club home (master brand) | Public |
 | `/sponsors` | Sponsors & Fan Club (master) | Public |
+| `/music` | Songs by The Boneheaded Boy (tracks in `MUSIC`, `src/lib/jewel/content.ts`; files in `public/music/`) | Public |
 | `/jewel-xi` `/jewel-xi/course` `/jewel-xi/sponsors` | Jewel XI event site (`data-theme="jewel-xi"`); `/jewel-xi/live` → `/jewel` | Public |
 | `/jewel` | Leaderboard, course guide, schedule, sponsors (tabs: `#leaders` `#score` `#course` `#info`) | Public |
 | `/c/:token` | Scorecard for one card (the QR code) | Anyone holding the card's QR |

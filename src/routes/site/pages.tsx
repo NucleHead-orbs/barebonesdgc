@@ -1,6 +1,7 @@
 /** Club website pages (design/club-website/README.md "Screens / Views"). */
 import { useState } from 'react';
-import { CLUB, EVENT, GALLERY, JEWEL_OVERVIEW, JEWEL_TEASER, SCHEDULE, TOUR } from '../../lib/jewel/content';
+import { CLUB, EVENT, GALLERY, JEWEL_OVERVIEW, JEWEL_TEASER, MUSIC, SCHEDULE, TOUR } from '../../lib/jewel/content';
+import { Tracks } from '../../components/Tracks';
 import { Gallery } from '../../components/Gallery';
 import { loadDivisions } from '../../lib/jewel/api';
 import { Banner, Button, Card, Chip, InsetFrame, SectionHeading, TourList } from '../../components/ui';
@@ -150,6 +151,26 @@ export function Sponsors({ jewel }: { jewel?: boolean }) {
             <div><Button href={EVENT.registerUrl} external>Sponsor on Disc Golf Scene</Button></div>
           </div>
         </Card>
+      </div>
+    </section>
+  );
+}
+
+/** 5. Music: songs by The Boneheaded Boy */
+export function Music() {
+  return (
+    <section className="sec">
+      <div className="sec-inner" style={{ maxWidth: 860 }}>
+        <SectionHeading kicker={MUSIC.artist} title="Music" size="l" as="h1" aside={`${MUSIC.tracks.length} tracks`} />
+        <div className="bhb">
+          <img src={MUSIC.logo} alt="Boneheaded Boy Productions" width={160} height={174} />
+          <div>
+            <h2>{MUSIC.artist}</h2>
+            <p>Songs for the Boners. Hit play, or catch the whole catalog on YouTube Music.</p>
+            <Button href={MUSIC.youtubeMusic} external variant="cta">Listen on YouTube Music</Button>
+          </div>
+        </div>
+        <Tracks tracks={MUSIC.tracks} artist={MUSIC.artist} />
       </div>
     </section>
   );
