@@ -8,7 +8,7 @@
 .mh { position: sticky; top: 0; z-index: 20; background: var(--header-bg); border-bottom: var(--header-rule-w) solid var(--header-rule); }
 .mh-row { max-width: var(--content-max); margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; gap: 16px; }
 .mh-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.mh-brand img { display: block; object-fit: contain; }
+.mh-brand img { display: block; width: 52px; height: 52px; object-fit: contain; }
 .mh-word { display: flex; flex-direction: column; line-height: 1; }
 .mh-word b { font-family: 'Luckiest Guy', var(--font-display); font-weight: 400; font-size: 26px; color: #b98bd0; text-transform: uppercase; letter-spacing: .5px; }
 .mh-word span { font-family: var(--font-label); font-weight: var(--label-weight); font-size: 13px; color: var(--accent-a); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; }
