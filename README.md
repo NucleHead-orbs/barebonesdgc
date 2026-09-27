@@ -29,7 +29,7 @@ One app, one Cloudflare Pages deploy: the Bare Bones club site and the Jewel XI 
 ## Setup
 ```bash
 npm install --include=dev      # --include=dev matters if your shell sets NODE_ENV=production
-cp .env.example .env.local   # fill in project URL + anon key (never the service_role key)
+cp .env.example .env.local   # optional: dev overrides; .env.production already has the public config
 npm run dev
 npm test                     # generator + offline queue
 npm run build
@@ -52,7 +52,7 @@ update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role":"td"}' w
 ### Deploy (Cloudflare Workers, static assets)
 Workers Builds on `main`: build `npm run build`, deploy `npx wrangler deploy` (config in `wrangler.jsonc`, output `dist`).
 SPA routes (`/td`, `/jewel`, `/c/<token>`) are handled by `assets.not_found_handling = "single-page-application"`. Do not add `public/_redirects`: that's a Pages feature and Workers rejects it as an infinite loop.
-**Build variables** (Workers → Settings → Build → Variables; Vite bakes them in at build time): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_PUBLIC_ORIGIN` (where printed QR codes point: `https://barebonesdiscgolf.club`).
+**Client config:** `.env.production` (committed) holds the public Supabase URL, anon key and `VITE_PUBLIC_ORIGIN`; Vite bakes them in at build time, so Cloudflare needs no build variables. `.env.local` (gitignored) overrides it for dev. Only public values go in either file, never the service_role key.
 Domain: `barebonesdiscgolf.club` (nameservers on Cloudflare since 2026-09-26). Attach it under the Worker's Domains & Routes.
 
 ## Build order
