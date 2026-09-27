@@ -1,0 +1,28 @@
+/* Course guide + sponsors. Semantic tokens only. */
+.ev-holes { border: 2px solid var(--border); border-radius: var(--r-card); background: var(--bg-surface); overflow: hidden; display: flex; flex-direction: column; }
+.ev-holes > .ds-skel { border-radius: 0; margin: 1px 0; }
+.ev-hole + .ev-hole { border-top: 1px solid var(--border); }
+.ev-hole > button { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 12px; border: 0; background: transparent; color: var(--fg-1); text-align: left; cursor: pointer; font: inherit; }
+.ev-hole[data-open='true'] { background: var(--bg-raised); }
+.ev-hole-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ev-hole-meta b { font-family: var(--font-label); font-weight: var(--label-weight); font-size: 14px; text-transform: uppercase; letter-spacing: .5px; }
+.ev-hole-meta span { font-size: 12px; font-weight: 700; color: var(--accent-c); }
+.ev-pm { font-family: var(--font-label); font-size: 20px; color: var(--fg-3); width: 20px; text-align: center; }
+.ev-hole-body { padding: 4px 16px 16px 64px; display: flex; flex-direction: column; gap: 8px; }
+.ev-rule { color: var(--accent-a); font-size: 13px; font-weight: 700; }
+.ev-hole-spon { color: var(--accent-gold); font-family: var(--font-label); font-weight: var(--label-weight); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+
+.ev-spanel { background: var(--sponsor-bg); color: var(--sponsor-fg); border: 3px solid var(--sponsor-border); border-radius: var(--r-card); padding: 20px 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.ev-spanel h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 30px; text-transform: var(--display-case); }
+.ev-spanel-sub { font-size: 13px; font-weight: 700; }
+.ev-logos { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.ev-logo { height: 56px; min-width: 96px; padding: 6px 12px; background: #fff; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; }
+.ev-logo img { max-height: 44px; max-width: 160px; object-fit: contain; display: block; }
+.ev-logo-pending { background: transparent; border: 2px dashed currentColor; font-weight: 700; font-size: 13px; color: inherit; }
+.ev-tagline { font-family: var(--font-hand); font-size: 20px; }
+
+.ev-sgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.ev-scard { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 10px; text-align: center; }
+.ev-scard .ev-logo-pending { color: var(--fg-3); width: 100%; }
+.ev-scard b { font-size: 15px; }
+.ev-meta { font-size: 12px; color: var(--fg-3); }

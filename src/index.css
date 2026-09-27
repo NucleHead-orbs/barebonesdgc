@@ -1,22 +1,81 @@
-/* Design tokens: Jewel XI handoff ("Electric" palette). Values are final; match them. */
+/*
+ * Design tokens. Source: club website handoff (design/club-website/README.md) + Jewel XI handoff (design/README.md).
+ * Two layers:
+ *   :root                     master brand (evergreen club)
+ *   [data-theme="jewel-xi"]   event skin; overrides SEMANTIC tokens only
+ *     + data-palette="electric|sunset|toxic|blood", data-bg="navy|black|charcoal"
+ * Components read semantic tokens only (--bg-*, --fg-*, --accent-*, --cta-*, --font-*, ...).
+ * Assumption (handoff doesn't map it): master accent-c = frosting #b98bd0.
+ */
 :root {
+  /* ---- master (club) ---- */
+  --bg-page: #0f1512; --bg-app: #0f1512; --bg-surface: #161f1a; --bg-raised: #212c26;
+  --border: #33423a; --border-subtle: #26322b;
+  --fg-1: #efe8cf; --fg-2: #d9d0b2; --fg-3: #9aa89f; --fg-placeholder: #6d7b72;
+  --accent-a: #a6d93b; --accent-b: #9a63a6; --accent-c: #b98bd0; --accent-gold: #f2c230;
+  --lime-deep: #7fae22; --ink: #17201c; --bone: #efe8cf;
+  --on-accent: #17201c;
+  --cta-bg: #a6d93b; --cta-fg: #17201c;
+  --header-bg: #17201c; --header-rule: #a6d93b; --header-rule-w: 3px;
+  --hero-bg: radial-gradient(circle at 70% 30%, #1f2a24, #0f1512 70%);
+  --score-under: #a6d93b; --score-even: #fff; --score-over: #ff8a7a; --error: #ff4b3e;
+  --sponsor-bg: #efe8cf; --sponsor-fg: #17201c; --sponsor-border: #17201c;
+  --font-display: 'Luckiest Guy', 'Rubik', system-ui, sans-serif;
+  --font-label: 'Rubik', system-ui, sans-serif;
+  --font-body: 'Rubik', system-ui, sans-serif;
+  --font-hand: 'Permanent Marker', cursive;
+  --font-quote: var(--font-hand);
+  --label-weight: 800; --display-case: uppercase;
+  --btn-shadow: 0 3px 0 #000;
+  --content-max: 1120px;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+
+  /* ---- shared ---- */
+  --r-dot: 6px; --r-input: 8px; --r-banner: 10px; --r-card: 12px; --r-hole: 14px; --r-pill: 999px;
+  --hit: 44px; --hit-score: 56px;
+
+  /* ---- legacy Jewel constants (scoring app + /td CSS); fixed values, not themed ---- */
   --page: #0b1020; --app: #141c2e; --surface: #101728; --raised: #1d2746;
-  --border: #2a3558; --border-subtle: #222c4a; --control-muted: #3a4568; --tile-empty: #1a2238;
+  --control-muted: #3a4568; --tile-empty: #1a2238;
   --cyan: #29e1ff; --violet: #7b5cff; --magenta: #ff3ad1;
-  --gold: #ffd23f; --under: #c6ff3d; --over: #ff8a7a; --error: #ff4b3e;
+  --gold: #ffd23f; --under: #c6ff3d; --over: #ff8a7a;
   --text: #ffffff; --text-muted: #8a93b0; --text-placeholder: #6b7596;
   --cta: linear-gradient(90deg, #29e1ff, #7b5cff, #ff3ad1);
   --sponsor: linear-gradient(180deg, #e6c46a, #a47d2c);
+  color-scheme: dark;
+}
+
+[data-theme='jewel-xi'] {
+  --bg-page: #0b1020; --bg-app: #141c2e; --bg-surface: #101728; --bg-raised: #1d2746;
+  --border: #2a3558; --border-subtle: #222c4a;
+  --fg-1: #ffffff; --fg-2: #ffffff; --fg-3: #8a93b0; --fg-placeholder: #6b7596;
+  --accent-a: #29e1ff; --accent-b: #7b5cff; --accent-c: #ff3ad1; --accent-gold: #ffd23f;
+  --on-accent: #000;
+  --cta-fg: #000;
+  --header-bg: linear-gradient(180deg, #1b2440, #141c2e); --header-rule-w: 2px;
+  --hero-bg: #141c2e;
+  --score-under: #c6ff3d;
+  --sponsor-bg: linear-gradient(180deg, #e6c46a, #a47d2c); --sponsor-fg: #111; --sponsor-border: #111;
   --font-display: 'Metal Mania', cursive;
   --font-label: 'Archivo Black', 'Arial Black', sans-serif;
   --font-body: 'Archivo', system-ui, sans-serif;
-  --font-quote: 'Permanent Marker', cursive;
-  --r-dot: 6px; --r-input: 10px; --r-card: 12px; --r-hole: 14px; --r-pill: 999px;
-  --hit: 44px; --hit-score: 56px;
-  color-scheme: dark;
+  --label-weight: 400; --display-case: none;
+  --btn-shadow: none;
 }
+/* Gradients that read the accents are declared wherever accents can change. */
+[data-theme='jewel-xi'], [data-palette] {
+  --cta-bg: linear-gradient(90deg, var(--accent-a), var(--accent-b), var(--accent-c));
+  --header-rule: var(--accent-b);
+}
+[data-palette='sunset'] { --accent-a: #ff2e88; --accent-b: #ff7a1a; --accent-c: #ffd23f; }
+[data-palette='toxic'] { --accent-a: #c6ff3d; --accent-b: #29d69a; --accent-c: #1b8fd9; }
+[data-palette='blood'] { --accent-a: #ff4b3e; --accent-b: #b0102d; --accent-c: #ff8a7a; }
+[data-bg='black'] { --bg-page: #0d0d0d; --bg-app: #0d0d0d; }
+[data-bg='charcoal'] { --bg-page: #2e2e30; --bg-app: #2e2e30; }
+
+:root, [data-theme] { color: var(--fg-1); font-family: var(--font-body); }
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; min-height: 100%; }
-body { background: var(--page); color: var(--text); font-family: var(--font-body); -webkit-tap-highlight-color: transparent; }
-:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+body { background: var(--bg-page); -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--accent-gold); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

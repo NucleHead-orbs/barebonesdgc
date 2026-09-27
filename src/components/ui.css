@@ -1,0 +1,76 @@
+/* Primitives. Semantic tokens only (see src/index.css). */
+
+/* Button */
+.ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 2px solid transparent; border-radius: var(--r-input);
+  font-family: var(--font-label); font-weight: var(--label-weight); text-transform: uppercase; letter-spacing: 1px; text-decoration: none;
+  cursor: pointer; box-shadow: var(--btn-shadow); transition: filter .15s var(--ease), transform .15s var(--ease); white-space: nowrap; }
+.ds-btn:hover { filter: brightness(1.1); }
+.ds-btn:active { transform: translateY(2px); box-shadow: none; }
+.ds-btn:disabled { opacity: .45; cursor: not-allowed; }
+.ds-btn-sm { min-height: 32px; padding: 0 10px; font-size: 11px; }
+.ds-btn-md { min-height: 44px; padding: 0 16px; font-size: 13px; }
+.ds-btn-lg { min-height: 52px; padding: 0 22px; font-size: 15px; border-radius: var(--r-card); }
+.ds-btn-cta { background: var(--cta-bg); color: var(--cta-fg); }
+.ds-btn-accent { background: var(--accent-a); color: var(--on-accent); }
+.ds-btn-outline { background: transparent; color: var(--fg-1); border-color: var(--fg-1); box-shadow: none; }
+.ds-btn-outline-accent { background: transparent; color: var(--accent-a); border-color: var(--accent-a); box-shadow: none; }
+.ds-btn-gold { background: var(--accent-gold); color: #000; }
+.ds-btn-danger { background: var(--error); color: #fff; }
+.ds-btn-ghost { background: transparent; color: var(--fg-2); box-shadow: none; }
+
+/* Chip */
+.ds-chip { flex: none; min-height: 40px; padding: 0 14px; border-radius: var(--r-pill); border: 2px solid var(--border); background: transparent; color: var(--fg-1);
+  font-family: var(--font-label); font-weight: var(--label-weight); font-size: 13px; letter-spacing: .5px; cursor: pointer; }
+.ds-chip-sm { min-height: 28px; padding: 0 10px; font-size: 11px; }
+.ds-chip[aria-pressed='true'] { background: var(--accent-c); border-color: var(--accent-c); color: var(--on-accent); }
+
+/* SectionHeading */
+.ds-sh { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ds-sh-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ds-kicker { font-family: var(--font-label); font-weight: var(--label-weight); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-c); }
+.ds-display { margin: 0; font-family: var(--font-display); font-weight: 400; text-transform: var(--display-case); line-height: .95; }
+.ds-display-xl { font-size: 72px; } .ds-display-l { font-size: 48px; } .ds-display-m { font-size: 34px; } .ds-display-s { font-size: 24px; }
+.ds-sh-aside { font-family: var(--font-label); font-weight: var(--label-weight); font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-a); }
+
+/* Card */
+.ds-card { border: 2px solid var(--border); border-radius: var(--r-card); background: var(--bg-surface); overflow: hidden; }
+.ds-card-locked { border-color: var(--score-under); } .ds-card-bad { border-color: var(--error); } .ds-card-hit { border-color: var(--accent-gold); }
+.ds-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; background: var(--bg-raised); }
+.ds-card-title { font-family: var(--font-label); font-weight: var(--label-weight); font-size: 16px; color: var(--accent-c); text-transform: uppercase; }
+.ds-card-aside { font-size: 12px; color: var(--fg-3); }
+.ds-card-body { padding: 4px 12px 12px; }
+
+/* Banner */
+.ds-banner { padding: 10px 14px; border-radius: var(--r-banner); font-size: 13px; font-weight: 700; line-height: 1.45; border: 2px solid transparent; }
+.ds-banner-info { background: var(--bg-raised); }
+.ds-banner-warn { background: color-mix(in srgb, var(--accent-gold) 10%, transparent); border-color: var(--accent-gold); }
+.ds-banner-error { background: color-mix(in srgb, var(--error) 15%, transparent); border-color: var(--error); }
+.ds-banner-success { background: color-mix(in srgb, var(--score-under) 12%, transparent); border-color: var(--score-under); }
+
+/* InsetFrame */
+.ds-inset { position: relative; }
+.ds-inset-frame { position: absolute; inset: 14px; border: 3px solid var(--accent-b); pointer-events: none; }
+
+/* TourList */
+.ds-tour { display: flex; flex-direction: column; }
+.ds-tour-kicker { font-family: var(--font-label); font-weight: var(--label-weight); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-c); padding-bottom: 6px; }
+.ds-tour-row { display: grid; grid-template-columns: minmax(88px, 120px) 1fr; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); }
+.ds-tour-date { font-family: var(--font-label); font-weight: var(--label-weight); color: var(--accent-a); text-transform: uppercase; font-size: 13px; letter-spacing: 1px; }
+.ds-tour-title { display: block; font-weight: 700; }
+.ds-tour-note { display: block; font-size: 13px; color: var(--fg-3); margin-top: 2px; }
+
+/* HoleRing */
+.ds-ring { width: 40px; height: 40px; border-radius: 50%; background: #000; border: 3px solid var(--accent-a); display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-label); font-weight: var(--label-weight); font-size: 15px; color: #fff; flex: none; }
+.ds-ring-p4 { border-color: var(--accent-c); } .ds-ring-mixed { border-color: var(--accent-gold); }
+
+/* NarratorQuote */
+.ds-quote { margin: 0; }
+.ds-quote blockquote { margin: 0; font-family: var(--font-hand); font-size: 17px; line-height: 1.35; }
+.ds-quote figcaption { margin-top: 4px; font-size: 11px; color: var(--fg-3); font-family: var(--font-label); font-weight: var(--label-weight); text-transform: uppercase; letter-spacing: 1px; }
+
+/* Skeleton */
+.ds-skel { border-radius: var(--r-card); background: linear-gradient(90deg, var(--bg-surface), var(--bg-raised), var(--bg-surface)); background-size: 200% 100%; animation: ds-shimmer 1.2s linear infinite; }
+@keyframes ds-shimmer { to { background-position: -200% 0; } }
+/* Long labels wrap on phones instead of running out of their container. */
+@media (max-width: 480px) { .ds-btn { white-space: normal; text-align: center; line-height: 1.2; } .ds-btn-lg { padding: 10px 18px; } }

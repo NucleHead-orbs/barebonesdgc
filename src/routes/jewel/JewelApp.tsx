@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { loadJewel, type JewelData, type PublicSponsor } from '../../lib/jewel/api';
+import { CourseGuide, SponsorPanel } from '../../components/event';
 import { rankDivision, divisionsPresent, onCourse, toPar, parTone, type Mode } from '../../lib/jewel/leaderboard';
 import { EVENT, SCHEDULE, HOUSE_RULES } from '../../lib/jewel/content';
+import { useTheme } from '../../lib/theme';
 import './jewel.css';
 
 type Tab = 'leaders' | 'score' | 'course' | 'info';
@@ -13,6 +15,7 @@ const tabFromHash = (): Tab => {
 
 /** Public player app at /jewel. Tabs live in the URL hash so links like /jewel#course are shareable. */
 export default function JewelApp() {
+  useTheme('jewel-xi');
   const [tab, setTab] = useState<Tab>(tabFromHash);
   const [data, setData] = useState<JewelData | null>(null);
   const [error, setError] = useState('');
@@ -119,36 +122,12 @@ function Score() {
 }
 
 function Course({ data }: { data: JewelData }) {
-  const [open, setOpen] = useState<number | null>(null);
-  const byHole = useMemo(() => {
-    const m = new Map<number, PublicSponsor[]>();
-    for (const s of data.sponsors) if (s.hole) m.set(s.hole, [...(m.get(s.hole) ?? []), s]);
-    return m;
-  }, [data.sponsors]);
   return (
     <>
       <h2 className="jw-h2">The Setlist</h2>
       <img className="jw-map" src="/assets/coursemap-thumb.png" alt="Course map: Stripe Show Golf Course" />
-      {data.holes.map((h) => {
-        const isOpen = open === h.n;
-        const spons = byHole.get(h.n) ?? [];
-        return (
-          <div key={h.n} className="jw-hole" data-open={isOpen}>
-            <button aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : h.n)}>
-              <span className={`jw-ring${h.par >= 4 ? ' p4' : ''}`}>{h.n}</span>
-              <span className="jw-hole-meta"><b>Par {h.par}{h.dist_ft ? ` · ${h.dist_ft} ft` : ''}</b>{h.ob && <span>{h.ob}</span>}</span>
-              <span className="jw-chev" aria-hidden>›</span>
-            </button>
-            {isOpen && (
-              <div className="jw-hole-body">
-                {h.quote && <div className="jw-quote">{h.quote}</div>}
-                {h.rules.map((r) => <div key={r} className="jw-rule">{r}</div>)}
-                {spons.length > 0 && <div className="jw-hole-spon">HOLE SPONSOR: {spons.map((s) => s.name).join(' · ')}</div>}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      <CourseGuide sponsors={data.sponsors} />
+      <a className="jw-note" href="/jewel-xi/course" style={{ color: 'var(--accent-a)' }}>Open the full course guide ›</a>
     </>
   );
 }
@@ -170,22 +149,7 @@ function Info({ sponsors }: { sponsors: PublicSponsor[] }) {
           {HOUSE_RULES.map((r) => <div key={r} className="jw-time"><b>•</b><span>{r}</span></div>)}
         </section>
       )}
-      <section className="jw-spons">
-        <h2>Our Sponsors</h2>
-        <div className="jw-note" style={{ color: '#111' }}>Presented by {EVENT.presentedBy}</div>
-        {sponsors.length > 0 ? (
-          <div className="jw-spons-grid">
-            {sponsors.map((s) => (
-              <div key={s.id} className="jw-spon">
-                {s.logo_url && <img src={s.logo_url} alt={s.name} loading="lazy" />}
-                <b>{s.name}</b>
-                {(s.hole || s.tier) && <span>{[s.hole ? `Hole ${s.hole}` : '', s.tier ?? ''].filter(Boolean).join(' · ')}</span>}
-              </div>
-            ))}
-          </div>
-        ) : <div>Sponsor lineup coming soon.</div>}
-        <div className="jw-tagline">{EVENT.tagline}</div>
-      </section>
+      <SponsorPanel sub={`Presented by ${EVENT.presentedBy}`} tagline={EVENT.tagline} sponsors={sponsors} />
     </>
   );
 }

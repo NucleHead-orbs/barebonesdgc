@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { isTd } from '../../lib/td/builder';
+import { useTheme } from '../../lib/theme';
 import CardBuilder from './CardBuilder';
 import './td.css';
 
@@ -11,6 +12,7 @@ import './td.css';
  * the same rule on every TD write; this only keeps non-TDs off the screen.)
  */
 export default function TdRoute() {
+  useTheme('jewel-xi');
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [notice, setNotice] = useState('');
 

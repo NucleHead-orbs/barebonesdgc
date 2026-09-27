@@ -46,19 +46,6 @@
 
 /* course */
 .jw-map { width: 100%; border-radius: 10px; display: block; }
-.jw-hole { border: 2px solid var(--border); border-radius: var(--r-card); background: var(--surface); overflow: hidden; }
-.jw-hole > button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 0; background: transparent; color: #fff; text-align: left; min-height: 60px; }
-.jw-ring { width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--cyan); display: flex; align-items: center; justify-content: center; font-family: var(--font-label); font-size: 15px; flex: none; background: #000; }
-.jw-ring.p4 { border-color: var(--magenta); }
-.jw-hole-meta { flex: 1; min-width: 0; }
-.jw-hole-meta b { display: block; font-family: var(--font-label); font-weight: 400; font-size: 14px; }
-.jw-hole-meta span { display: block; font-size: 12px; color: var(--magenta); }
-.jw-chev { color: var(--text-muted); transition: transform .15s; }
-.jw-hole[data-open='true'] .jw-chev { transform: rotate(90deg); }
-.jw-hole-body { padding: 0 14px 14px 64px; display: flex; flex-direction: column; gap: 8px; }
-.jw-quote { font-family: var(--font-quote); font-size: 17px; line-height: 1.35; }
-.jw-rule { color: var(--cyan); font-size: 14px; font-weight: 700; }
-.jw-hole-spon { font-size: 12px; color: var(--gold); font-family: var(--font-label); letter-spacing: 1px; }
 
 /* info */
 .jw-day { border: 2px solid var(--border); border-radius: var(--r-card); background: var(--surface); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
@@ -66,18 +53,4 @@
 .jw-time { display: grid; grid-template-columns: 56px 1fr; gap: 8px; font-size: 14px; line-height: 1.35; }
 .jw-time b { color: var(--magenta); font-family: var(--font-label); font-weight: 400; }
 .jw-cta { display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: var(--r-card); background: var(--cta); color: #000; font-family: var(--font-label); font-size: 15px; letter-spacing: 1px; text-decoration: none; }
-.jw-spons { background: var(--sponsor); border: 3px solid #111; border-radius: var(--r-card); padding: 16px 14px; color: #111; display: flex; flex-direction: column; gap: 12px; text-align: center; }
-.jw-spons h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 32px; }
-.jw-spons-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.jw-spon { background: #fff; border-radius: 10px; padding: 10px; min-height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
-.jw-spon img { max-width: 100%; max-height: 64px; object-fit: contain; }
-.jw-spon b { font-size: 13px; font-weight: 700; line-height: 1.2; }
-.jw-spon span { font-size: 11px; color: #555; }
-.jw-tagline { font-family: var(--font-quote); font-size: 20px; }
 
-/* home */
-.hm { max-width: 480px; margin: 0 auto; min-height: 100vh; padding: 48px 20px; display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; background: var(--app); }
-.hm img { width: 240px; height: auto; }
-.hm h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 40px; line-height: 1; }
-.hm .jw-cta { width: 100%; }
-.hm a.ghost { color: var(--cyan); font-family: var(--font-label); font-size: 13px; letter-spacing: 1px; }

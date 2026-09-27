@@ -4,7 +4,9 @@ One app, one Cloudflare Pages deploy: the Bare Bones club site and the Jewel XI 
 
 | Route | What | Who |
 |---|---|---|
-| `/` | Club site | Public |
+| `/` | Club home (master brand) | Public |
+| `/sponsors` | Sponsors & Fan Club (master) | Public |
+| `/jewel-xi` `/jewel-xi/course` `/jewel-xi/sponsors` | Jewel XI event site (`data-theme="jewel-xi"`); `/jewel-xi/live` → `/jewel` | Public |
 | `/jewel` | Leaderboard, course guide, schedule, sponsors (tabs: `#leaders` `#score` `#course` `#info`) | Public |
 | `/c/:token` | Scorecard for one card (the QR code) | Anyone holding the card's QR |
 | `/td` | Card Builder, paper totals, unlocks | TD login only |
@@ -18,7 +20,9 @@ One app, one Cloudflare Pages deploy: the Bare Bones club site and the Jewel XI 
 - **Card Builder glue:** `src/lib/td/builder.ts` (moves, locks, publish payload, import preview, error messages). A hand move locks the card the player lands on, so it survives Regenerate.
 - **Card assignment:** `src/lib/cards/generate.ts` (pure, deterministic, seeded).
 - **Offline writes:** `src/lib/offline/queue.ts`. Every tap lands in IndexedDB before it touches the network.
-- **Design tokens:** `src/index.css`, straight from the handoff. Match them.
+- **Design tokens:** `src/index.css`. Master brand on `:root`, Jewel XI skin on `[data-theme="jewel-xi"]` (+ `data-palette`, `data-bg`). Components read semantic tokens only. Sources: `design/club-website/README.md` (club site) and `design/README.md` (Jewel XI).
+- **Components:** `src/components/ui.tsx` (primitives), `event.tsx` (the ONE course guide + sponsor panel/grid, shared by `/jewel-xi/*` and the scoring app), `site.tsx` (headers, footer, layouts).
+- **Missing from the club design bundle** (only its README arrived): logo lockups, Boner Nation art + copy, Facebook URL, venue a.k.a. names. Fields exist in `src/lib/jewel/content.ts` (`CLUB`, `JEWEL_OVERVIEW`); blank = element hidden, never faked.
 
 ## Rules the system enforces
 - Players never write tables directly. All scoring goes through token-gated RPCs; tokens are not publicly readable.

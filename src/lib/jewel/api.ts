@@ -13,16 +13,31 @@ const need = <T>(r: { data: T | null; error: unknown }, what: string): T => {
   return (r.data ?? ([] as unknown)) as T;
 };
 
-export async function loadJewel(): Promise<JewelData> {
+export interface Division { code: string; sort: number; wave_default: 'AM' | 'PM' }
+
+// Reference data barely changes during a visit: fetch once per page load, shared by every page.
+const once = new Map<string, Promise<unknown>>();
+function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  if (!once.has(key)) once.set(key, fn().catch((e) => { once.delete(key); throw e; }));
+  return once.get(key) as Promise<T>;
+}
+export const loadEventId = () => cached('event', async () => {
   const ev = need(await supabase.from('events').select('id').eq('slug', EVENT_SLUG).maybeSingle(), 'the event') as { id: string } | null;
   if (!ev) throw new Error('Event not found.');
-  const [holes, sponsors, board] = await Promise.all([
-    supabase.from('holes').select('n, par, dist_ft, ob, quote, rules').eq('event_id', ev.id).order('n'),
-    // hidden = false explicitly: a signed-in TD viewing the public page must see what the public sees.
-    supabase.from('sponsors').select('id, name, tier, hole, logo_url, sort').eq('event_id', ev.id).eq('hidden', false).order('sort'),
-    loadBoard(ev.id),
-  ]);
-  return { eventId: ev.id, holes: need(holes, 'the course') as Hole[], sponsors: need(sponsors, 'sponsors') as PublicSponsor[], board };
+  return ev.id;
+});
+export const loadHoles = () => cached('holes', async () =>
+  need(await supabase.from('holes').select('n, par, dist_ft, ob, quote, rules').eq('event_id', await loadEventId()).order('n'), 'the course') as Hole[]);
+export const loadDivisions = () => cached('divisions', async () =>
+  need(await supabase.from('divisions').select('code, sort, wave_default').eq('event_id', await loadEventId()).order('sort'), 'divisions') as Division[]);
+/** Approved sponsors only. hidden=false explicitly: a signed-in TD must see what the public sees. */
+export const loadPublicSponsors = () => cached('sponsors', async () =>
+  need(await supabase.from('sponsors').select('id, name, tier, hole, logo_url, sort').eq('event_id', await loadEventId()).eq('hidden', false).order('sort'), 'sponsors') as PublicSponsor[]);
+
+export async function loadJewel(): Promise<JewelData> {
+  const eventId = await loadEventId();
+  const [holes, sponsors, board] = await Promise.all([loadHoles(), loadPublicSponsors(), loadBoard(eventId)]);
+  return { eventId, holes, sponsors, board };
 }
 
 export async function loadBoard(eventId: string): Promise<LbRow[]> {
