@@ -5,7 +5,7 @@ import { ScoreQueue, deviceId, type QueuedScore, type RejectedScore } from '../.
 import { useTheme } from '../../lib/theme';
 import {
   bump, cardComplete, cleanInitials, firstOpenHole, holeDone, holeOrder, mergeScores, playerLine,
-  resultMessage, signState, signStatusLine, tileTone, toParText, type CardPlayer, type HoleInfo, type ScoreMap,
+  resultMessage, shortNames, signState, signStatusLine, tileTone, toParText, type CardPlayer, type HoleInfo, type ScoreMap,
 } from '../../lib/scorecard/logic';
 import { CardError, cachedCard, fetchCard, signCard, submitCard, unlockCard, type CardSnapshot } from '../../lib/scorecard/api';
 import './card.css';
@@ -279,6 +279,7 @@ function SignPanel({ token, snap, scores, state, signed, onDone }: {
 }
 
 function CardTable({ snap, scores }: { snap: CardSnapshot; scores: ScoreMap }) {
+  const short = shortNames(snap.players);
   return (
     <div className="sc-table-wrap">
       <table className="sc-table">
@@ -291,7 +292,7 @@ function CardTable({ snap, scores }: { snap: CardSnapshot; scores: ScoreMap }) {
             const line = playerLine(p.id, snap.holes, scores);
             return (
               <tr key={p.id}>
-                <th scope="row">{p.name.split(' ')[0]}</th>
+                <th scope="row">{short[p.id]}</th>
                 {snap.holes.map((h) => {
                   const v = scores[p.id]?.[h.n];
                   return <td key={h.n} className={`tone-${tileTone(v, h.par)}`}>{v ?? '·'}</td>;

@@ -18,9 +18,8 @@ export default function SetupPanel({ setup, admin, players, onSaved, onDeleted }
   return (
     <main className="td-main td-setup">
       <EventSection ev={ev} onSaved={onSaved} />
-      {/* keyed on server truth: a change from elsewhere (e.g. switching to one wave) resets the section */}
-      <CourseSection key={JSON.stringify(setup.holes)} eventId={ev.id} holes={setup.holes} onSaved={onSaved} />
-      <DivisionSection key={`${ev.waves}|${JSON.stringify(setup.divisions)}`} eventId={ev.id} waves={ev.waves} divisions={setup.divisions} players={players} onSaved={onSaved} />
+      <CourseSection eventId={ev.id} holes={setup.holes} onSaved={onSaved} />
+      <DivisionSection eventId={ev.id} waves={ev.waves} divisions={setup.divisions} players={players} onSaved={onSaved} />
       <TdSection eventId={ev.id} tds={setup.tds} admin={admin} onSaved={onSaved} />
       {admin && ev.slug !== 'jewel-xi-2026' && <DangerSection ev={ev} onDeleted={onDeleted} />}
     </main>
@@ -118,6 +117,10 @@ function EventSection({ ev, onSaved }: { ev: EventConfig; onSaved: () => Promise
 
 function CourseSection({ eventId, holes, onSaved }: { eventId: string; holes: HoleRow[]; onSaved: () => Promise<void> }) {
   const [rows, setRows] = useState(holes);
+  // server truth changed (a save, or another tab): take it, without remounting (keeps the save message)
+  const sig = JSON.stringify(holes);
+  const [seen, setSeen] = useState(sig);
+  if (seen !== sig) { setSeen(sig); setRows(holes); }
   const { busy, msg, setMsg, run } = useSave(onSaved);
   const dirty = JSON.stringify(rows) !== JSON.stringify(holes);
   const edit = (n: number, p: Partial<HoleRow>) => setRows((rs) => rs.map((h) => (h.n === n ? { ...h, ...p } : h)));
@@ -163,6 +166,10 @@ function DivisionSection({ eventId, waves, divisions, players, onSaved }: {
 }) {
   const base = divisions.map((d) => ({ code: d.code, wave: d.wave }));
   const [divs, setDivs] = useState<DivisionRow[]>(base);
+  // server truth changed (a save, or switching to one wave): take it, without remounting
+  const sig = `${waves}|${JSON.stringify(base)}`;
+  const [seen, setSeen] = useState(sig);
+  if (seen !== sig) { setSeen(sig); setDivs(base); }
   const { busy, msg, setMsg, run } = useSave(onSaved);
   const dirty = JSON.stringify(divs) !== JSON.stringify(base);
   const inUse = [...new Set(players.map((p) => p.div_code))];

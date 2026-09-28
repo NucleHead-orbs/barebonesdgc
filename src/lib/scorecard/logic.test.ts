@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   holeOrder, mergeScores, holeDone, firstOpenHole, playerLine, cardComplete, tileTone, bump, cleanInitials,
-  signState, signStatusLine, toParText, resultMessage, type CardPlayer, type HoleInfo,
+  signState, signStatusLine, toParText, resultMessage, shortNames, type CardPlayer, type HoleInfo,
 } from './logic';
 import type { QueuedScore } from '../offline/queue';
 
@@ -91,5 +91,13 @@ describe('sign-off flow', () => {
     expect(resultMessage('rejected_submitted')).toMatch(/already submitted/);
     expect(resultMessage('invalid_token')).toMatch(/doesn't match a live card/);
     expect(resultMessage('something_new')).toBe('something_new');
+  });
+});
+
+describe('shortNames', () => {
+  it('uses first names, adding a last initial only where they collide', () => {
+    expect(shortNames([{ id: 'a', name: 'Test Alpha' }, { id: 'b', name: 'Test Bravo' }, { id: 'c', name: 'Mike Minnier' }]))
+      .toEqual({ a: 'Test A.', b: 'Test B.', c: 'Mike' });
+    expect(shortNames([{ id: 'a', name: 'Cher' }])).toEqual({ a: 'Cher' });
   });
 });

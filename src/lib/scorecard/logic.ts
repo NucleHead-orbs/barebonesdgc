@@ -109,3 +109,14 @@ export function resultMessage(r: string): string {
     default: return r;
   }
 }
+
+/** Short names for the sign-off grid: first names, plus a last initial wherever first names collide. */
+export function shortNames(players: Pick<CardPlayer, 'id' | 'name'>[]): Record<string, string> {
+  const parts = players.map((p) => ({ id: p.id, words: p.name.trim().split(/\s+/) }));
+  const firsts = parts.map((p) => p.words[0].toLowerCase());
+  return Object.fromEntries(parts.map((p, i) => {
+    const clash = firsts.filter((f) => f === firsts[i]).length > 1;
+    const last = p.words.length > 1 ? p.words[p.words.length - 1] : '';
+    return [p.id, clash && last ? `${p.words[0]} ${last[0].toUpperCase()}.` : p.words[0]];
+  }));
+}
