@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { loadJewel, type JewelData, type PublicSponsor } from '../../lib/jewel/api';
 import { CourseGuide, SponsorPanel } from '../../components/event';
-import { rankDivision, divisionsPresent, onCourse, toPar, parTone, type Mode } from '../../lib/jewel/leaderboard';
+import Leaderboard from '../../components/Leaderboard';
 import { EVENT, SCHEDULE, HOUSE_RULES } from '../../lib/jewel/content';
 import { useTheme } from '../../lib/theme';
 import './jewel.css';
@@ -44,7 +44,7 @@ export default function JewelApp() {
       <main className="jw-body">
         {error && <div className="jw-error" role="alert">{error}</div>}
         {!data && !error && <p className="jw-note">Loading…</p>}
-        {data && tab === 'leaders' && <Leaders data={data} />}
+        {data && tab === 'leaders' && <Leaderboard board={data.board} rounds={2} empty="No players yet. Registration is open on Disc Golf Scene." />}
         {tab === 'score' && <Score />}
         {data && tab === 'course' && <Course data={data} />}
         {tab === 'info' && <Info sponsors={data?.sponsors ?? []} />}
@@ -57,57 +57,6 @@ export default function JewelApp() {
         ))}
       </nav>
     </div>
-  );
-}
-
-function Leaders({ data }: { data: JewelData }) {
-  const [mode, setMode] = useState<Mode>('live');
-  const [div, setDiv] = useState<string>('All');
-  const divs = useMemo(() => divisionsPresent(data.board), [data.board]);
-  const live = onCourse(data.board);
-  const shown = div === 'All' ? divs : divs.filter((d) => d === div);
-
-  return (
-    <>
-      <div className="jw-row">
-        <h2 className="jw-h2">Leaderboard</h2>
-        <span className="jw-live">{live ? `● LIVE · ${live} ON COURSE` : `${data.board.length} REGISTERED`}</span>
-      </div>
-      <div className="jw-row">
-        <div className="jw-seg">
-          {(['official', 'live'] as Mode[]).map((m) => (
-            <button key={m} aria-pressed={mode === m} onClick={() => setMode(m)}>{m === 'official' ? 'OFFICIAL' : 'LIVE'}</button>
-          ))}
-        </div>
-        <span className="jw-note" style={{ flex: 1, minWidth: 160 }}>
-          {mode === 'official' ? 'Only signed & submitted rounds count.' : 'Showing live, unsigned scores — unofficial until the card signs off.'}
-        </span>
-      </div>
-      {divs.length > 1 && (
-        <div className="jw-chips" role="group" aria-label="Division">
-          {['All', ...divs].map((d) => <button key={d} className="jw-chip" aria-pressed={div === d} onClick={() => setDiv(d)}>{d}</button>)}
-        </div>
-      )}
-      {!divs.length && <div className="jw-banner">No players yet. Registration is open on Disc Golf Scene.</div>}
-      {shown.map((d) => {
-        const ranked = rankDivision(data.board.filter((r) => r.div_code === d), mode);
-        return (
-          <section key={d} className="jw-div" aria-label={`${d} leaderboard`}>
-            <div className="jw-div-head"><b>{d}</b><span>{ranked.length} player{ranked.length === 1 ? '' : 's'}</span></div>
-            <div className="jw-grid hdr"><span>POS</span><span>PLAYER</span><span className="num">R1</span><span className="num">R2</span><span className="num">TOT</span></div>
-            {ranked.map((p) => (
-              <div key={p.id} className="jw-grid">
-                <span className={`jw-pos${p.first ? ' first' : ''}`}>{p.pos}</span>
-                <span className="jw-name"><b>{p.name}</b><span>{p.status}</span></span>
-                <span className={`num ${parTone(p.r1)}`}>{toPar(p.r1)}</span>
-                <span className={`num ${parTone(p.r2)}`}>{toPar(p.r2)}</span>
-                <span className={`num tot ${parTone(p.total)}`}>{toPar(p.total)}</span>
-              </div>
-            ))}
-          </section>
-        );
-      })}
-    </>
   );
 }
 

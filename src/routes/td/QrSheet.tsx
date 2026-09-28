@@ -7,8 +7,8 @@ const publicOrigin = (): string =>
   (import.meta.env.VITE_PUBLIC_ORIGIN as string | undefined)?.trim() || window.location.origin;
 
 /** One code per published card, pointing at /c/<token>. Tokens come from td_publish_round. */
-export default function QrSheet({ round, cards, names, onBack }: {
-  round: 1 | 2; cards: PublishedCard[]; names: Record<string, string>; onBack: () => void;
+export default function QrSheet({ round, eventName, cards, names, onBack }: {
+  round: 1 | 2; eventName: string; cards: PublishedCard[]; names: Record<string, string>; onBack: () => void;
 }) {
   const origin = publicOrigin();
   const [svgs, setSvgs] = useState<Record<string, string>>({});
@@ -28,19 +28,20 @@ export default function QrSheet({ round, cards, names, onBack }: {
   return (
     <div className="td-qr">
       <div className="td-row td-noprint">
-        <button className="td-btn" onClick={onBack}>‹ BACK TO BUILDER</button>
+        <button className="td-btn" onClick={onBack}>‹ BACK TO CARDS</button>
         <div className="td-title">QR Sheet · R{round}</div>
         <div style={{ flex: 1 }} />
         <button className="td-btn cta" onClick={() => window.print()} disabled={!cards.length || missing > 0}>PRINT</button>
       </div>
       <div className="td-hint td-noprint">{cards.length} cards · codes open {origin}/c/… · a code belongs to its slot (e.g. AM 7B), so it keeps working if you regenerate and republish.</div>
-      {local && <div className="td-warn td-noprint">These codes point at {origin}, which phones on the course can't reach. Set VITE_PUBLIC_ORIGIN (e.g. https://barebonesdiscgolf.club) before printing.</div>}
+      {local && <div className="td-warn td-noprint">These codes point at {origin}, which phones on the course can't reach. Set VITE_PUBLIC_ORIGIN (the live site address) before printing.</div>}
       {missing > 0 && <div className="td-warn td-noprint">{missing} card(s) came back without a token. Republish before printing.</div>}
       {error && <div className="td-warn td-noprint">{error}</div>}
       <div className="td-qr-grid">
         {cards.map((c) => (
           <div className="td-qr-card" key={`${c.wave}-${c.label}`}>
-            <div className="lbl">{c.wave} · Hole {c.label}</div>
+            <div className="start">{eventName}</div>
+            <div className="lbl">{c.wave === 'AM' && !cards.some((x) => x.wave === 'PM') ? '' : `${c.wave} · `}Hole {c.label}</div>
             <div className="start">R{round} · start on hole {c.start_hole}</div>
             {svgs[c.token] ? <div dangerouslySetInnerHTML={{ __html: svgs[c.token] }} style={{ width: '100%', display: 'flex', justifyContent: 'center' }} /> : <div style={{ height: 190 }} />}
             <div className="names">{c.players.map((id) => names[id] ?? '?').join(' · ')}</div>

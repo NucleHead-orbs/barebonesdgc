@@ -5,7 +5,7 @@ import type { ImportRow } from '../../lib/import/dgs';
 
 const FIELDS: Array<[Field, string]> = [
   ['division', 'Division'], ['name', 'Name'], ['first', 'First name'], ['last', 'Last name'],
-  ['pdga', 'PDGA#'], ['regDate', 'Registration date'], ['rating', 'Rating'], ['sponsor', 'Jewel hole sponsor'],
+  ['pdga', 'PDGA#'], ['regDate', 'Registration date'], ['rating', 'Rating'], ['sponsor', 'Hole sponsor'],
 ];
 const REASON: Record<string, string> = {
   footer: 'Totals footer', no_name: 'No name', sponsor_only: 'Sponsor only (SPON)', unknown_division: 'Unknown division',
@@ -16,16 +16,17 @@ const REASON: Record<string, string> = {
  * skipped rows with reasons, blocking problems, and a new / changed / unchanged preview.
  * The file text lives only in memory and is dropped on import or cancel.
  */
-export default function ImportReview({ fileName, text, divCodes, existing, existingSponsors, busy, onImport, onCancel }: {
-  fileName: string; text: string; divCodes: string[]; existing: ExistingPlayer[]; existingSponsors: string[]; busy: boolean;
+export default function ImportReview({ fileName, text, divCodes, existing, existingSponsors, withSponsors, busy, onImport, onCancel }: {
+  fileName: string; text: string; divCodes: string[]; existing: ExistingPlayer[]; existingSponsors: string[]; withSponsors: boolean; busy: boolean;
   onImport: (rows: ImportRow[], sponsorNames: string[]) => void; onCancel: () => void;
 }) {
   const [override, setOverride] = useState<Mapping>({});
   const parsed = useMemo(() => parseDgsCsv(text, divCodes, override), [text, divCodes, override]);
   const diff = useMemo(() => importDiff(parsed.rows, existing), [parsed.rows, existing]);
   const knownSponsors = useMemo(() => new Set(existingSponsors.map(nameKey)), [existingSponsors]);
-  const newSponsors = parsed.sponsors.filter((s) => !knownSponsors.has(nameKey(s.name)));
-  const nothingToDo = (parsed.rows.length > 0 || parsed.sponsors.length > 0)
+  const sponsorsFound = withSponsors ? parsed.sponsors : [];
+  const newSponsors = sponsorsFound.filter((s) => !knownSponsors.has(nameKey(s.name)));
+  const nothingToDo = (parsed.rows.length > 0 || sponsorsFound.length > 0)
     && diff.inserts.length === 0 && diff.updates.length === 0 && newSponsors.length === 0;
   const total = diff.inserts.length + diff.updates.length;
 
@@ -39,7 +40,7 @@ export default function ImportReview({ fileName, text, divCodes, existing, exist
       <div className="td-group">
         <div className="td-label">COLUMN MAPPING</div>
         <div className="td-map">
-          {FIELDS.map(([f, label]) => (
+          {FIELDS.filter(([f]) => withSponsors || f !== 'sponsor').map(([f, label]) => (
             <label key={f}>{label}
               <select className="td-select" value={parsed.mapping[f] ?? ''}
                 onChange={(e) => setOverride((o) => ({ ...o, [f]: e.target.value }))}>
@@ -60,7 +61,7 @@ export default function ImportReview({ fileName, text, divCodes, existing, exist
           <Stat v={diff.updates.length} k="CHANGED" color={diff.updates.length ? 'var(--gold)' : '#fff'} />
           <Stat v={diff.unchanged.length} k="UNCHANGED" color="#fff" />
           <Stat v={parsed.skipped.length} k="SKIPPED" color={parsed.skipped.length ? 'var(--over)' : '#fff'} />
-          <Stat v={newSponsors.length} k="NEW SPONSORS" color={newSponsors.length ? 'var(--gold)' : '#fff'} />
+          {withSponsors && <Stat v={newSponsors.length} k="NEW SPONSORS" color={newSponsors.length ? 'var(--gold)' : '#fff'} />}
         </div>
       )}
 
@@ -73,11 +74,11 @@ export default function ImportReview({ fileName, text, divCodes, existing, exist
         </div>
       )}
 
-      {parsed.sponsors.length > 0 && (
+      {sponsorsFound.length > 0 && (
         <div className="td-group">
           <div className="td-label">HOLE SPONSORS IN THIS FILE</div>
           <table className="td-table"><thead><tr><th>Registrant</th><th>Status</th></tr></thead>
-            <tbody>{parsed.sponsors.map((s) => (
+            <tbody>{sponsorsFound.map((s) => (
               <tr key={s.line}><td>{s.name}</td><td>{knownSponsors.has(nameKey(s.name)) ? 'Already in Sponsors' : 'New · lands hidden until you approve it in Sponsors'}</td></tr>
             ))}</tbody>
           </table>
@@ -98,8 +99,8 @@ export default function ImportReview({ fileName, text, divCodes, existing, exist
       {nothingToDo && <div className="td-warn soft">Every player already matches the database. Importing changes nothing.</div>}
 
       <div className="td-actions">
-        <button className="td-btn cta" disabled={busy || parsed.blocking.length > 0 || (parsed.rows.length === 0 && parsed.sponsors.length === 0)}
-          onClick={() => onImport(parsed.rows, parsed.sponsors.map((s) => s.name))}>
+        <button className="td-btn cta" disabled={busy || parsed.blocking.length > 0 || (parsed.rows.length === 0 && sponsorsFound.length === 0)}
+          onClick={() => onImport(parsed.rows, sponsorsFound.map((s) => s.name))}>
           {busy ? 'IMPORTING…' : nothingToDo ? 'IMPORT (NO CHANGES)'
             : `IMPORT ${total} PLAYER${total === 1 ? '' : 'S'}${newSponsors.length ? ` + ${newSponsors.length} SPONSOR${newSponsors.length === 1 ? '' : 'S'}` : ''}`}
         </button>

@@ -62,8 +62,25 @@
   --label-weight: 400; --display-case: none;
   --btn-shadow: none;
 }
+/* Neutral skin for any club's event (TD tool, scorecard, leaderboard). Accents come from data-palette. */
+[data-theme='event'] {
+  --bg-page: #0e1116; --bg-app: #151a22; --bg-surface: #11151c; --bg-raised: #1e2530;
+  --border: #2c3542; --border-subtle: #222a35;
+  --fg-1: #f4f6f8; --fg-2: #dde2e8; --fg-3: #8b96a5; --fg-placeholder: #667182;
+  --accent-a: #29e1ff; --accent-b: #7b5cff; --accent-c: #ff3ad1; --accent-gold: #ffd23f;
+  --on-accent: #000; --cta-fg: #000;
+  --header-bg: #151a22; --header-rule-w: 2px; --hero-bg: #151a22;
+  --score-under: #c6ff3d;
+  --font-display: 'Archivo Black', 'Arial Black', sans-serif;
+  --font-label: 'Archivo Black', 'Arial Black', sans-serif;
+  --font-body: 'Archivo', system-ui, sans-serif;
+  --label-weight: 400; --display-case: none; --btn-shadow: none;
+}
+[data-palette='cosmic'] { --accent-a: #29e1ff; --accent-b: #7b5cff; --accent-c: #ff3ad1; }
+[data-palette='bone'] { --accent-a: #a6d93b; --accent-b: #9a63a6; --accent-c: #efe8cf; }
+
 /* Gradients that read the accents are declared wherever accents can change. */
-[data-theme='jewel-xi'], [data-palette] {
+[data-theme='jewel-xi'], [data-theme='event'], [data-palette] {
   --cta-bg: linear-gradient(90deg, var(--accent-a), var(--accent-b), var(--accent-c));
   --header-rule: var(--accent-b);
 }

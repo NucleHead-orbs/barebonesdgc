@@ -12,6 +12,7 @@ const MusicPage = lazy(() => pages().then((m) => ({ default: m.Music })));
 const TdRoute = lazy(() => import('./routes/td/TdRoute'));
 const JewelApp = lazy(() => import('./routes/jewel/JewelApp'));
 const CardApp = lazy(() => import('./routes/card/CardApp'));
+const EventBoard = lazy(() => import('./routes/event/EventBoard'));
 
 /** A route that fails to load (bad deploy config, dropped chunk on course signal) says so instead of going blank. */
 class RouteGuard extends Component<{ children: ReactNode }, { error: string }> {
@@ -40,6 +41,7 @@ export default function App() {
         </Route>
         <Route path="/jewel" element={<RouteGuard><Suspense fallback={null}><JewelApp /></Suspense></RouteGuard>} />
         <Route path="/c/:token" element={<RouteGuard><Suspense fallback={null}><CardApp /></Suspense></RouteGuard>} />
+        <Route path="/e/:slug" element={<RouteGuard><Suspense fallback={null}><EventBoard /></Suspense></RouteGuard>} />
         <Route path="/td" element={<RouteGuard><Suspense fallback={null}><TdRoute /></Suspense></RouteGuard>} />
         <Route path="*" element={<Placeholder title="Not here" note="That page doesn't exist. Head back to barebonesdiscgolf.club." />} />
       </Routes>

@@ -5,6 +5,7 @@
  */
 import { DEFAULT_SETTINGS, type BuilderSettings, type Card, type SortBy, type Wave } from '../cards/generate';
 import { nameKey, type ImportRow } from '../import/dgs';
+import { setupMessage } from './setup';
 
 // ---------- auth ----------
 export const isTd = (user: { app_metadata?: Record<string, unknown> } | null | undefined): boolean =>
@@ -13,17 +14,24 @@ export const isTd = (user: { app_metadata?: Record<string, unknown> } | null | u
 // ---------- settings ----------
 const SORTS: SortBy[] = ['rating', 'r1', 'reg', 'random'];
 
-/** Round 2 seeds from R1 scores by default (handoff: switching to R2 changes the sort to R1 score). */
-export function defaultSettings(round: 1 | 2): BuilderSettings {
-  return { ...DEFAULT_SETTINGS, sortBy: round === 2 ? 'r1' : DEFAULT_SETTINGS.sortBy };
+/**
+ * Round 2 seeds from R1 scores by default (handoff: switching to R2 changes the sort to R1 score).
+ * Without pmDefault: the original Jewel defaults (kept as the generator's fixture).
+ * With pmDefault (every real event): PM = the divisions marked PM in the build menu, and no
+ * double-up order (that is course-specific; Jewel's lives in its saved builder_settings).
+ */
+export function defaultSettings(round: 1 | 2, pmDefault?: string[]): BuilderSettings {
+  const sortBy = round === 2 ? 'r1' : DEFAULT_SETTINGS.sortBy;
+  if (!pmDefault) return { ...DEFAULT_SETTINGS, sortBy };
+  return { ...DEFAULT_SETTINGS, pmDivisions: [...pmDefault], doubleUp: [], sortBy };
 }
 
 const intList = (v: unknown, max: number): number[] | null =>
   Array.isArray(v) ? [...new Set(v.map(Number).filter((n) => Number.isInteger(n) && n >= 1 && n <= max))] : null;
 
 /** Saved builder_settings JSON -> valid settings. Anything missing or malformed falls back to the default. */
-export function mergeSettings(saved: unknown, round: 1 | 2, holeCount: number): BuilderSettings {
-  const d = defaultSettings(round);
+export function mergeSettings(saved: unknown, round: 1 | 2, holeCount: number, pmDefault?: string[]): BuilderSettings {
+  const d = defaultSettings(round, pmDefault);
   if (!saved || typeof saved !== 'object') return d;
   const s = saved as Record<string, unknown>;
   return {
@@ -100,7 +108,7 @@ export function unassignedIds(playerIds: string[], cards: Card[]): string[] {
 }
 
 // ---------- import preview ----------
-export interface ExistingPlayer { id: string; name: string; div_code: string; rating: number | null; pdga: string | null; reg_order: number | null }
+export interface ExistingPlayer { id: string; name: string; div_code: string; rating: number | null; pdga: string | null; reg_order: number | null; checked_in?: boolean }
 export interface ImportDiff { inserts: ImportRow[]; updates: Array<{ row: ImportRow; fields: string[] }>; unchanged: ImportRow[] }
 
 /**
@@ -135,9 +143,11 @@ export function rpcError(err: unknown, round?: number): { kind: RpcErrorKind; me
   const e = (err && typeof err === 'object' ? err : {}) as { message?: string; code?: string; details?: string };
   const msg = `${e.message ?? ''} ${e.details ?? ''}`.trim() || String(err);
   const r = round ? `Round ${round}` : 'This round';
+  const setup = setupMessage(msg);
+  if (setup) return { kind: 'other', message: setup };
   if (/round_has_scores/.test(msg))
     return { kind: 'has_scores', message: `${r} already has scores, so publishing was refused. Nothing changed. Force republish keeps every score but drops signatures and submissions on the rebuilt cards.` };
-  if (/forbidden|permission denied/i.test(msg) || e.code === '42501') return { kind: 'forbidden', message: 'This account is not a TD. Sign in with the TD account.' };
+  if (/forbidden|permission denied/i.test(msg) || e.code === '42501') return { kind: 'forbidden', message: "This account isn't a TD for this event. Ask the organizer to add your email." };
   if (/empty_card/.test(msg)) return { kind: 'empty_card', message: 'A card has no players. Regenerate, then publish again.' };
   if (/unknown_player/.test(msg)) return { kind: 'unknown_player', message: 'A card has a player who is not in this event. Reload the page and regenerate.' };
   if (/jwt/i.test(msg) || e.code === 'PGRST301' || e.code === 'PGRST303') return { kind: 'auth', message: 'Your session expired. Sign in again; nothing was saved.' };

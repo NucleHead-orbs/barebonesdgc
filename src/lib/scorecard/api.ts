@@ -9,8 +9,11 @@ import { supabase } from '../supabase';
 import type { CardPlayer, HoleInfo, ScoreMap } from './logic';
 
 export interface CardInfo { id: string; event_id: string; round: number; wave: string; label: string; start_hole: number }
+export interface CardEvent { name: string; slug: string; club_name: string | null; skin: 'event' | 'jewel-xi'; palette: string; rounds: number; waves: number }
 export interface CardSnapshot {
   card: CardInfo;
+  /** Missing on snapshots cached before multi-event (treated as Jewel XI). */
+  event?: CardEvent;
   players: CardPlayer[];
   signoffs: Record<string, string>;
   submitted: boolean;

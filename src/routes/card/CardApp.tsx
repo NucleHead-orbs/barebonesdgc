@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useParams } from 'react-router-dom';
 import { supabase, syncScores } from '../../lib/supabase';
 import { ScoreQueue, deviceId, type QueuedScore, type RejectedScore } from '../../lib/offline/queue';
-import { isTd } from '../../lib/td/builder';
 import { useTheme } from '../../lib/theme';
 import {
   bump, cardComplete, cleanInitials, firstOpenHole, holeDone, holeOrder, mergeScores, playerLine,
@@ -19,7 +18,6 @@ const REFRESH_MS = 20_000;
  * Taps save to this phone first (IndexedDB), then sync. No signal never loses a score.
  */
 export default function CardApp() {
-  useTheme('jewel-xi');
   const { token = '' } = useParams();
   const [snap, setSnap] = useState<CardSnapshot>();
   const [fatal, setFatal] = useState('');
@@ -29,6 +27,10 @@ export default function CardApp() {
   const [hole, setHole] = useState<number>();
   const [td, setTd] = useState(false);
   const alive = useRef(true);
+  // no snapshot yet: neutral; old cached snapshot without event info: it can only be Jewel XI
+  const skin = snap?.event ? (snap.event.skin === 'jewel-xi' ? 'jewel-xi' : 'event') : snap ? 'jewel-xi' : 'event';
+  useTheme(skin, snap?.event?.palette ?? null);
+  const brand = snap?.event?.name ?? (snap ? 'The Jewel XI' : '');
 
   const refreshLocal = useCallback(async () => {
     const [p, r] = await Promise.all([queue.pending(), queue.rejected()]);
@@ -62,7 +64,6 @@ export default function CardApp() {
     alive.current = true;
     cachedCard(token).then((c) => { if (c && alive.current) setSnap((s) => s ?? c); });
     void refreshLocal().then(sync);
-    supabase.auth.getSession().then(({ data }) => { if (alive.current) setTd(isTd(data.session?.user)); });
     const tick = () => { if (document.visibilityState === 'visible') void sync(); };
     const id = window.setInterval(tick, REFRESH_MS);
     window.addEventListener('online', tick);
@@ -75,12 +76,24 @@ export default function CardApp() {
     };
   }, [token, refreshLocal, sync]);
 
+  // TD tools show for anyone the database says can run THIS event (super admin or its event TDs).
+  const eventId = snap?.card.event_id;
+  useEffect(() => {
+    if (!eventId) return;
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return;
+      const r = await supabase.rpc('can_td', { p_event: eventId });
+      if (alive.current) setTd(r.data === true);
+    })();
+  }, [eventId]);
+
   const scores = useMemo(() => mergeScores(snap?.scores ?? {}, pending, token), [snap, pending, token]);
 
-  if (fatal) return <Shell><div className="sc-msg sc-msg-bad"><h1>Card not found</h1><p>{fatal}</p></div></Shell>;
+  if (fatal) return <Shell brand={brand}><div className="sc-msg sc-msg-bad"><h1>Card not found</h1><p>{fatal}</p></div></Shell>;
   if (!snap) {
     return (
-      <Shell>
+      <Shell brand={brand}>
         <div className="sc-msg">
           {online ? <p>Loading your card…</p> : <><h1>No signal</h1><p>This card hasn't been opened on this phone yet, so it needs signal once. Step toward the parking lot and it will load on its own.</p></>}
         </div>
@@ -88,7 +101,7 @@ export default function CardApp() {
     );
   }
   if (!snap.holes.length || !snap.players.length) {
-    return <Shell><div className="sc-msg"><h1>{snap.card.label}</h1><p>This card has no {snap.players.length ? 'course holes' : 'players'} yet. Check with the TD.</p></div></Shell>;
+    return <Shell brand={brand}><div className="sc-msg"><h1>{snap.card.label}</h1><p>This card has no {snap.players.length ? 'course holes' : 'players'} yet. Check with the TD.</p></div></Shell>;
   }
 
   const order = holeOrder(snap.card.start_hole, snap.holes.map((h) => h.n));
@@ -110,11 +123,11 @@ export default function CardApp() {
   const state = signState({ submitted: snap.submitted, complete, pending: pending.length, signed, players: snap.players.length });
 
   return (
-    <Shell>
+    <Shell brand={brand}>
       <header className="sc-top">
         <div>
           <div className="sc-label">{snap.card.label}</div>
-          <div className="sc-sub">Round {snap.card.round} · {snap.card.wave} wave · starts on {snap.card.start_hole}</div>
+          <div className="sc-sub">{[(snap.event?.rounds ?? 2) > 1 ? `Round ${snap.card.round}` : '', (snap.event?.waves ?? 2) > 1 ? `${snap.card.wave} wave` : '', `starts on ${snap.card.start_hole}`].filter(Boolean).join(' · ')}</div>
         </div>
         <div className={`sc-net ${online ? (pending.length ? 'is-pending' : 'is-ok') : 'is-off'}`} role="status">
           {!online ? `offline · ${pending.length} saved on phone` : pending.length ? `syncing ${pending.length}…` : '✓ saved'}
@@ -167,12 +180,13 @@ export default function CardApp() {
         <SignPanel token={token} snap={snap} scores={scores} state={state} signed={signed} onDone={sync} />
       )}
       {td && (snap.submitted || signed > 0) && <TdUnlock cardId={snap.card.id} onDone={sync} />}
+      <a className="sc-board" href={snap.event ? `/e/${snap.event.slug}` : '/jewel'}>Live leaderboard ›</a>
     </Shell>
   );
 }
 
-function Shell({ children }: { children: ReactNode }) {
-  return <div className="sc"><div className="sc-brand">THE JEWEL XI</div>{children}</div>;
+function Shell({ brand, children }: { brand: string; children: ReactNode }) {
+  return <div className="sc"><div className="sc-brand">{brand.toUpperCase()}</div>{children}</div>;
 }
 
 function PlayerRow({ p, hole, holes, scores, locked, signed, onSet }: {
