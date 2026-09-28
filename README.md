@@ -1,6 +1,6 @@
 # barebones.club
 
-One app, one Cloudflare Pages deploy: the Bare Bones club site and the Jewel XI scoring system.
+One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI event, and the **TD Builder**: a multi-event tool any club can run events with (Jewel XI is one saved configuration of it).
 
 | Route | What | Who |
 |---|---|---|
@@ -9,15 +9,18 @@ One app, one Cloudflare Pages deploy: the Bare Bones club site and the Jewel XI 
 | `/music` | Songs by The Boneheaded Boy (tracks in `MUSIC`, `src/lib/jewel/content.ts`; files in `public/music/`) | Public |
 | `/jewel-xi` `/jewel-xi/course` `/jewel-xi/sponsors` | Jewel XI event site (`data-theme="jewel-xi"`); `/jewel-xi/live` → `/jewel` | Public |
 | `/jewel` | Leaderboard, course guide, schedule, sponsors (tabs: `#leaders` `#score` `#course` `#info`) | Public |
-| `/c/:token` | Scorecard for one card (the QR code) | Anyone holding the card's QR |
-| `/td` | Card Builder, paper totals, unlocks | TD login only |
+| `/e/:slug` | Live leaderboard + course for any event built in `/td` (event skin + palette) | Public |
+| `/c/:token` | Scorecard for one card (the QR code); takes the event's name + palette | Anyone holding the card's QR |
+| `/td` | TD Builder: event list → Setup (build menu) · Players (import, walk-ups, check-in) · Cards & QR · Sponsors | Signed-in TDs; each sees only their events |
 
 ## Sources of truth
 - **Data:** Supabase project `jjywfkonerwbhpesyyxa` (West US). `supabase/migrations/` is the only schema definition. Never edit tables in the dashboard.
-- **Holes/divisions:** migration `20260926000100_jewel_seed.sql` (from the design handoff's `HOLES` array). Reference data is versioned, not hand-entered.
+- **An event's configuration (the build menu):** the `events` row (club, dates, skin, palette, rounds 1–2, waves 1 or AM/PM, check-in, sponsors), its `holes`, its `divisions` (order + default wave) and `builder_settings` (card rules per round). Edited only through `td_update_event` / `td_set_holes` / `td_set_divisions` (they enforce the rules below). Jewel XI's holes/divisions were seeded by `20260926000100_jewel_seed.sql`; its double-up order lives in its saved card rules (`20260928000100_jewel_card_rules.sql`).
+- **Who can run an event:** super admin = `app_metadata.role = 'td'` (all events; the only one who creates events from scratch or deletes them). Event TD = a **confirmed** email listed in `event_tds` for that event. `can_td(event_id)` is the single check behind every TD RLS policy and RPC. Signing up grants nothing by itself.
 - **Sponsors:** Disc Golf Scene's "Jewel hole sponsor" column → `td_import_sponsors` (adds only, never overwrites, lands hidden) → TD sets public name / hole / tier / logo and flips Visible in `/td` → Sponsors. Logos in the public `sponsor-logos` storage bucket (TD-only writes). Public sees approved sponsors only (RLS).
 - **Event copy (schedule, register link, tagline):** `src/lib/jewel/content.ts`. House rules are empty until the TD supplies them; the section stays hidden meanwhile.
 - **Card labels (`7`, `7A`):** computed by `td_publish_round` in the database. The client never builds a label; unpublished cards show "Hole 7 · group 2".
+- **Build-menu rules (client mirror + messages):** `src/lib/td/setup.ts`.
 - **Card Builder glue:** `src/lib/td/builder.ts` (moves, locks, publish payload, import preview, error messages). A hand move locks the card the player lands on, so it survives Regenerate.
 - **Card assignment:** `src/lib/cards/generate.ts` (pure, deterministic, seeded).
 - **Offline writes:** `src/lib/offline/queue.ts`. Every tap lands in IndexedDB before it touches the network.
@@ -32,6 +35,10 @@ One app, one Cloudflare Pages deploy: the Bare Bones club site and the Jewel XI 
 - Paper totals (TD) override app scores and count as official.
 - Republishing a round with scores is refused unless forced. A forced republish keeps scores but drops signatures/submissions on rebuilt cards.
 - QR tokens belong to the slot (e.g. AM 7B), so printed codes survive regenerating cards.
+- An event TD can only touch their own events: every write is checked per event on the server. Only the super admin creates events from scratch, adds/removes TDs, or deletes events (Jewel XI can't be deleted).
+- Any TD can **duplicate** their own event (league week 2): course, format, divisions, card rules and TDs copy; players optionally (all un-checked-in); cards and scores never.
+- Publishing refuses a round beyond the event's rounds, and PM cards on a single-wave event. Switching 2→1 rounds or AM/PM→single is refused while those cards exist. Removing a hole a card starts on (or with scores), or a division with players, is refused.
+- With check-in on, cards are built from checked-in players only.
 
 ## Setup
 ```bash
@@ -43,29 +50,32 @@ npm run build
 ```
 
 ### Database
-Apply `supabase/migrations/*.sql` in filename order. All four are live on the project as of 2026-09-27.
+Apply `supabase/migrations/*.sql` in filename order. All seven are live on the project as of 2026-09-28.
 Local check against plain Postgres (no Supabase needed):
 ```bash
 psql -d jewel -f supabase/tests/00_supabase_stub.sql   # test only, never on Supabase
 psql -d jewel -f supabase/migrations/20260926000000_jewel_core.sql
 psql -d jewel -f supabase/migrations/20260926000100_jewel_seed.sql
-psql -d jewel -f supabase/tests/10_acceptance.sql       # 39 checks
+for f in supabase/migrations/2026092[78]*.sql; do psql -d jewel -f "$f"; done
+psql -d jewel -f supabase/tests/10_acceptance.sql       # 39 checks: scoring core
+psql -d jewel -f supabase/tests/20_multi_event.sql      # 43 checks: event-scoped TDs + build-menu rules
 ```
-Make a user the TD:
+Make a user **super admin** (event TDs need nothing here: add their email in `/td` → Setup → TDs):
 ```sql
 update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role":"td"}' where email = '...';
 ```
 
 ### Deploy (Cloudflare Workers, static assets)
 Workers Builds on `main`: build `npm run build`, deploy `npx wrangler deploy` (config in `wrangler.jsonc`, output `dist`).
-SPA routes (`/td`, `/jewel`, `/c/<token>`) are handled by `assets.not_found_handling = "single-page-application"`. Do not add `public/_redirects`: that's a Pages feature and Workers rejects it as an infinite loop.
+SPA routes (`/td`, `/jewel`, `/e/<slug>`, `/c/<token>`) are handled by `assets.not_found_handling = "single-page-application"`. Do not add `public/_redirects`: that's a Pages feature and Workers rejects it as an infinite loop.
 **Client config:** `.env.production` (committed) holds the public Supabase URL, anon key and `VITE_PUBLIC_ORIGIN`; Vite bakes them in at build time, so Cloudflare needs no build variables. `.env.local` (gitignored) overrides it for dev. Only public values go in either file, never the service_role key.
 Domain: `barebonesdiscgolf.club` (nameservers on Cloudflare since 2026-09-26). Attach it under the Worker's Domains & Routes.
 
 ## Build order
 1. ✅ Schema, RLS, RPCs, seed, acceptance tests — live on Supabase, security advisor clean except the 8 intended public RPCs
-2. ✅ Card Builder (`/td`): DGS CSV import → generate → review → publish → QR sheet (code + unit tests done; live TD walkthrough pending)
-3. Scorecard (`/c/:token`): offline queue, sign-off, submit
+2. ✅ Card Builder (`/td`): DGS CSV import → generate → review → publish → QR sheet
+3. ✅ Scorecard (`/c/:token`): offline queue, sign-off, submit, TD unlock
+3b. ✅ TD Builder (multi-event): build menu, invite-only event TDs, walk-ups + check-in, duplicate for leagues, `/e/:slug` leaderboard
 4. ✅ Public `/jewel`: Leaderboard (loads on open; Realtime still to do), Course, Info, sponsors. ✅ Sponsors pipeline.
 5. PWA/service worker, TD dashboard (who hasn't submitted, paper entry)
 6. Field test at league rounds → Nov 15 warm-up dubs → Jewel XI Nov 21–22
