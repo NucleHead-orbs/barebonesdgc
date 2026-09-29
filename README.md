@@ -15,7 +15,7 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 
 ## Sources of truth
 - **Data:** Supabase project `jjywfkonerwbhpesyyxa` (West US). `supabase/migrations/` is the only schema definition. Never edit tables in the dashboard.
-- **An event's configuration (the build menu):** the `events` row (club, dates, skin, palette, rounds 1–2, waves 1 or AM/PM, check-in, sponsors), its `holes`, its `divisions` (order + default wave) and `builder_settings` (card rules per round). Edited only through `td_update_event` / `td_set_holes` / `td_set_divisions` (they enforce the rules below). Jewel XI's holes/divisions were seeded by `20260926000100_jewel_seed.sql`; its double-up order lives in its saved card rules (`20260928000100_jewel_card_rules.sql`).
+- **An event's configuration (the build menu):** the `events` row (club, dates, skin, palette, rounds 1–2, waves 1 or AM/PM, check-in, sponsors), its `holes`, its `divisions` (order + default wave) and `builder_settings` (card rules per round). Edited only through `td_update_event` / `td_set_holes` / `td_set_divisions` (they enforce the rules below). Jewel XI's holes/divisions were seeded by `20260926000100_jewel_seed.sql`, with the course (distances, OB, rules) replaced by `20260928000300_jewel_xi_holes_from_guide.sql`; its double-up order lives in its saved card rules (`20260928000100_jewel_card_rules.sql`).
 - **Who can run an event:** super admin = `app_metadata.role = 'td'` (all events; the only one who creates events from scratch or deletes them). Event TD = a **confirmed** email listed in `event_tds` for that event. `can_td(event_id)` is the single check behind every TD RLS policy and RPC. Signing up grants nothing by itself.
 - **Sponsors:** Disc Golf Scene's "Jewel hole sponsor" column → `td_import_sponsors` (adds only, never overwrites, lands hidden) → TD sets public name / hole / tier / logo and flips Visible in `/td` → Sponsors. Logos in the public `sponsor-logos` storage bucket (TD-only writes). Public sees approved sponsors only (RLS).
 - **Event copy (schedule, register link, tagline):** `src/lib/jewel/content.ts`. House rules are empty until the TD supplies them; the section stays hidden meanwhile.
@@ -50,7 +50,7 @@ npm run build
 ```
 
 ### Database
-Apply `supabase/migrations/*.sql` in filename order. All seven are live on the project as of 2026-09-28.
+Apply `supabase/migrations/*.sql` in filename order. The first seven are live on the project as of 2026-09-28. `20260928000300_jewel_xi_holes_from_guide.sql` (Jewel XI distances/OB/rules from YT & Beard's course guide; refuses to run if any par differs) is committed but **not yet applied**.
 Local check against plain Postgres (no Supabase needed):
 ```bash
 psql -d jewel -f supabase/tests/00_supabase_stub.sql   # test only, never on Supabase
