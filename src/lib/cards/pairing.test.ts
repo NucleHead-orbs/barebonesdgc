@@ -98,6 +98,12 @@ describe('generateCards with pairing + social mix', () => {
     for (const c of cards) expect(new Set(c.playerIds.map((id) => id.split('-')[0])).size).toBe(2);
   });
 
+  it('a lone 1-player division rides with the division before it (no card of 1)', () => {
+    const six = [...mk('OPEN', 5), ...mk('REC', 1)];
+    const { cards } = generateCards({ players: six, settings: { ...settings, size: 3 }, divOrder: ['OPEN', 'REC'], holeCount: 9 });
+    expect(cards.map((c) => c.playerIds.length)).toEqual([3, 3]);
+  });
+
   it('honors an approved cross-division request and a keep-apart pair', () => {
     const pairing: PairingInput = { groups: [['MA1-0', 'MA2-5']], apart: [['MA1-0', 'MA1-1']], vibe: {} };
     const { cards } = generateCards({ players, settings, divOrder: ['MA1', 'MA2'], holeCount: 18, pairing });

@@ -160,6 +160,13 @@ export function generateCards(input: GenerateInput): GenerateResult {
     if (s.keepDivisions && s.mergeSmall) {
       const small = groups.filter((g) => g.length < 3);
       if (small.length > 1) groups = [...groups.filter((g) => g.length >= 3), small.flat()];
+      // Still a lone group of 1–2 (e.g. the only REC player)? It rides with the division before it
+      // (or after, if it's first) instead of becoming a card of 1.
+      for (let i = groups.findIndex((g) => g.length < 3); i >= 0 && groups.length > 1; i = groups.findIndex((g) => g.length < 3)) {
+        const into = i > 0 ? i - 1 : 1;
+        const merged = i > 0 ? [...groups[into], ...groups[i]] : [...groups[i], ...groups[into]];
+        groups = groups.flatMap((g, k) => (k === i ? [] : k === into ? [merged] : [g]));
+      }
     }
 
     const fresh: Card[] = [];
