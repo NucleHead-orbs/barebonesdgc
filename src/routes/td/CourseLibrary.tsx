@@ -75,15 +75,15 @@ export function LibraryBar({ eventId, linkedId, holes, dirty, admin, lib, onLib,
         <button className="td-btn cyan" disabled={!pick || busy} onClick={() => void load()}>{busy ? 'LOADING…' : 'LOAD'}</button>
         <button className="td-btn quiet" onClick={() => setSaving(!saving)}>{saving ? 'CLOSE' : 'SAVE TO LIBRARY'}</button>
       </div>
-      {saving && <SaveToLibrary eventId={eventId} lib={lib} linked={linked} dirty={dirty} holeCount={holes.length}
+      {saving && <SaveToLibrary eventId={eventId} lib={lib} linked={linked} dirty={dirty} holeCount={holes.length} admin={admin}
         onDone={async (text) => { await onLib(); setSaving(false); setMsg({ ok: true, text }); }} />}
       {msg && <div className={msg.ok ? 'td-ok' : 'td-warn'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
     </div>
   );
 }
 
-function SaveToLibrary({ eventId, lib, linked, dirty, holeCount, onDone }: {
-  eventId: string; lib: LibCourse[]; linked: ReturnType<typeof findLayout>; dirty: boolean; holeCount: number;
+function SaveToLibrary({ eventId, lib, linked, dirty, holeCount, admin, onDone }: {
+  eventId: string; lib: LibCourse[]; linked: ReturnType<typeof findLayout>; dirty: boolean; holeCount: number; admin: boolean;
   onDone: (text: string) => Promise<void>;
 }) {
   const [courseId, setCourseId] = useState(linked?.course.id ?? '');
@@ -116,7 +116,7 @@ function SaveToLibrary({ eventId, lib, linked, dirty, holeCount, onDone }: {
     if (r.error) return setErr(rpcError(r.error).message);
     const cname = creating ? newName.trim() : course!.name;
     await onDone(updating
-      ? `Updated ${cname}: ${name} with this event's ${holeCount} holes.${updating.verified_at ? ' A super admin will re-check it before it shows as verified again.' : ''}`
+      ? `Updated ${cname}: ${name} with this event's ${holeCount} holes.${updating.verified_at && !admin ? ' A super admin will re-check it before it shows as verified again.' : ''}`
       : `Saved ${cname}: ${name} (${holeCount} holes) to the library. Every TD can load it now.`);
   };
 
