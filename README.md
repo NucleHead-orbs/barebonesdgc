@@ -9,6 +9,7 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 | `/music` | Songs by The Boneheaded Boy (tracks in `MUSIC`, `src/lib/jewel/content.ts`; files in `public/music/`) | Public |
 | `/jewel-xi` `/jewel-xi/course` `/jewel-xi/sponsors` | Jewel XI event site (`data-theme="jewel-xi"`); `/jewel-xi/live` → `/jewel` | Public |
 | `/jewel` | Leaderboard, course guide, schedule, sponsors (tabs: `#leaders` `#score` `#course` `#info`) | Public |
+| `/e/:slug/winners` | Winners Circle: exactly what the TD last posted (places + prizes) | Public |
 | `/e/:slug/request` | Table QR: a player picks themselves + who they want on their card → TD's Requests tab | Public (server-validated, max 3 pending) |
 | `/e/:slug` | Live leaderboard + course for any event built in `/td` (event skin + palette) | Public |
 | `/c/:token` | Scorecard for one card (the QR code); takes the event's name + palette | Anyone holding the card's QR |
@@ -21,6 +22,8 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 - **Sponsors:** Disc Golf Scene's "Jewel hole sponsor" column → `td_import_sponsors` (adds only, never overwrites, lands hidden) → TD sets public name / hole / tier / logo and flips Visible in `/td` → Sponsors. Logos in the public `sponsor-logos` storage bucket (TD-only writes). Public sees approved sponsors only (RLS).
 - **Event copy (schedule, register link, tagline):** `src/lib/jewel/content.ts`. House rules are empty until the TD supplies them; the section stays hidden meanwhile.
 - **Card labels (`7`, `7A`):** computed by `td_publish_round` in the database. The client never builds a label; unpublished cards show "Hole 7 · group 2".
+- **TD instructions:** `src/lib/td/help.ts` is the ONE source; the HELP button in /td renders it. Change a screen → change its help section in the same commit.
+- **Winners Circle:** inputs in `event_prize` (added/raffle total, credit rounding, am prize name) and `division_payouts` (cash/credit, entry, payback %, fixed added, paid places, % table), `players.finish_status` (DNF/DQ/NS) and `playoffs`. Both prize tables are TD-only. All math is pure in `src/lib/prizes/payout.ts` + `winners.ts`. The public page reads only `winners_posts` (the snapshot the TD posts).
 - **Build-menu rules (client mirror + messages):** `src/lib/td/setup.ts`.
 - **Card requests / ⭐☺ tags / keep-apart:** tables `card_requests` (+ `card_request_players`), `player_private`, `keep_apart`: TD-only (RLS `can_td`), never public. Seating logic: `src/lib/cards/pairing.ts` (pure); `cardIssues()` is the one source for warnings after generate and after hand moves. Glue: `src/lib/td/requests.ts`.
 - **Card Builder glue:** `src/lib/td/builder.ts` (moves, locks, publish payload, import preview, error messages). A hand move locks the card the player lands on, so it survives Regenerate.
@@ -44,6 +47,7 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 - Only **approved** requests shape cards, and only Round 1 (Round 2 seeds by score). Requests chain (A+B, B+C → one group of up to 5). The generator never seats a keep-apart pair together (all rounds), and seats ⭐ players with their group or ☺ players first. It only swaps players between unlocked cards, so card sizes and the hole plan don't change.
 - Keep divisions together OFF = social mix: divisions are dealt round-robin so every card mixes them. A lone 1–2 player division rides with its neighbor instead of making a card of 1.
 - Duplicating an event carries ⭐/☺ tags and keep-apart pairs (matched by name); requests never carry.
+- **Payouts:** pool = players × entry × payback % + added share (added spread by field size over divisions without a fixed amount). Only players who finished every round (official = signed/paper; live = all holes) and aren't DNF/DQ/NS place. PDGA ties: tied players split the combined % of the spots they cover, including across the cash line; a tie for 1st uses the recorded playoff winner. Cash rounds down to $1, credit to $1/$5; the leftover is always shown. Default tables: pros ≈40% paid, ams ≈1/3, weights (n−i+1)^1.5. The public page changes only when the TD taps POST RESULTS. Duplicating carries fees/tables/rounding/label, never the added total, posts or statuses.
 
 ## Setup
 ```bash
@@ -55,7 +59,7 @@ npm run build
 ```
 
 ### Database
-Apply `supabase/migrations/*.sql` in filename order. All nine are live on the project as of 2026-09-29 (newest: `20260929000000_card_requests.sql`). The latest, `20260928000300_jewel_xi_holes_from_guide.sql`, sets Jewel XI distances/OB/rules from YT & Beard's course guide (par 62, 6,499 ft) and refuses to run if any par differs.
+Apply `supabase/migrations/*.sql` in filename order. All ten are live on the project as of 2026-09-29 (newest: `20260929000100_winners.sql`). The latest, `20260928000300_jewel_xi_holes_from_guide.sql`, sets Jewel XI distances/OB/rules from YT & Beard's course guide (par 62, 6,499 ft) and refuses to run if any par differs.
 Local check against plain Postgres (no Supabase needed):
 ```bash
 psql -d jewel -f supabase/tests/00_supabase_stub.sql   # test only, never on Supabase
@@ -65,6 +69,7 @@ for f in supabase/migrations/2026092[789]*.sql; do psql -d jewel -f "$f"; done
 psql -d jewel -f supabase/tests/10_acceptance.sql       # 39 checks: scoring core
 psql -d jewel -f supabase/tests/20_multi_event.sql      # 43 checks: event-scoped TDs + build-menu rules
 psql -d jewel -f supabase/tests/30_card_requests.sql    # 23 checks: requests, private tags, keep-apart
+psql -d jewel -f supabase/tests/40_winners.sql          # 19 checks: prize privacy, posting, week-2 carry
 ```
 Make a user **super admin** (event TDs need nothing here: add their email in `/td` → Setup → TDs):
 ```sql

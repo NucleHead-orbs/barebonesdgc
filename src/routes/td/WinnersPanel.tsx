@@ -116,14 +116,14 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
       <section className="td-panel td-money">
         <label className="td-field">
           <span className="td-label">ADDED CASH / RAFFLE TOTAL</span>
-          <input className="td-input td-big" inputMode="decimal" value={addedText} placeholder="0"
+          <input className="td-input td-big" aria-label="Added cash or raffle total" inputMode="decimal" value={addedText} placeholder="0"
             onChange={(e) => setAddedText(e.target.value.replace(/[^0-9.]/g, ''))} onBlur={commitAdded}
             onKeyDown={(e) => { if (e.key === 'Enter') { commitAdded(); (e.target as HTMLInputElement).blur(); } }} />
           <span className="td-hint">Spread across divisions by field size (except fixed ones). Update it as raffle sales come in.</span>
         </label>
         <label className="td-field">
           <span className="td-label">AM PRIZE NAME</span>
-          <input className="td-input" defaultValue={label} maxLength={24} onBlur={(e) => { if (e.target.value.trim() && e.target.value.trim() !== label) void saveSettings({ ...prize.settings, creditLabel: e.target.value.trim() }); }} />
+          <input className="td-input" aria-label="Am prize name" defaultValue={label} maxLength={24} onBlur={(e) => { if (e.target.value.trim() && e.target.value.trim() !== label) void saveSettings({ ...prize.settings, creditLabel: e.target.value.trim() }); }} />
         </label>
         <div className="td-field">
           <span className="td-label">{label.toUpperCase()} ROUND TO</span>
