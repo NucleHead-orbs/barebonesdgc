@@ -50,7 +50,7 @@ npm run build
 ```
 
 ### Database
-Apply `supabase/migrations/*.sql` in filename order. The first seven are live on the project as of 2026-09-28. `20260928000300_jewel_xi_holes_from_guide.sql` (Jewel XI distances/OB/rules from YT & Beard's course guide; refuses to run if any par differs) is committed but **not yet applied**.
+Apply `supabase/migrations/*.sql` in filename order. All eight are live on the project as of 2026-09-28. The latest, `20260928000300_jewel_xi_holes_from_guide.sql`, sets Jewel XI distances/OB/rules from YT & Beard's course guide (par 62, 6,499 ft) and refuses to run if any par differs.
 Local check against plain Postgres (no Supabase needed):
 ```bash
 psql -d jewel -f supabase/tests/00_supabase_stub.sql   # test only, never on Supabase
