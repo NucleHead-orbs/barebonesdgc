@@ -8,6 +8,7 @@ import type { BuilderPlayer, BuilderSettings, Card, Wave } from '../cards/genera
 import type { ImportRow } from '../import/dgs';
 import type { ExistingPlayer, PublishCard, PublishedCard } from './builder';
 import type { DivisionRow, EventConfig, HoleRow } from './setup';
+import type { DivisionConfig, FinishStatus, PrizeSettings } from '../prizes/payout';
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
 const wrap = async <T>(fn: () => Promise<T>): Promise<Result<T>> => {
@@ -86,7 +87,7 @@ export const deleteEvent = (eventId: string) => wrap(async () => {
 
 // ---------- players ----------
 export const loadPlayers = (eventId: string) => wrap(async (): Promise<ExistingPlayer[]> =>
-  list(await supabase.from('players').select('id, name, div_code, rating, pdga, reg_order, checked_in').eq('event_id', eventId).order('reg_order', { nullsFirst: false })));
+  list(await supabase.from('players').select('id, name, div_code, rating, pdga, reg_order, checked_in, finish_status').eq('event_id', eventId).order('reg_order', { nullsFirst: false })));
 
 export const setCheckedIn = (playerId: string, on: boolean) => wrap(async () => {
   must(await supabase.from('players').update({ checked_in: on }).eq('id', playerId));
@@ -228,4 +229,65 @@ export const addApart = (eventId: string, a: string, b: string) => wrap(async ()
 export const removeApart = (a: string, b: string) => wrap(async () => {
   const [x, y] = ordered(a, b);
   must(await supabase.from('keep_apart').delete().eq('player_a', x).eq('player_b', y));
+});
+
+// ---------- Winners Circle (event_prize + division_payouts are TD-only; winners_posts is public) ----------
+export interface PrizeSetup {
+  settings: PrizeSettings;
+  configs: Record<string, DivisionConfig>;
+  playoffs: Record<string, string>;        // div -> winner player id
+  post: { payload: WinnersPayload; posted_at: string } | null;
+}
+export interface WinnersPayload {
+  event: string; credit_label: string; mode: 'official' | 'live';
+  divisions: Array<{ div: string; currency: 'cash' | 'credit'; rows: Array<{ place: string; name: string; total: number; amount: number }> }>;
+}
+
+const num = (v: unknown) => (v == null ? null : Number(v));
+
+export const loadPrizeSetup = (eventId: string) => wrap(async (): Promise<PrizeSetup> => {
+  const [p, d, o, w] = await Promise.all([
+    supabase.from('event_prize').select('added_total, credit_round, credit_label').eq('event_id', eventId).maybeSingle(),
+    supabase.from('division_payouts').select('div_code, currency, entry_fee, payback_pct, added_override, paid_places, pcts').eq('event_id', eventId),
+    supabase.from('playoffs').select('div_code, winner_player_id').eq('event_id', eventId),
+    supabase.from('winners_posts').select('payload, posted_at').eq('event_id', eventId).maybeSingle(),
+  ]);
+  const prize = must(p) as { added_total: number; credit_round: 1 | 5; credit_label: string } | null;
+  const configs: Record<string, DivisionConfig> = {};
+  for (const r of list(d) as Array<{ div_code: string; currency: 'cash' | 'credit'; entry_fee: number; payback_pct: number; added_override: number | null; paid_places: number | null; pcts: number[] | null }>) {
+    configs[r.div_code] = {
+      div: r.div_code, currency: r.currency, entryFee: Number(r.entry_fee), paybackPct: Number(r.payback_pct),
+      addedOverride: num(r.added_override), paidPlaces: r.paid_places, pcts: r.pcts ? r.pcts.map(Number) : null,
+    };
+  }
+  return {
+    settings: { addedTotal: Number(prize?.added_total ?? 0), creditRound: prize?.credit_round ?? 1, creditLabel: prize?.credit_label ?? 'prize credit' },
+    configs,
+    playoffs: Object.fromEntries((list(o) as Array<{ div_code: string; winner_player_id: string }>).map((x) => [x.div_code, x.winner_player_id])),
+    post: (must(w) as PrizeSetup['post']) ?? null,
+  };
+});
+
+export const savePrizeSettings = (eventId: string, s: PrizeSettings) => wrap(async () => {
+  must(await supabase.from('event_prize').upsert({
+    event_id: eventId, added_total: s.addedTotal, credit_round: s.creditRound, credit_label: s.creditLabel.trim() || 'prize credit', updated_at: new Date().toISOString(),
+  }));
+});
+export const saveDivisionPayout = (eventId: string, c: DivisionConfig) => wrap(async () => {
+  must(await supabase.from('division_payouts').upsert({
+    event_id: eventId, div_code: c.div, currency: c.currency, entry_fee: c.entryFee, payback_pct: c.paybackPct,
+    added_override: c.addedOverride, paid_places: c.paidPlaces, pcts: c.pcts, updated_at: new Date().toISOString(),
+  }));
+});
+export const setFinishStatus = (playerId: string, status: FinishStatus | null) => wrap(async () => {
+  must(await supabase.from('players').update({ finish_status: status }).eq('id', playerId));
+});
+export const setPlayoffWinner = (eventId: string, div: string, playerId: string | null) => wrap(async () => {
+  if (playerId) must(await supabase.from('playoffs').upsert({ event_id: eventId, div_code: div, winner_player_id: playerId, recorded_at: new Date().toISOString() }));
+  else must(await supabase.from('playoffs').delete().eq('event_id', eventId).eq('div_code', div));
+});
+export const postWinners = (eventId: string, payload: WinnersPayload) => wrap(async (): Promise<string> => {
+  const posted_at = new Date().toISOString();
+  must(await supabase.from('winners_posts').upsert({ event_id: eventId, payload, posted_at }));
+  return posted_at;
 });

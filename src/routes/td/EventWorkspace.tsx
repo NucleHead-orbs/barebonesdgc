@@ -6,10 +6,12 @@ import { useTheme } from '../../lib/theme';
 import CardBuilder from './CardBuilder';
 import PlayersPanel from './PlayersPanel';
 import RequestsPanel from './RequestsPanel';
+import WinnersPanel from './WinnersPanel';
 import SetupPanel from './SetupPanel';
 import SponsorsPanel from './SponsorsPanel';
+import { HelpButton } from './Help';
 
-const TAB_LABEL: Record<Tab, string> = { setup: 'SETUP', players: 'PLAYERS', requests: 'REQUESTS', cards: 'CARDS & QR', sponsors: 'SPONSORS' };
+const TAB_LABEL: Record<Tab, string> = { setup: 'SETUP', players: 'PLAYERS', requests: 'REQUESTS', cards: 'CARDS & QR', winners: 'WINNERS', sponsors: 'SPONSORS' };
 const POLL_MS = 20_000; // new player requests show up without a reload
 
 /**
@@ -96,6 +98,7 @@ export default function EventWorkspace({ eventId, email, admin, onSignOut, onBac
         onPlayers={setPlayers} onReload={async () => { await Promise.all([loadPlayers(), loadRequests(), loadPrivate()]); }} onSponsors={setSponsors} onPrivate={loadPrivate} />}
       {current === 'requests' && <RequestsPanel setup={setup} players={players} requests={requests} onReload={loadRequests} />}
       {current === 'cards' && <CardBuilder key={rev} setup={setup} players={players} requests={requests} priv={priv} />}
+      {current === 'winners' && <WinnersPanel setup={setup} players={players} onPlayers={setPlayers} />}
       {current === 'sponsors' && (
         <SponsorsPanel eventId={ev.id} holeCount={setup.holes.length} sponsors={sponsors} onChange={setSponsors} onBack={() => setTab('cards')} />
       )}
@@ -117,6 +120,7 @@ function Frame({ title, sub, email, onSignOut, onBack, links, children }: {
         <div style={{ flex: 1 }} />
         <div className="td-actions">
           {links}
+          <HelpButton />
           <button className="td-btn quiet" onClick={onSignOut} title={email}>SIGN OUT</button>
         </div>
       </header>

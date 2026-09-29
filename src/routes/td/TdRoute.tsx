@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { isTd } from '../../lib/td/builder';
 import { useTheme } from '../../lib/theme';
 import EventHub from './EventHub';
+import { HelpButton } from './Help';
 import './td.css';
 
 /**
@@ -53,6 +54,7 @@ function Login() {
       <div className="td-login">
         <h1>TD Builder</h1>
         <div className="td-sub">CARDS · CHECK-IN · LIVE SCORING</div>
+        <div><HelpButton start="start" /></div>
         {notice && <div className="td-warn soft" role="status">{notice}</div>}
         {error && <div className="td-warn" role="alert">{error}</div>}
         <form onSubmit={submit}>

@@ -70,3 +70,7 @@ button.jw-cta:disabled { opacity: .5; cursor: default; }
 .jw-pick button { min-height: 52px; text-align: left; padding: 0 14px; border-radius: 10px; border: 2px solid var(--border); background: var(--raised); color: #fff; font-size: 17px; font-weight: 700; }
 .jw-pick button span { font-size: 12px; color: var(--text-muted); font-weight: 400; margin-left: 6px; }
 .jw-linkbtn { background: none; border: 0; color: var(--cyan); text-decoration: underline; font-size: 13px; padding: 0 0 0 6px; }
+
+/* winners page */
+.jw-grid.win { grid-template-columns: 40px minmax(0, 1fr) auto; }
+.jw-grid.win .num { min-width: 90px; }

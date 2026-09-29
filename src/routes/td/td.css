@@ -226,3 +226,28 @@
 .td-sign-qr svg { width: 100%; height: auto; display: block; }
 .td-sign-url { font-size: 12px; opacity: .6; word-break: break-all; }
 @media print { .td-sign { border: 0; max-width: none; } }
+
+/* ---------- help ---------- */
+.td-help { position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, .6); overflow: auto; padding: 24px 12px; }
+.td-help-inner { max-width: 760px; margin: 0 auto; background: var(--app); border: 2px solid var(--violet); border-radius: var(--r-card); padding: 18px 20px 28px; display: flex; flex-direction: column; gap: 14px; }
+.td-help-sec { scroll-margin-top: 16px; }
+.td-help-sec h3 { margin: 8px 0 6px; font-family: var(--font-label); font-weight: 400; font-size: 17px; color: var(--cyan); }
+.td-help-sec ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; line-height: 1.45; }
+@media print { .td-help { display: none; } }
+
+/* ---------- winners ---------- */
+.td-money { display: grid; grid-template-columns: minmax(220px, 1.4fr) minmax(160px, 1fr) auto; gap: 14px; align-items: start; }
+.td-money .td-counts { grid-column: 1 / -1; }
+.td-big { font-size: 26px; min-height: 56px; font-family: var(--font-label); }
+.td-windiv h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 24px; }
+.td-windiv.is-cash { border-color: var(--under); }
+.td-poolrow { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.td-poolrow label, .td-pcts label { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-label); font-size: 11px; letter-spacing: 1px; opacity: .9; }
+.td-pcts { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px; border-radius: 8px; background: var(--raised); }
+.td-pct-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.td-results tr.is-paid td { font-weight: 700; }
+.td-results tr.is-paid td:nth-child(4) { color: var(--under); }
+.td-results tr.is-out td { opacity: .55; }
+.td-status { min-height: 30px; font-size: 12px; padding: 2px 4px; }
+.td-inline-status { display: inline-flex; gap: 6px; align-items: center; margin-right: 12px; font-size: 13px; }
+@media (max-width: 760px) { .td-money { grid-template-columns: 1fr; } }

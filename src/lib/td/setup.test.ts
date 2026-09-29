@@ -54,7 +54,7 @@ describe('format', () => {
   });
   it('shows Sponsors only when the event uses it', () => {
     expect(eventTabs({ use_sponsors: false })).not.toContain('sponsors');
-    expect(eventTabs({ use_sponsors: false })).toEqual(['setup', 'players', 'requests', 'cards']);
+    expect(eventTabs({ use_sponsors: false })).toEqual(['setup', 'players', 'requests', 'cards', 'winners']);
     expect(eventTabs({ use_sponsors: true })).toContain('sponsors');
   });
   it('builds cards from checked-in players only when check-in is on', () => {

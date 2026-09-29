@@ -5,6 +5,7 @@ import { rpcError } from '../../lib/td/builder';
 import { DIVISION_PRESETS, addDays, dateRange, daysBetween, divisionsProblem, isoDate, normalizeDivCode, type DivisionRow, type EventConfig } from '../../lib/td/setup';
 import { useTheme } from '../../lib/theme';
 import EventWorkspace from './EventWorkspace';
+import { HelpButton } from './Help';
 
 /**
  * Home of /td: the events this account runs. ?e=<id> opens one.
@@ -86,7 +87,10 @@ function HubShell({ email, admin, onSignOut, children }: { email: string; admin:
           <div className="td-sub">{admin ? 'SUPER ADMIN' : 'EVENT TD'} · {email}</div>
         </div>
         <div style={{ flex: 1 }} />
-        <button className="td-btn quiet" onClick={onSignOut}>SIGN OUT</button>
+        <div className="td-actions">
+          <HelpButton />
+          <button className="td-btn quiet" onClick={onSignOut}>SIGN OUT</button>
+        </div>
       </header>
       {children}
     </div>

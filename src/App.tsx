@@ -14,6 +14,7 @@ const JewelApp = lazy(() => import('./routes/jewel/JewelApp'));
 const CardApp = lazy(() => import('./routes/card/CardApp'));
 const EventBoard = lazy(() => import('./routes/event/EventBoard'));
 const RequestPage = lazy(() => import('./routes/event/RequestPage'));
+const WinnersPage = lazy(() => import('./routes/event/WinnersPage'));
 
 /** A route that fails to load (bad deploy config, dropped chunk on course signal) says so instead of going blank. */
 class RouteGuard extends Component<{ children: ReactNode }, { error: string }> {
@@ -42,6 +43,7 @@ export default function App() {
         </Route>
         <Route path="/jewel" element={<RouteGuard><Suspense fallback={null}><JewelApp /></Suspense></RouteGuard>} />
         <Route path="/c/:token" element={<RouteGuard><Suspense fallback={null}><CardApp /></Suspense></RouteGuard>} />
+        <Route path="/e/:slug/winners" element={<RouteGuard><Suspense fallback={null}><WinnersPage /></Suspense></RouteGuard>} />
         <Route path="/e/:slug/request" element={<RouteGuard><Suspense fallback={null}><RequestPage /></Suspense></RouteGuard>} />
         <Route path="/e/:slug" element={<RouteGuard><Suspense fallback={null}><EventBoard /></Suspense></RouteGuard>} />
         <Route path="/td" element={<RouteGuard><Suspense fallback={null}><TdRoute /></Suspense></RouteGuard>} />

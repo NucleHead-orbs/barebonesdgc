@@ -108,7 +108,7 @@ export function unassignedIds(playerIds: string[], cards: Card[]): string[] {
 }
 
 // ---------- import preview ----------
-export interface ExistingPlayer { id: string; name: string; div_code: string; rating: number | null; pdga: string | null; reg_order: number | null; checked_in?: boolean }
+export interface ExistingPlayer { id: string; name: string; div_code: string; rating: number | null; pdga: string | null; reg_order: number | null; checked_in?: boolean; finish_status?: 'dnf' | 'dq' | 'ns' | null }
 export interface ImportDiff { inserts: ImportRow[]; updates: Array<{ row: ImportRow; fields: string[] }>; unchanged: ImportRow[] }
 
 /**
