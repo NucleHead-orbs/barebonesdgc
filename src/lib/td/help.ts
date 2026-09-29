@@ -19,7 +19,8 @@ export const HELP: HelpSection[] = [
     id: 'setup', title: 'Set up your event (SETUP tab)',
     steps: [
       '**Event:** name, club, dates, colors, rounds (1 or 2), waves (single or AM/PM), check-in on/off. Tap **SAVE EVENT**.',
-      '**Course:** how many holes, then par, feet and OB for each. Tap **SAVE COURSE**.',
+      '**Course:** pick your course from the **library** list and tap **LOAD**: par, feet, OB and mandos fill in. Not listed? Type the holes, tap **SAVE COURSE**, then **SAVE TO LIBRARY** so every TD can use it next time.',
+      'Loading copies the holes into your event. Fixing the library later never changes an event you already ran.',
       '**Divisions:** tap the ones you use. Tap **SAVE DIVISIONS**.',
       'Not sure what something does? Leave it. The defaults work.',
     ],

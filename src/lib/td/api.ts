@@ -9,6 +9,7 @@ import type { ImportRow } from '../import/dgs';
 import type { ExistingPlayer, PublishCard, PublishedCard } from './builder';
 import type { DivisionRow, EventConfig, HoleRow } from './setup';
 import type { DivisionConfig, FinishStatus, PrizeSettings } from '../prizes/payout';
+import { summarize, toLayoutPayload, type LayoutHole, type LibCourse, type LibLayout } from '../courses/courses';
 import { filePath, nextVersion, type DesignAsset, type DesignFile, type DesignStatus, type NewTask, type PrepTask } from '../prep/prep';
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
@@ -19,7 +20,7 @@ const must = <T>(r: { data: T; error: unknown }): T => { if (r.error) throw r.er
 const list = <T>(r: { data: T[] | null; error: unknown }): T[] => must(r) ?? [];
 
 // ---------- events (build menu) ----------
-const EVENT_COLS = 'id, slug, name, club_name, starts_on, ends_on, skin, palette, rounds, waves, use_checkin, use_sponsors, archived';
+const EVENT_COLS = 'id, slug, name, club_name, starts_on, ends_on, skin, palette, rounds, waves, use_checkin, use_sponsors, archived, course_layout_id';
 
 /** Events this account can run (super admin: all). */
 export const myEvents = () => wrap(async (): Promise<EventConfig[]> =>
@@ -370,3 +371,31 @@ export const signedUrl = (path: string, seconds: number, download?: string) => w
   (must(await supabase.storage.from(PREP_BUCKET).createSignedUrl(path, seconds, download ? { download } : undefined)) as { signedUrl: string }).signedUrl);
 export const downloadFile = (path: string) => wrap(async (): Promise<Blob> =>
   must(await supabase.storage.from(PREP_BUCKET).download(path)) as Blob);
+
+// ---------- course library (public read; any TD writes via RPCs) ----------
+type LayoutRow = Omit<LibLayout, 'holes' | 'par' | 'ft'> & { course_holes: Array<{ par: number; dist_ft: number | null }> };
+export const loadLibrary = () => wrap(async (): Promise<LibCourse[]> => {
+  const rows = list(await supabase.from('courses')
+    .select('id, name, city, pdga_url, pdga_holes, notes, course_layouts(id, course_id, name, source, verified_at, verified_by, updated_at, updated_by, course_holes(par, dist_ft))')
+    .order('name')) as Array<Omit<LibCourse, 'layouts'> & { course_layouts: LayoutRow[] }>;
+  return rows.map(({ course_layouts, ...c }) => ({
+    ...c,
+    layouts: (course_layouts ?? []).map(({ course_holes, ...l }) => ({ ...l, ...summarize(course_holes ?? []) })),
+  }));
+});
+/** Returns the new course id. */
+export const addCourse = (name: string, city: string | null) => wrap(async (): Promise<string> =>
+  (must(await supabase.from('courses').insert({ name, city }).select('id').single()) as { id: string }).id);
+/** Copies the event's SAVED holes (with rules) into a new or existing layout. */
+export const saveLayoutFromEvent = (eventId: string, courseId: string, layoutId: string | null, name: string, source: string | null) =>
+  wrap(async (): Promise<string> => {
+    const hs = list(await supabase.from('holes').select('n, par, dist_ft, ob, rules').eq('event_id', eventId).order('n')) as LayoutHole[];
+    return must(await supabase.rpc('td_save_layout', {
+      p_course_id: courseId, p_layout_id: layoutId, p_name: name, p_holes: toLayoutPayload(hs), p_source: source,
+    })) as string;
+  });
+export const applyLayout = (eventId: string, layoutId: string) => wrap(async (): Promise<number> =>
+  must(await supabase.rpc('td_apply_layout', { p_event_id: eventId, p_layout_id: layoutId })) as number);
+export const verifyLayout = (layoutId: string, on: boolean) => wrap(async () => {
+  must(await supabase.rpc('td_verify_layout', { p_layout_id: layoutId, p_on: on }));
+});

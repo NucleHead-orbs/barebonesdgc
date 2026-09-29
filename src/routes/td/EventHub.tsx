@@ -6,6 +6,8 @@ import { DIVISION_PRESETS, addDays, dateRange, daysBetween, divisionsProblem, is
 import { useTheme } from '../../lib/theme';
 import EventWorkspace from './EventWorkspace';
 import { HelpButton } from './Help';
+import { LayoutSelect } from './CourseLibrary';
+import { findLayout, sortLibrary, type LibCourse } from '../../lib/courses/courses';
 
 /**
  * Home of /td: the events this account runs. ?e=<id> opens one.
@@ -107,15 +109,27 @@ function NewEventForm({ onCancel, onCreated }: { onCancel: () => void; onCreated
   const [divs, setDivs] = useState<DivisionRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [lib, setLib] = useState<LibCourse[]>([]);
+  const [layoutId, setLayoutId] = useState('');
+  const [created, setCreated] = useState<string | null>(null);
+  useEffect(() => { void (async () => { const r = await api.loadLibrary(); if (r.data) setLib(sortLibrary(r.data)); })(); }, []);
+  const chosen = findLayout(lib, layoutId);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const bad = !name.trim() ? 'The event needs a name.' : ends < starts ? "The end date can't be before the start date." : divisionsProblem(divs);
     if (bad) return setErr(bad);
     setBusy(true); setErr('');
-    const r = await api.createEvent({ name: name.trim(), club: club.trim(), starts, ends, holeCount: holes, divisions: divs });
+    const r = await api.createEvent({ name: name.trim(), club: club.trim(), starts, ends, holeCount: chosen?.layout.holes ?? holes, divisions: divs });
+    if (r.error || !r.data) { setBusy(false); return setErr(rpcError(r.error).message); }
+    if (chosen) {
+      const a = await api.applyLayout(r.data.id, chosen.layout.id);
+      if (a.error) {
+        setBusy(false); setCreated(r.data.id);
+        return setErr(`The event was created, but the course didn't load: ${rpcError(a.error).message} Open it and use Setup → Course → LOAD.`);
+      }
+    }
     setBusy(false);
-    if (r.error || !r.data) return setErr(rpcError(r.error).message);
     onCreated(r.data.id);
   };
 
@@ -128,12 +142,17 @@ function NewEventForm({ onCancel, onCreated }: { onCancel: () => void; onCreated
         <Field label="CLUB"><input className="td-input" value={club} onChange={(e) => setClub(e.target.value)} placeholder="Your club" /></Field>
         <Field label="STARTS"><input className="td-input" type="date" required value={starts} onChange={(e) => { setStarts(e.target.value); if (ends < e.target.value) setEnds(e.target.value); }} /></Field>
         <Field label="ENDS"><input className="td-input" type="date" required value={ends} min={starts} onChange={(e) => setEnds(e.target.value)} /></Field>
-        <Field label="HOLES"><input className="td-input" type="number" min={1} max={40} value={holes} onChange={(e) => setHoles(Math.max(1, Math.min(40, Number(e.target.value) || 1)))} /></Field>
+        {!chosen && <Field label="HOLES"><input className="td-input" type="number" min={1} max={40} value={holes} onChange={(e) => setHoles(Math.max(1, Math.min(40, Number(e.target.value) || 1)))} /></Field>}
       </div>
+      <Field label="COURSE">
+        <LayoutSelect lib={lib} value={layoutId} onChange={setLayoutId} blankLabel="Not in the list: I'll enter holes in Setup" label="Course" />
+      </Field>
       <DivisionPicker divs={divs} waves={1} onChange={setDivs} />
       {err && <div className="td-warn" role="alert">{err}</div>}
       <div className="td-actions">
-        <button className="td-btn cta" type="submit" disabled={busy}>{busy ? 'CREATING…' : 'CREATE EVENT'}</button>
+        {created
+          ? <button className="td-btn cta" type="button" onClick={() => onCreated(created)}>OPEN EVENT</button>
+          : <button className="td-btn cta" type="submit" disabled={busy}>{busy ? 'CREATING…' : 'CREATE EVENT'}</button>}
         <button className="td-btn quiet" type="button" onClick={onCancel}>CANCEL</button>
       </div>
     </form>

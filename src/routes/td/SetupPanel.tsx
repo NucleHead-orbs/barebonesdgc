@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import * as api from '../../lib/td/api';
 import { rpcError, type ExistingPlayer } from '../../lib/td/builder';
 import {
@@ -6,6 +6,8 @@ import {
   type DivisionRow, type EventConfig, type HoleRow,
 } from '../../lib/td/setup';
 import { DivisionPicker, Field } from './EventHub';
+import { LibraryBar } from './CourseLibrary';
+import { sortLibrary, type LibCourse } from '../../lib/courses/courses';
 
 /**
  * The build menu. Each section saves on its own through the matching RPC, so a refusal in one
@@ -15,10 +17,16 @@ export default function SetupPanel({ setup, admin, players, onSaved, onDeleted }
   setup: api.EventSetup; admin: boolean; players: ExistingPlayer[]; onSaved: () => Promise<void>; onDeleted: () => void;
 }) {
   const ev = setup.event;
+  const [lib, setLib] = useState<LibCourse[]>([]);
+  const loadLib = useCallback(async () => {
+    const r = await api.loadLibrary();
+    if (r.data) setLib(sortLibrary(r.data));
+  }, []);
+  useEffect(() => { void (async () => { await loadLib(); })(); }, [loadLib]);
   return (
     <main className="td-main td-setup">
       <EventSection ev={ev} onSaved={onSaved} />
-      <CourseSection eventId={ev.id} holes={setup.holes} onSaved={onSaved} />
+      <CourseSection eventId={ev.id} holes={setup.holes} onSaved={onSaved} admin={admin} lib={lib} onLib={loadLib} linkedId={ev.course_layout_id ?? null} />
       <DivisionSection eventId={ev.id} waves={ev.waves} divisions={setup.divisions} players={players} onSaved={onSaved} />
       <TdSection eventId={ev.id} tds={setup.tds} admin={admin} onSaved={onSaved} />
       {admin && ev.slug !== 'jewel-xi-2026' && <DangerSection ev={ev} onDeleted={onDeleted} />}
@@ -115,7 +123,9 @@ function EventSection({ ev, onSaved }: { ev: EventConfig; onSaved: () => Promise
   );
 }
 
-function CourseSection({ eventId, holes, onSaved }: { eventId: string; holes: HoleRow[]; onSaved: () => Promise<void> }) {
+function CourseSection({ eventId, holes, onSaved, admin, lib, onLib, linkedId }: {
+  eventId: string; holes: HoleRow[]; onSaved: () => Promise<void>; admin: boolean; lib: LibCourse[]; onLib: () => Promise<void>; linkedId: string | null;
+}) {
   const [rows, setRows] = useState(holes);
   // server truth changed (a save, or another tab): take it, without remounting (keeps the save message)
   const sig = JSON.stringify(holes);
@@ -131,6 +141,8 @@ function CourseSection({ eventId, holes, onSaved }: { eventId: string; holes: Ho
   };
   return (
     <Section title="Course" hint="Holes are numbered 1 to N. Cards start on these holes (shotgun). Distance and OB show on the scorecard." msg={msg}>
+      <LibraryBar eventId={eventId} linkedId={linkedId} holes={holes} dirty={dirty} admin={admin} lib={lib} onLib={onLib}
+        onApplied={async () => { await onSaved(); await onLib(); }} />
       <div className="td-row">
         <Field label="HOLES">
           <input className="td-input" type="number" min={1} max={40} value={rows.length} style={{ maxWidth: 100 }}

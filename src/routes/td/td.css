@@ -296,3 +296,9 @@
 .td-link.danger { color: var(--error); }
 @media (max-width: 600px) { .td-task { padding: 10px; } .td-sizelist { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .td-progress span { transition: none; } }
+
+/* ---------- course library ---------- */
+.td-library { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 8px; background: var(--raised); }
+.td-library .td-hint b { opacity: 1; }
+.td-layout-select { flex: 1 1 260px; min-width: 0; max-width: 100%; }
+.td-library-save { border-color: var(--violet); gap: 10px; }

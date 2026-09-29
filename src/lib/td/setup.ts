@@ -23,6 +23,7 @@ export interface EventConfig {
   use_checkin: boolean;
   use_sponsors: boolean;
   archived: boolean;
+  course_layout_id?: string | null; // library layout the course was loaded from (reference only)
 }
 
 export interface HoleRow { n: number; par: number; dist_ft: number | null; ob: string | null }
@@ -127,7 +128,7 @@ export const dateRange = (e: { starts_on: string; ends_on: string }) => {
 
 /** Server refusal code -> what the TD should do. Null when the code isn't one of the build-menu rules. */
 export function setupMessage(raw: string): string | null {
-  const m = raw.match(/(division_in_use|holes_have_cards|holes_have_scores|no_divisions|invalid_division|duplicate_division|invalid_round|invalid_wave|round2_has_cards|pm_cards_exist|invalid_name|invalid_dates|invalid_holes|protected_event)\s*([A-Z0-9]*)/);
+  const m = raw.match(/(division_in_use|holes_have_cards|holes_have_scores|no_divisions|invalid_division|duplicate_division|invalid_round|invalid_wave|round2_has_cards|pm_cards_exist|invalid_name|invalid_dates|invalid_holes|protected_event|unknown_layout|courses_name_key|course_layouts_name_key)\s*([A-Z0-9]*)/);
   if (!m) return null;
   switch (m[1]) {
     case 'division_in_use': return `${m[2] ? `Division ${m[2]}` : 'A division you removed'} still has players. Move or remove them first.`;
@@ -144,6 +145,9 @@ export function setupMessage(raw: string): string | null {
     case 'invalid_dates': return 'The end date can\'t be before the start date.';
     case 'invalid_holes': return 'Check the course: 1–40 holes, par 2–6, distance 1–5000 ft.';
     case 'protected_event': return 'Jewel XI can\'t be deleted from here.';
+    case 'unknown_layout': return 'That course layout isn\'t in the library anymore. Reload and pick again.';
+    case 'courses_name_key': return 'A course with that name is already in the library. Pick it from the list.';
+    case 'course_layouts_name_key': return 'That course already has a layout with this name.';
   }
   return null;
 }
