@@ -27,6 +27,7 @@ export function MasterLayout() {
           <nav className="mh-nav" aria-label="Main">
             <NavLink to="/" end>Home</NavLink>
             <NavLink to="/jewel-xi">Jewel XI</NavLink>
+            <NavLink to="/leagues">Leagues</NavLink>
             <NavLink to="/gallery">Gallery</NavLink>
             <NavLink to="/music">Music</NavLink>
             <NavLink to="/sponsors">Sponsors</NavLink>

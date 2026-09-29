@@ -145,3 +145,37 @@ export function jewelRail(jewels: GalleryItem[], upTo = CURRENT_JEWEL_NO): Jewel
     return { no, roman: roman(no), year: FIRST_JEWEL_YEAR + i, cover: items[0] ?? null, items };
   });
 }
+
+export interface EventGroup { key: string; label: string; cover: GalleryItem; items: GalleryItem[]; from: number | null; to: number | null }
+
+/** The spelling most items use (whitespace collapsed); tie -> code-point order, so "Pig Day" beats "pig day". */
+function labelFor(list: GalleryItem[]): string | null {
+  const counts = new Map<string, number>();
+  for (const i of list) if (i.event_label) { const l = i.event_label.trim().replace(/\s+/g, ' '); counts.set(l, (counts.get(l) ?? 0) + 1); }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))[0]?.[0] ?? null;
+}
+
+/**
+ * Events & Fliers as one tile per event. Group key = event_label (case/space-insensitive); an item with no
+ * label stands alone under its title. Label = the most-used spelling. Newest event first (by its latest year), then A–Z. Cover = first by sort.
+ */
+export function groupEvents(events: GalleryItem[]): EventGroup[] {
+  const map = new Map<string, GalleryItem[]>();
+  for (const e of events) {
+    if (e.hidden) continue;
+    const key = e.event_label ? `e:${e.event_label.trim().toLowerCase().replace(/\s+/g, ' ')}` : `i:${e.id}`;
+    const list = map.get(key);
+    if (list) list.push(e); else map.set(key, [e]);
+  }
+  const groups = [...map.entries()].map(([key, list]): EventGroup => {
+    const items = list.slice().sort((a, b) => (a.year ?? 0) - (b.year ?? 0) || bySort(a, b));
+    const years = items.map((i) => i.year).filter((y): y is number => y !== null);
+    const cover = list.slice().sort(bySort)[0];
+    return { key, label: labelFor(list) ?? cover.title, cover, items, from: years.length ? Math.min(...years) : null, to: years.length ? Math.max(...years) : null };
+  });
+  return groups.sort((a, b) => (b.to ?? 0) - (a.to ?? 0) || a.label.localeCompare(b.label));
+}
+
+/** "2017", "2016–2018" or "" */
+export const yearSpan = (g: { from: number | null; to: number | null }) =>
+  g.from === null ? '' : g.from === g.to ? String(g.from) : `${g.from}–${g.to}`;

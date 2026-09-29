@@ -5,7 +5,7 @@ import { Button, Chip, SectionHeading, Skeleton, Banner } from '../../components
 import { useLoad } from '../../lib/useLoad';
 import { imageUrl, loadPublic } from '../../lib/gallery/api';
 import {
-  FILTERS, YOUTUBE_CHANNEL, groupForPage, jewelRail, youtubeEmbed, youtubeThumb, youtubeWatch,
+  FILTERS, YOUTUBE_CHANNEL, groupEvents, groupForPage, jewelRail, yearSpan, youtubeEmbed, youtubeThumb, youtubeWatch,
   type Filter, type GalleryItem,
 } from '../../lib/gallery/gallery';
 import '../../components/gallery.css';
@@ -20,6 +20,11 @@ export default function GalleryPage() {
   const [box, setBox] = useState<{ list: GalleryItem[]; at: number } | null>(null);
   const g = useMemo(() => groupForPage(data ?? []), [data]);
   const rail = useMemo(() => jewelRail(g.jewels), [g.jewels]);
+  const events = useMemo(() => groupEvents(g.events), [g.events]);
+  const [openEvent, setOpenEvent] = useState<string | null>(null);
+  const current = events.find((e) => e.key === openEvent) ?? null;
+  const panel = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (openEvent) panel.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [openEvent]);
   const has: Record<Filter, boolean> = {
     all: true, jewel: g.jewels.length > 0, meme: g.memes.length > 0, photo: g.photos.length > 0,
     video: g.videos.length > 0, event: g.events.length > 0,
@@ -111,17 +116,39 @@ export default function GalleryPage() {
 
       {show('event') && (
         <section className="sec"><div className="sec-inner">
-          <SectionHeading kicker="Past shenanigans" title="Events & Fliers" />
+          <SectionHeading kicker="Past shenanigans" title="Events & Fliers" aside={`${events.length} events`} />
           <div className="gp-grid">
-            {g.events.map((e, i) => (
-              <figure key={e.id}>
-                <button type="button" className="gp-tile" onClick={() => open(g.events, i)} aria-label={`View: ${e.title}`}>
-                  <img src={imageUrl(e.storage_path!)} alt="" loading="lazy" />
-                </button>
-                <figcaption><b>{e.event_label || e.title}</b>{(e.caption || e.year) && <span>{e.caption || e.year}</span>}</figcaption>
-              </figure>
-            ))}
+            {events.map((ev) => {
+              const on = openEvent === ev.key;
+              const meta = [yearSpan(ev), ev.items.length > 1 ? `${ev.items.length} pics` : ''].filter(Boolean).join(' · ');
+              return (
+                <figure key={ev.key} className={on ? 'gp-ev-on' : undefined}>
+                  <button type="button" className="gp-tile gp-square gp-ev" aria-expanded={ev.items.length > 1 ? on : undefined}
+                    onClick={() => (ev.items.length > 1 ? setOpenEvent(on ? null : ev.key) : open(ev.items, 0))}
+                    aria-label={ev.items.length > 1 ? `${on ? 'Close' : 'Open'} ${ev.label}, ${ev.items.length} pictures` : `View: ${ev.label}`}>
+                    <img src={imageUrl(ev.cover.storage_path!)} alt="" loading="lazy" />
+                    {ev.items.length > 1 && <span className="gp-ev-count" aria-hidden>{ev.items.length}</span>}
+                  </button>
+                  <figcaption><b>{ev.label}</b>{meta && <span>{meta}</span>}</figcaption>
+                </figure>
+              );
+            })}
           </div>
+          {current && (
+            <div className="gp-ev-panel" ref={panel} role="region" aria-label={current.label}>
+              <div className="gp-ev-head">
+                <div><div className="ds-kicker">{yearSpan(current) || 'Event'}</div><h3 className="ds-display ds-display-s">{current.label}</h3></div>
+                <button type="button" className="gp-ev-x" onClick={() => setOpenEvent(null)} aria-label={`Close ${current.label}`}>×</button>
+              </div>
+              <div className="gp-ev-grid">
+                {current.items.map((it, i) => (
+                  <button key={it.id} type="button" className="gp-tile gp-square" onClick={() => open(current.items, i)} aria-label={`View: ${it.title}`}>
+                    <img src={imageUrl(it.storage_path!)} alt="" loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div></section>
       )}
 

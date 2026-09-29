@@ -1,0 +1,58 @@
+/* Leagues & Pop Ups (/leagues). Semantic tokens only; the Pop Ups band is bone-on-ink like the canvas. */
+.lg-lead { max-width: 620px; }
+.lg-chip { display: inline-flex; align-items: center; text-decoration: none; }
+.lg-scrawl { font-family: var(--font-hand); color: var(--accent-a); font-size: 22px; transform: rotate(-3deg); display: inline-block; align-self: flex-start; }
+.lg-gold { color: var(--accent-gold); font-size: 26px; }
+.lg-muted { margin: 0; color: var(--fg-3); font-size: 15px; }
+
+.lg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; align-items: stretch; }
+.lg-card { display: flex; flex-direction: column; scroll-margin-top: 24px; overflow: hidden; }
+.lg-banner { display: block; width: 100%; height: 150px; object-fit: cover; border-bottom: 2px solid var(--border); }
+.lg-logos { height: 150px; display: flex; align-items: center; justify-content: center; gap: 24px; background: var(--ink); border-bottom: 2px solid var(--border); }
+.lg-logos img { height: 124px; width: auto; display: block; }
+.lg-card-body { display: flex; flex-direction: column; gap: 14px; padding-top: 12px; flex-grow: 1; }
+.lg-card-actions { margin-top: auto; }
+
+.lg-pop { --pop-kick: color-mix(in srgb, var(--accent-b) 70%, var(--ink)); --pop-green: color-mix(in srgb, var(--lime-deep) 55%, var(--ink));
+  background: var(--bone); color: var(--ink); border-top: 4px solid var(--ink); border-bottom: 4px solid var(--ink); padding: 64px 20px; scroll-margin-top: 12px; }
+.lg-pop .ds-kicker, .lg-pop-kick { color: var(--pop-kick); }
+.lg-pop-green { color: var(--pop-green); }
+.lg-ink { color: var(--ink); }
+.lg-pop .ds-sh-aside { color: var(--pop-green); }
+.lg-pop-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 400px); gap: 48px; align-items: start; }
+.lg-pop-copy { display: flex; flex-direction: column; gap: 16px; }
+.lg-pop-copy p { margin: 0; font-size: 18px; line-height: 1.5; font-weight: 500; max-width: 560px; }
+.lg-pop-title { margin: 0; font-size: clamp(48px, 7vw, 84px); line-height: .95; color: var(--ink); }
+.lg-pop-copy .lg-scrawl { font-size: 30px; }
+.lg-pop-outline { color: var(--ink); border-color: var(--ink); }
+.lg-next { background: #fff; border: 3px solid var(--ink); color: var(--ink); }
+.lg-next-head { background: var(--ink); }
+.lg-next-head .ds-card-title { color: var(--accent-a); }
+.lg-next-head .ds-card-aside { color: var(--bone); }
+.lg-next-body { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; }
+.lg-next-on { display: flex; flex-direction: column; gap: 6px; }
+.lg-next-on b { font-size: 20px; }
+.lg-next-off { border: 2px dashed color-mix(in srgb, var(--ink) 40%, transparent); border-radius: var(--r-banner); padding: 12px 14px; font-weight: 700; font-size: 14px; }
+.lg-next-off a { color: var(--pop-kick); }
+.lg-pop-tour .ds-tour-row { border-color: color-mix(in srgb, var(--ink) 18%, transparent); }
+.lg-pop-tour .ds-tour-date { color: var(--pop-green); }
+
+.lg-past { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+.lg-past figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.lg-past figcaption { font-size: 13px; display: flex; flex-direction: column; }
+.lg-past figcaption span { font-weight: 500; }
+.lg-flier { padding: 0; border: 4px solid var(--ink); border-radius: 14px; overflow: hidden; background: var(--ink); cursor: zoom-in; transition: transform .15s var(--ease); }
+.lg-flier:hover { transform: translateY(-2px) rotate(-1deg); }
+.lg-flier img { display: block; width: 100%; height: auto; }
+
+.lg-td { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center; }
+
+@media (max-width: 900px) { .lg-pop-top { grid-template-columns: 1fr; gap: 28px; } }
+@media (max-width: 640px) {
+  .lg-pop { padding: 44px 20px; }
+  .lg-past { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; padding-bottom: 6px; }
+  .lg-past figure { flex: 0 0 62%; scroll-snap-align: start; }
+  .lg-td { grid-template-columns: 1fr; }
+  .lg-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .lg-flier { transition: none; } }

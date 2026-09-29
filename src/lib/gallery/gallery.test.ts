@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CURRENT_JEWEL_NO, groupForPage, guessFromPath, jewelNoForYear, jewelRail, roman, titleFromFilename, youtubeId, type GalleryItem } from './gallery';
+import { CURRENT_JEWEL_NO, groupEvents, groupForPage, guessFromPath, jewelNoForYear, jewelRail, roman, titleFromFilename, youtubeId, yearSpan, type GalleryItem } from './gallery';
 
 describe('youtubeId', () => {
   it('takes every common URL shape and a bare id', () => {
@@ -65,5 +65,23 @@ describe('jewelRail', () => {
     expect(rail[2].items.map((i) => i.id)).toEqual(['a', 'b']);
     expect(rail[4].cover).toBeNull(); // hidden never shows
     expect(rail[10]).toMatchObject({ roman: 'XI', year: 2026 });
+  });
+});
+
+describe('groupEvents', () => {
+  const ev = (id: string, event_label: string | null, year: number | null, sort = 0, hidden = false): GalleryItem => ({
+    id, kind: 'image', category: 'event', title: `T ${id}`, caption: null, year, jewel_no: null, event_label,
+    storage_path: `event/${id}.webp`, youtube_id: null, source_path: null, hidden, sort, created_at: '2026-01-01',
+  });
+  it('one tile per event, newest first; unlabeled fliers stand alone; hidden never shows', () => {
+    const g = groupEvents([
+      ev('a', 'Pig Day', 2022, 2), ev('b', 'pig  day', 2022, 1), ev('c', 'FLO', 2016), ev('d', 'FLO', 2018),
+      ev('e', null, 2017), ev('h', 'Pig Day', 2022, 0, true),
+    ]);
+    expect(g.map((x) => x.label)).toEqual(['Pig Day', 'FLO', 'T e']);
+    expect(g[0].items.map((i) => i.id)).toEqual(['b', 'a']);
+    expect(g[0].cover.id).toBe('b');
+    expect(yearSpan(g[1])).toBe('2016–2018');
+    expect(yearSpan(g[2])).toBe('2017');
   });
 });

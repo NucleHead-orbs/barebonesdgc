@@ -9,6 +9,7 @@ const JewelCourse = lazy(() => pages().then((m) => ({ default: m.JewelCourse }))
 const SponsorsPage = lazy(() => pages().then((m) => ({ default: m.Sponsors })));
 const MusicPage = lazy(() => pages().then((m) => ({ default: m.Music })));
 const GalleryPage = lazy(() => import('./routes/site/GalleryPage'));
+const LeaguesPage = lazy(() => import('./routes/site/LeaguesPage'));
 // Each app loads only on its own route, so the first page stays small on course signal.
 const TdRoute = lazy(() => import('./routes/td/TdRoute'));
 const JewelApp = lazy(() => import('./routes/jewel/JewelApp'));
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/sponsors" element={<SponsorsPage />} />
           <Route path="/music" element={<MusicPage />} />
+          <Route path="/leagues" element={<LeaguesPage />} />
           <Route path="/gallery" element={<GalleryPage />} />
         </Route>
         <Route path="/jewel-xi" element={<JewelLayout />}>

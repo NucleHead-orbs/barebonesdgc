@@ -116,6 +116,14 @@ export const HELP: HelpSection[] = [
     ],
   },
   {
+    id: 'leagues', title: 'Leagues and Pop Ups on the website',
+    steps: [
+      'The Leagues page finds your events by **name**. Start a Lazy Boners night with **Lazy Boners** and an RBFL night with **RBFL** or **Root Beer Float**. Its **This week\'s scores** button opens the newest one that has started.',
+      'Put **Pop Up** anywhere in a Pop Up\'s name and it shows as **Next Pop Up** (date and a link) until it\'s over.',
+      'Archive an event to take it off the page.',
+    ],
+  },
+  {
     id: 'gallery', title: 'Club gallery (super admin)',
     steps: [
       'From your events list tap **CLUB GALLERY**. Only the super admin sees it.',

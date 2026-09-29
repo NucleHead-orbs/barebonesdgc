@@ -40,3 +40,14 @@
 
 @media (prefers-reduced-motion: reduce) { .gp-jewel img, .gp-tile, .gp-play-btn { transition: none; } }
 @media (max-width: 480px) { .gp-wall { columns: 2; column-gap: 10px; } .gp-wall > .gp-tile { margin-bottom: 10px; } .gp-rail { grid-template-columns: repeat(2, 1fr); } }
+
+/* Events & Fliers: one tile per event; tap opens that event's pictures below the grid. */
+.gp-ev { position: relative; }
+.gp-ev-count { position: absolute; right: 8px; bottom: 8px; min-width: 30px; height: 30px; padding: 0 8px; border-radius: var(--r-pill); display: grid; place-items: center; background: var(--ink); color: var(--accent-a); border: 2px solid var(--accent-a); font-family: var(--font-label); font-size: 13px; }
+.gp-ev-on .gp-tile { border-color: var(--accent-a); }
+.gp-ev-panel { display: flex; flex-direction: column; gap: 14px; padding: 18px; border: 3px solid var(--accent-a); border-radius: var(--r-card); background: var(--bg-surface); scroll-margin-top: 96px; }
+.gp-ev-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.gp-ev-head h3 { margin: 4px 0 0; }
+.gp-ev-x { width: 44px; height: 44px; flex: none; border-radius: 50%; border: 2px solid var(--ink); background: var(--accent-a); color: var(--on-accent); font-size: 26px; line-height: 1; cursor: pointer; }
+.gp-ev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+@media (max-width: 480px) { .gp-ev-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } }
