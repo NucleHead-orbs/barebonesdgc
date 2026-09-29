@@ -9,6 +9,7 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 | `/music` | Songs by The Boneheaded Boy (tracks in `MUSIC`, `src/lib/jewel/content.ts`; files in `public/music/`) | Public |
 | `/jewel-xi` `/jewel-xi/course` `/jewel-xi/sponsors` | Jewel XI event site (`data-theme="jewel-xi"`); `/jewel-xi/live` → `/jewel` | Public |
 | `/jewel` | Leaderboard, course guide, schedule, sponsors (tabs: `#leaders` `#score` `#course` `#info`) | Public |
+| `/e/:slug/request` | Table QR: a player picks themselves + who they want on their card → TD's Requests tab | Public (server-validated, max 3 pending) |
 | `/e/:slug` | Live leaderboard + course for any event built in `/td` (event skin + palette) | Public |
 | `/c/:token` | Scorecard for one card (the QR code); takes the event's name + palette | Anyone holding the card's QR |
 | `/td` | TD Builder: event list → Setup (build menu) · Players (import, walk-ups, check-in) · Cards & QR · Sponsors | Signed-in TDs; each sees only their events |
@@ -21,6 +22,7 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 - **Event copy (schedule, register link, tagline):** `src/lib/jewel/content.ts`. House rules are empty until the TD supplies them; the section stays hidden meanwhile.
 - **Card labels (`7`, `7A`):** computed by `td_publish_round` in the database. The client never builds a label; unpublished cards show "Hole 7 · group 2".
 - **Build-menu rules (client mirror + messages):** `src/lib/td/setup.ts`.
+- **Card requests / ⭐☺ tags / keep-apart:** tables `card_requests` (+ `card_request_players`), `player_private`, `keep_apart`: TD-only (RLS `can_td`), never public. Seating logic: `src/lib/cards/pairing.ts` (pure); `cardIssues()` is the one source for warnings after generate and after hand moves. Glue: `src/lib/td/requests.ts`.
 - **Card Builder glue:** `src/lib/td/builder.ts` (moves, locks, publish payload, import preview, error messages). A hand move locks the card the player lands on, so it survives Regenerate.
 - **Card assignment:** `src/lib/cards/generate.ts` (pure, deterministic, seeded).
 - **Offline writes:** `src/lib/offline/queue.ts`. Every tap lands in IndexedDB before it touches the network.
@@ -39,6 +41,9 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 - Any TD can **duplicate** their own event (league week 2): course, format, divisions, card rules and TDs copy; players optionally (all un-checked-in); cards and scores never.
 - Publishing refuses a round beyond the event's rounds, and PM cards on a single-wave event. Switching 2→1 rounds or AM/PM→single is refused while those cards exist. Removing a hole a card starts on (or with scores), or a division with players, is refused.
 - With check-in on, cards are built from checked-in players only.
+- Only **approved** requests shape cards, and only Round 1 (Round 2 seeds by score). Requests chain (A+B, B+C → one group of up to 5). The generator never seats a keep-apart pair together (all rounds), and seats ⭐ players with their group or ☺ players first. It only swaps players between unlocked cards, so card sizes and the hole plan don't change.
+- Keep divisions together OFF = social mix: divisions are dealt round-robin so every card mixes them. A lone 1–2 player division rides with its neighbor instead of making a card of 1.
+- Duplicating an event carries ⭐/☺ tags and keep-apart pairs (matched by name); requests never carry.
 
 ## Setup
 ```bash
@@ -50,15 +55,16 @@ npm run build
 ```
 
 ### Database
-Apply `supabase/migrations/*.sql` in filename order. All eight are live on the project as of 2026-09-28. The latest, `20260928000300_jewel_xi_holes_from_guide.sql`, sets Jewel XI distances/OB/rules from YT & Beard's course guide (par 62, 6,499 ft) and refuses to run if any par differs.
+Apply `supabase/migrations/*.sql` in filename order. All nine are live on the project as of 2026-09-29 (newest: `20260929000000_card_requests.sql`). The latest, `20260928000300_jewel_xi_holes_from_guide.sql`, sets Jewel XI distances/OB/rules from YT & Beard's course guide (par 62, 6,499 ft) and refuses to run if any par differs.
 Local check against plain Postgres (no Supabase needed):
 ```bash
 psql -d jewel -f supabase/tests/00_supabase_stub.sql   # test only, never on Supabase
 psql -d jewel -f supabase/migrations/20260926000000_jewel_core.sql
 psql -d jewel -f supabase/migrations/20260926000100_jewel_seed.sql
-for f in supabase/migrations/2026092[78]*.sql; do psql -d jewel -f "$f"; done
+for f in supabase/migrations/2026092[789]*.sql; do psql -d jewel -f "$f"; done
 psql -d jewel -f supabase/tests/10_acceptance.sql       # 39 checks: scoring core
 psql -d jewel -f supabase/tests/20_multi_event.sql      # 43 checks: event-scoped TDs + build-menu rules
+psql -d jewel -f supabase/tests/30_card_requests.sql    # 23 checks: requests, private tags, keep-apart
 ```
 Make a user **super admin** (event TDs need nothing here: add their email in `/td` → Setup → TDs):
 ```sql
