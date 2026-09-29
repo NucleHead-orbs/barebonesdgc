@@ -251,3 +251,48 @@
 .td-status { min-height: 30px; font-size: 12px; padding: 2px 4px; }
 .td-inline-status { display: inline-flex; gap: 6px; align-items: center; margin-right: 12px; font-size: 13px; }
 @media (max-width: 760px) { .td-money { grid-template-columns: 1fr; } }
+
+/* ---------- event prep ---------- */
+.td-progress { height: 10px; border-radius: var(--r-pill); background: var(--raised); overflow: hidden; }
+.td-progress span { display: block; height: 100%; background: var(--under); transition: width .3s ease; }
+.td-tile { text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.td-tile:hover { border-color: var(--gold); }
+.td-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.td-task { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 10px 12px; border-radius: 8px; background: var(--surface); border: 2px solid var(--border); }
+.td-task input[type='checkbox'] { width: 22px; height: 22px; accent-color: var(--under); flex: none; }
+.td-task-main { flex: 1; min-width: 180px; display: flex; flex-direction: column; gap: 2px; }
+.td-task-main b { font-size: 15px; }
+.td-task-main span { font-size: 12px; opacity: .7; }
+.td-task-main .td-task-notes { opacity: .85; white-space: pre-wrap; }
+.td-task.is-done { opacity: .55; }
+.td-task.is-done .td-task-main b { text-decoration: line-through; }
+.td-task.is-overdue { border-color: var(--error); }
+.td-due { font-family: var(--font-label); font-size: 11px; letter-spacing: 1px; padding: 3px 8px; border-radius: var(--r-pill); border: 2px solid var(--border); white-space: nowrap; }
+.td-due.is-overdue { border-color: var(--error); background: var(--error); color: #fff; }
+.td-due.is-soon { border-color: var(--gold); color: var(--gold); }
+.td-due.is-done { border-color: var(--under); color: var(--under); }
+.td-task-edit { flex-basis: 100%; display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid var(--raised); }
+.td-task-edit textarea { padding: 8px 10px; font: inherit; resize: vertical; }
+.td-inline { display: inline-flex; align-items: center; gap: 6px; }
+.td-shirts td, .td-shirts th { text-align: center; }
+.td-shirts td:first-child, .td-shirts th:first-child { text-align: left; }
+.td-sizelist { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; }
+.td-sizerow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px; border-radius: 8px; background: var(--raised); }
+.td-sizerow span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.td-sizerow em { font-style: normal; opacity: .55; font-size: 11px; margin-left: 6px; }
+.td-designs { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.td-thumb { aspect-ratio: 4 / 3; background: var(--page); display: grid; place-items: center; overflow: hidden; }
+.td-thumb img { width: 100%; height: 100%; object-fit: contain; }
+.td-thumb span { font-family: var(--font-label); font-size: 14px; letter-spacing: 2px; opacity: .5; }
+.td-design.is-approved { border-color: var(--under); }
+.td-design.is-sent { border-color: var(--cyan); }
+.td-title-input { width: 100%; border: 0; background: transparent; color: #fff; font-family: var(--font-label); font-size: 14px; padding: 2px 0; }
+.td-title-input:focus { outline: 2px solid var(--cyan); border-radius: 4px; }
+.td-design-body { padding: 10px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.td-design-body .td-seg { align-self: stretch; }
+.td-versions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; width: 100%; font-size: 12px; }
+.td-versions li { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.td-versions span { flex: 1; min-width: 0; opacity: .7; overflow-wrap: anywhere; }
+.td-link.danger { color: var(--error); }
+@media (max-width: 600px) { .td-task { padding: 10px; } .td-sizelist { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .td-progress span { transition: none; } }

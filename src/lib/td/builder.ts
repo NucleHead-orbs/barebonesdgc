@@ -108,7 +108,7 @@ export function unassignedIds(playerIds: string[], cards: Card[]): string[] {
 }
 
 // ---------- import preview ----------
-export interface ExistingPlayer { id: string; name: string; div_code: string; rating: number | null; pdga: string | null; reg_order: number | null; checked_in?: boolean; finish_status?: 'dnf' | 'dq' | 'ns' | null }
+export interface ExistingPlayer { id: string; name: string; div_code: string; rating: number | null; pdga: string | null; reg_order: number | null; checked_in?: boolean; finish_status?: 'dnf' | 'dq' | 'ns' | null; shirt_size?: string | null }
 export interface ImportDiff { inserts: ImportRow[]; updates: Array<{ row: ImportRow; fields: string[] }>; unchanged: ImportRow[] }
 
 /**
@@ -129,6 +129,7 @@ export function importDiff(rows: ImportRow[], existing: ExistingPlayer[]): Impor
     if (r.rating != null && r.rating !== ex.rating) fields.push('rating');
     if (r.pdga != null && r.pdga !== ex.pdga) fields.push('PDGA#');
     if (r.reg_order !== ex.reg_order) fields.push('registration order');
+    if (r.shirt_size != null && r.shirt_size !== (ex.shirt_size ?? null)) fields.push('shirt size');
     if (fields.length) diff.updates.push({ row: r, fields });
     else diff.unchanged.push(r);
   }

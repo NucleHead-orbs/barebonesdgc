@@ -5,17 +5,18 @@ import { dateRange, eventTabs, formatSummary, type Tab } from '../../lib/td/setu
 import { useTheme } from '../../lib/theme';
 import CardBuilder from './CardBuilder';
 import PlayersPanel from './PlayersPanel';
+import PrepPanel from './PrepPanel';
 import RequestsPanel from './RequestsPanel';
 import WinnersPanel from './WinnersPanel';
 import SetupPanel from './SetupPanel';
 import SponsorsPanel from './SponsorsPanel';
 import { HelpButton } from './Help';
 
-const TAB_LABEL: Record<Tab, string> = { setup: 'SETUP', players: 'PLAYERS', requests: 'REQUESTS', cards: 'CARDS & QR', winners: 'WINNERS', sponsors: 'SPONSORS' };
+const TAB_LABEL: Record<Tab, string> = { setup: 'SETUP', prep: 'PREP', players: 'PLAYERS', requests: 'REQUESTS', cards: 'CARDS & QR', winners: 'WINNERS', sponsors: 'SPONSORS' };
 const POLL_MS = 20_000; // new player requests show up without a reload
 
 /**
- * One event: Setup (the build menu) · Players (import, walk-ups, check-in) · Cards & QR · Sponsors (if on).
+ * One event: Setup (the build menu) · Prep (tasks, shirts, designs) · Players (import, walk-ups, check-in) · Cards & QR · Sponsors (if on).
  * Setup and players are loaded here once and shared, so every tab sees the same truth.
  */
 export default function EventWorkspace({ eventId, email, admin, onSignOut, onBack }: {
@@ -94,6 +95,7 @@ export default function EventWorkspace({ eventId, email, admin, onSignOut, onBac
         ))}
       </nav>
       {current === 'setup' && <SetupPanel setup={setup} admin={admin} players={players} onSaved={loadSetup} onDeleted={onBack} />}
+      {current === 'prep' && <PrepPanel setup={setup} players={players} onPlayers={setPlayers} email={email} />}
       {current === 'players' && <PlayersPanel setup={setup} players={players} sponsors={sponsors} priv={priv}
         onPlayers={setPlayers} onReload={async () => { await Promise.all([loadPlayers(), loadRequests(), loadPrivate()]); }} onSponsors={setSponsors} onPrivate={loadPrivate} />}
       {current === 'requests' && <RequestsPanel setup={setup} players={players} requests={requests} onReload={loadRequests} />}

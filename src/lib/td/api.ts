@@ -9,6 +9,7 @@ import type { ImportRow } from '../import/dgs';
 import type { ExistingPlayer, PublishCard, PublishedCard } from './builder';
 import type { DivisionRow, EventConfig, HoleRow } from './setup';
 import type { DivisionConfig, FinishStatus, PrizeSettings } from '../prizes/payout';
+import { filePath, nextVersion, type DesignAsset, type DesignFile, type DesignStatus, type NewTask, type PrepTask } from '../prep/prep';
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
 const wrap = async <T>(fn: () => Promise<T>): Promise<Result<T>> => {
@@ -87,7 +88,7 @@ export const deleteEvent = (eventId: string) => wrap(async () => {
 
 // ---------- players ----------
 export const loadPlayers = (eventId: string) => wrap(async (): Promise<ExistingPlayer[]> =>
-  list(await supabase.from('players').select('id, name, div_code, rating, pdga, reg_order, checked_in, finish_status').eq('event_id', eventId).order('reg_order', { nullsFirst: false })));
+  list(await supabase.from('players').select('id, name, div_code, rating, pdga, reg_order, checked_in, finish_status, shirt_size').eq('event_id', eventId).order('reg_order', { nullsFirst: false })));
 
 export const setCheckedIn = (playerId: string, on: boolean) => wrap(async () => {
   must(await supabase.from('players').update({ checked_in: on }).eq('id', playerId));
@@ -291,3 +292,81 @@ export const postWinners = (eventId: string, payload: WinnersPayload) => wrap(as
   must(await supabase.from('winners_posts').upsert({ event_id: eventId, payload, posted_at }));
   return posted_at;
 });
+
+// ---------- event prep (TD-only: prep_tasks, shirt_order, design_assets/files, event-assets bucket) ----------
+const PREP_BUCKET = 'event-assets';
+const TASK_COLS = 'id, title, category, due_offset_days, assignee, notes, done_at, done_by, sort';
+const FILE_COLS = 'id, asset_id, version, path, file_name, mime, bytes, uploaded_by, uploaded_at';
+const ASSET_COLS = `id, category, title, status, notes, updated_at, design_files(${FILE_COLS})`;
+export interface ShirtOrder { extras: Record<string, number>; vendor: string | null; notes: string | null; ordered_at: string | null }
+export interface PrepData { tasks: PrepTask[]; order: ShirtOrder; assets: DesignAsset[]; creditLabel: string | null }
+type AssetRow = Omit<DesignAsset, 'files'> & { design_files: DesignFile[] };
+const toAsset = (a: AssetRow): DesignAsset => {
+  const { design_files, ...rest } = a;
+  return { ...rest, files: (design_files ?? []).slice().sort((x, y) => y.version - x.version) };
+};
+
+export const loadPrep = (eventId: string) => wrap(async (): Promise<PrepData> => {
+  const [tasks, order, assets, prize] = await Promise.all([
+    supabase.from('prep_tasks').select(TASK_COLS).eq('event_id', eventId).order('sort'),
+    supabase.from('shirt_order').select('extras, vendor, notes, ordered_at').eq('event_id', eventId).maybeSingle(),
+    supabase.from('design_assets').select(ASSET_COLS).eq('event_id', eventId).order('created_at'),
+    supabase.from('event_prize').select('credit_label').eq('event_id', eventId).maybeSingle(),
+  ]);
+  const o = must(order) as ShirtOrder | null;
+  return {
+    tasks: list(tasks) as PrepTask[],
+    order: o ?? { extras: {}, vendor: null, notes: null, ordered_at: null },
+    assets: (list(assets) as AssetRow[]).map(toAsset),
+    creditLabel: (must(prize) as { credit_label: string } | null)?.credit_label ?? null,
+  };
+});
+
+export const addTasks = (eventId: string, rows: NewTask[]) => wrap(async (): Promise<PrepTask[]> =>
+  list(await supabase.from('prep_tasks').insert(rows.map((r) => ({ ...r, event_id: eventId }))).select(TASK_COLS)) as PrepTask[]);
+export const updateTask = (id: string, patch: Partial<Omit<PrepTask, 'id'>>) => wrap(async (): Promise<PrepTask> =>
+  must(await supabase.from('prep_tasks').update(patch).eq('id', id).select(TASK_COLS).single()) as PrepTask);
+export const deleteTask = (id: string) => wrap(async () => { must(await supabase.from('prep_tasks').delete().eq('id', id)); });
+
+export const saveShirtOrder = (eventId: string, o: ShirtOrder) => wrap(async () => {
+  must(await supabase.from('shirt_order').upsert({ event_id: eventId, ...o, updated_at: new Date().toISOString() }));
+});
+export const setShirtSize = (playerId: string, size: string | null) => wrap(async () => {
+  must(await supabase.from('players').update({ shirt_size: size }).eq('id', playerId));
+});
+
+export const createAsset = (eventId: string, category: string, title: string) => wrap(async (): Promise<DesignAsset> =>
+  toAsset(must(await supabase.from('design_assets').insert({ event_id: eventId, category, title }).select(ASSET_COLS).single()) as AssetRow));
+export const updateAsset = (id: string, patch: { title?: string; status?: DesignStatus; notes?: string | null; category?: string }) =>
+  wrap(async (): Promise<DesignAsset> =>
+    toAsset(must(await supabase.from('design_assets').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select(ASSET_COLS).single()) as AssetRow));
+/** Files first, then the row, so nothing is left orphaned in storage. */
+export const deleteAsset = (a: DesignAsset) => wrap(async () => {
+  if (a.files.length) must(await supabase.storage.from(PREP_BUCKET).remove(a.files.map((f) => f.path)));
+  must(await supabase.from('design_assets').delete().eq('id', a.id));
+});
+/** Uploads the next version. If the row can't be written, the uploaded file is removed again. */
+export const uploadVersion = (eventId: string, a: DesignAsset, file: File, email: string) => wrap(async (): Promise<DesignFile> => {
+  const version = nextVersion(a.files);
+  const path = filePath(eventId, a.category, a.id, version, file.name);
+  must(await supabase.storage.from(PREP_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert: false }));
+  const row = await supabase.from('design_files').insert({ asset_id: a.id, version, path, file_name: file.name, mime: file.type || null, bytes: file.size, uploaded_by: email })
+    .select(FILE_COLS).single();
+  if (row.error) { await supabase.storage.from(PREP_BUCKET).remove([path]); throw row.error; }
+  await supabase.from('design_assets').update({ updated_at: new Date().toISOString() }).eq('id', a.id);
+  return row.data as DesignFile;
+});
+export const deleteFile = (f: DesignFile) => wrap(async () => {
+  must(await supabase.storage.from(PREP_BUCKET).remove([f.path]));
+  must(await supabase.from('design_files').delete().eq('id', f.id));
+});
+/** Signed links: thumbnails (1 h), downloads, and 7-day share links. */
+export const signedUrls = (paths: string[], seconds = 3600) => wrap(async (): Promise<Record<string, string>> => {
+  if (!paths.length) return {};
+  const r = must(await supabase.storage.from(PREP_BUCKET).createSignedUrls(paths, seconds)) as Array<{ path: string | null; signedUrl: string }>;
+  return Object.fromEntries(r.filter((x) => x.path && x.signedUrl).map((x) => [x.path!, x.signedUrl]));
+});
+export const signedUrl = (path: string, seconds: number, download?: string) => wrap(async (): Promise<string> =>
+  (must(await supabase.storage.from(PREP_BUCKET).createSignedUrl(path, seconds, download ? { download } : undefined)) as { signedUrl: string }).signedUrl);
+export const downloadFile = (path: string) => wrap(async (): Promise<Blob> =>
+  must(await supabase.storage.from(PREP_BUCKET).download(path)) as Blob);

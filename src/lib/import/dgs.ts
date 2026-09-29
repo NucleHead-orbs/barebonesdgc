@@ -3,13 +3,14 @@
  * Verified against the real Jewel X export (2025-11-01).
  *
  * Privacy rule: only Division, Name (or First+Last), PDGA#, Registration date,
- * the "Jewel hole sponsor" flag, and an optional Rating column are ever read.
+ * the "Jewel hole sponsor" flag, T-shirt size, and an optional Rating column are ever read.
  * Sponsor dollar amounts and Notes stay in the file. Email, phone, address, and
  * payment columns never leave the file. The players table is public-read.
  */
 import Papa from 'papaparse';
+import { normalizeSize } from '../prep/prep';
 
-export type Field = 'division' | 'name' | 'first' | 'last' | 'pdga' | 'regDate' | 'rating' | 'sponsor';
+export type Field = 'division' | 'name' | 'first' | 'last' | 'pdga' | 'regDate' | 'rating' | 'sponsor' | 'shirt';
 export type Mapping = Partial<Record<Field, string>>; // field -> exact header text
 
 export interface ImportRow {
@@ -18,6 +19,8 @@ export interface ImportRow {
   pdga: string | null;
   rating: number | null;
   reg_order: number;
+  /** Standard size when recognizable ("Large" -> "L"); odd values kept as typed so the TD sees them. */
+  shirt_size?: string | null;
 }
 
 export interface SkippedRow {
@@ -52,7 +55,17 @@ const RULES: Record<Field, { exact: string[]; loose: (h: string) => boolean }> =
   regDate: { exact: ['registration date mdt'], loose: (h) => h.startsWith('registration date') || h === 'registered' },
   rating: { exact: ['rating'], loose: (h) => h.includes('rating') },
   sponsor: { exact: ['jewel hole sponsor'], loose: (h) => h.includes('sponsor') && !h.includes('$') },
+  shirt: { exact: ['t-shirt size', 'shirt size'], loose: (h) => h.includes('shirt') && !h.includes('$') },
 };
+
+/** DGS size cell -> stored size. Numbers / yes-flags are not sizes. */
+export function shirtCell(v: unknown): string | null {
+  const raw = String(v ?? '').replace(/\s+/g, ' ').trim();
+  if (!raw) return null;
+  const n = normalizeSize(raw);
+  if (n) return n;
+  return /[a-z]/i.test(raw) && !/^(y|yes|no|n|x|true|false|n\/a|none)$/i.test(raw) ? raw.slice(0, 12) : null;
+}
 
 export function detectMapping(headers: string[]): Mapping {
   const norm = headers.map((h) => h.replace(/^\uFEFF/, '').trim().toLowerCase());
@@ -106,7 +119,8 @@ export function parseDgsCsv(text: string, divisionCodes: string[], override?: Ma
     const pdga = mapping.pdga ? clean(r[mapping.pdga]).replace(/\D/g, '') || null : null;
     const ratingRaw = mapping.rating ? parseInt(clean(r[mapping.rating]), 10) : NaN;
     kept.push({
-      row: { name, div_code: div, pdga, rating: Number.isFinite(ratingRaw) && ratingRaw > 0 ? ratingRaw : null },
+      row: { name, div_code: div, pdga, rating: Number.isFinite(ratingRaw) && ratingRaw > 0 ? ratingRaw : null,
+             shirt_size: mapping.shirt ? shirtCell(r[mapping.shirt]) : null },
       date: mapping.regDate ? clean(r[mapping.regDate]) : '',
       line,
     });

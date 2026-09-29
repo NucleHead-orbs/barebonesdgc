@@ -158,6 +158,14 @@ describe('import preview (mirrors td_import_players matching)', () => {
     expect(d.updates.map((u) => [u.row.name, u.fields]).sort()).toEqual([['Axl Anhyzer', ['name']], ['Lita Ford', ['name']]]);
   });
 
+  it('reports a new shirt size; a blank size never counts as a change', () => {
+    const db = asDb();
+    const withSize = rows.map((r) => (r.name === 'Lita Ford' ? { ...r, shirt_size: 'XL' } : r));
+    expect(importDiff(withSize, db).updates.map((u) => [u.row.name, u.fields])).toEqual([['Lita Ford', ['shirt size']]]);
+    const dbSized = db.map((p) => ({ ...p, shirt_size: 'M' }));
+    expect(importDiff(rows, dbSized).updates).toHaveLength(0);
+  });
+
   it('reports a division change', () => {
     const db = asDb(); const i = db.findIndex((p) => p.name === 'Jane Doe'); db[i] = { ...db[i], div_code: 'MA3' };
     expect(importDiff(rows, db).updates[0].fields).toEqual(['division']);

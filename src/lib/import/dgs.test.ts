@@ -26,8 +26,14 @@ describe('DGS import', () => {
 
   it('never carries email, phone, address or payment data', () => {
     const json = JSON.stringify(r.rows);
-    expect(json).not.toMatch(/example\.com|Large|15500|100/);
-    for (const row of r.rows) expect(Object.keys(row).sort()).toEqual(['div_code', 'name', 'pdga', 'rating', 'reg_order']);
+    expect(json).not.toMatch(/example\.com|15500|100/);
+    for (const row of r.rows) expect(Object.keys(row).sort()).toEqual(['div_code', 'name', 'pdga', 'rating', 'reg_order', 'shirt_size']);
+  });
+
+  it('reads the T-shirt size (never the T-shirt $ column), normalized', () => {
+    expect(r.mapping.shirt).toBe('T-shirt size');
+    expect(r.rows.find((x) => x.name === 'Axl Anhyzer')!.shirt_size).toBe('L');
+    expect(r.rows.find((x) => x.name === 'Doe, Jane')!.shirt_size).toBeNull();
   });
 
   it('skips the Totals footer, SPON and unknown divisions, with reasons', () => {
@@ -92,11 +98,23 @@ describe('DGS import: 2026 export layout + hole sponsors', () => {
 
   it('never carries sponsor dollars, notes, email or phone', () => {
     const json = JSON.stringify({ rows: r.rows, sponsors: r.sponsors });
-    expect(json).not.toMatch(/example\.com|private note|Full Hole|\$|XXL/);
+    expect(json).not.toMatch(/example\.com|private note|Full Hole|\$/);
     for (const s of r.sponsors) expect(Object.keys(s).sort()).toEqual(['line', 'name']);
+  });
+
+  it('2026 sizes: XXL -> 2XL, XL stays', () => {
+    expect(r.rows.map((x) => x.shirt_size)).toEqual(['XL', 'L', '2XL']);
   });
 
   it('no sponsor column means no sponsors (last year\'s export still works)', () => {
     expect(parseDgsCsv('Division,Name\nMA1,Solo Sam', DIVS).sponsors).toEqual([]);
+  });
+});
+
+describe('shirtCell', () => {
+  it('keeps odd sizes as typed, drops flags and numbers', async () => {
+    const { shirtCell } = await import('./dgs');
+    expect([shirtCell('Large'), shirtCell('6XL'), shirtCell('1'), shirtCell('yes'), shirtCell(''), shirtCell('Youth XL')])
+      .toEqual(['L', '6XL', null, null, null, 'Youth XL']);
   });
 });

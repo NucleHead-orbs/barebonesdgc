@@ -96,9 +96,9 @@ export function formatSummary(ev: Pick<EventConfig, 'rounds' | 'waves'>, holeCou
   ].join(' · ');
 }
 
-export type Tab = 'setup' | 'players' | 'requests' | 'cards' | 'winners' | 'sponsors';
+export type Tab = 'setup' | 'prep' | 'players' | 'requests' | 'cards' | 'winners' | 'sponsors';
 export const eventTabs = (ev: Pick<EventConfig, 'use_sponsors'>): Tab[] =>
-  ev.use_sponsors ? ['setup', 'players', 'requests', 'cards', 'winners', 'sponsors'] : ['setup', 'players', 'requests', 'cards', 'winners'];
+  ev.use_sponsors ? ['setup', 'prep', 'players', 'requests', 'cards', 'winners', 'sponsors'] : ['setup', 'prep', 'players', 'requests', 'cards', 'winners'];
 
 /** Who goes into card generation: with check-in on, only checked-in players. */
 export function cardPool<P extends { checked_in?: boolean }>(players: P[], useCheckin: boolean): P[] {

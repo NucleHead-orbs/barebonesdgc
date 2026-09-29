@@ -25,6 +25,17 @@ export const HELP: HelpSection[] = [
     ],
   },
   {
+    id: 'prep', title: 'Get ready for the event (PREP tab)',
+    steps: [
+      '**DASHBOARD** shows days to go, how much of the checklist is done, what\'s overdue, the shirt count and design approvals.',
+      '**TASKS:** tap **LOAD STARTER CHECKLIST** once. Due dates count back from your event date. Tick a box when it\'s done. **Edit** a task to change it, give it to another TD or add notes.',
+      '**SHIRTS:** sizes come in from the Disc Golf Scene import. Add **extras** per size, then **DOWNLOAD CSV** for the printer and tap **MARK ORDERED**. Anyone missing a size is listed under **Player sizes**. Pick it there.',
+      '**DESIGNS:** tap **ADD DESIGN** (shirt front, flyer, tee sign…), then **UPLOAD FILE**. A new upload becomes v2, v3… and old versions are kept. Set it to **Approved** or **Sent to print**.',
+      '**SHARE LINK** copies a link anyone can open for 7 days (good for a printer). **EXPORT ZIP** downloads the latest version of every design shown, sorted into folders.',
+      'Only this event\'s TDs can see any of it. **DUPLICATE** carries the checklist over (unticked, with dates moved to the new event). Designs, shirt orders and sizes start fresh.',
+    ],
+  },
+  {
     id: 'players', title: 'Check people in (PLAYERS tab)',
     steps: [
       'New player: type their name, pick a division, tap **ADD + CHECK IN**.',
@@ -87,7 +98,7 @@ export const HELP: HelpSection[] = [
     steps: [
       'Go back to your events, tap **DUPLICATE** on last week, pick the new date.',
       'Leave **"Copy the player list"** on. Everyone starts not checked in.',
-      'Course, divisions, card rules, private tags, keep-apart and payout tables carry over. Requests, cards, scores and results don\'t.',
+      'Course, divisions, card rules, private tags, keep-apart, payout tables and the prep checklist carry over. Requests, cards, scores, results, designs and shirt orders don\'t.',
     ],
   },
   {
