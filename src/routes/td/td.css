@@ -302,3 +302,28 @@
 .td-library .td-hint b { opacity: 1; }
 .td-layout-select { flex: 1 1 260px; min-width: 0; max-width: 100%; }
 .td-library-save { border-color: var(--violet); gap: 10px; }
+
+/* ---------- crew ---------- */
+.td-crewlist { display: flex; flex-direction: column; gap: 10px; }
+.td-crew { gap: 10px; border-color: var(--border); }
+.td-crew.is-off { opacity: .55; }
+.td-crew-name { font-family: var(--font-label); font-size: 18px; }
+.td-crew-qr { width: 180px; background: #fff; padding: 8px; border-radius: 8px; }
+.td-crew-qr svg { display: block; width: 100%; height: auto; }
+.td-news { gap: 8px; border-color: var(--border); }
+.td-news.is-pinned { border-color: var(--gold); }
+.td-news.is-read { opacity: .75; }
+.td-news-body { margin: 0; white-space: pre-wrap; font-size: 15px; line-height: 1.45; }
+.td-update { margin: 0; padding: 6px 10px; border-left: 3px solid var(--cyan); background: var(--raised); border-radius: 0 6px 6px 0; font-size: 14px; white-space: pre-wrap; }
+.td-task-dot { width: 22px; text-align: center; flex: none; opacity: .6; }
+.td-table tr.is-void td, .td-checklist li.is-void span { text-decoration: line-through; opacity: .5; }
+.td-crewapp { max-width: 760px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+.td-crewapp .td-help-sec summary { cursor: pointer; font-size: 16px; padding: 6px 0; }
+.td-checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.td-checklist li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 8px; background: var(--surface); border: 2px solid var(--border); }
+.td-checklist li.is-in { border-color: var(--under); }
+.td-crew-mini { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.td-contacts { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.td-contact.is-lead { border-color: var(--gold); }
+.td-contact.is-yes, .td-contact.is-paid { border-color: var(--under); }
+.td-contact.is-no { opacity: .6; }

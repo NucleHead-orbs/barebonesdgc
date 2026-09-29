@@ -9,6 +9,7 @@ import type { ImportRow } from '../import/dgs';
 import type { ExistingPlayer, PublishCard, PublishedCard } from './builder';
 import type { DivisionRow, EventConfig, HoleRow } from './setup';
 import type { DivisionConfig, FinishStatus, PrizeSettings } from '../prizes/payout';
+import type { Announcement, Contact, CrewMember, RaffleSale, Role } from '../crew/crew';
 import { summarize, toLayoutPayload, type LayoutHole, type LibCourse, type LibLayout } from '../courses/courses';
 import { filePath, nextVersion, type DesignAsset, type DesignFile, type DesignStatus, type NewTask, type PrepTask } from '../prep/prep';
 
@@ -186,7 +187,7 @@ export const uploadLogo = (eventId: string, sponsorId: string, file: File) => wr
 // ---------- card requests, private tags, keep-apart (TD-only tables) ----------
 export type RequestStatus = 'new' | 'approved' | 'declined';
 export interface CardRequest {
-  id: string; status: RequestStatus; source: 'player' | 'td'; note: string | null; created_at: string;
+  id: string; status: RequestStatus; source: 'player' | 'td' | 'crew'; note: string | null; created_at: string;
   requester: string | null; players: string[]; // requester first
 }
 
@@ -296,7 +297,7 @@ export const postWinners = (eventId: string, payload: WinnersPayload) => wrap(as
 
 // ---------- event prep (TD-only: prep_tasks, shirt_order, design_assets/files, event-assets bucket) ----------
 const PREP_BUCKET = 'event-assets';
-const TASK_COLS = 'id, title, category, due_offset_days, assignee, notes, done_at, done_by, sort';
+const TASK_COLS = 'id, title, category, due_offset_days, assignee, notes, done_at, done_by, sort, crew_id';
 const FILE_COLS = 'id, asset_id, version, path, file_name, mime, bytes, uploaded_by, uploaded_at';
 const ASSET_COLS = `id, category, title, status, notes, updated_at, design_files(${FILE_COLS})`;
 export interface ShirtOrder { extras: Record<string, number>; vendor: string | null; notes: string | null; ordered_at: string | null }
@@ -399,3 +400,69 @@ export const applyLayout = (eventId: string, layoutId: string) => wrap(async ():
 export const verifyLayout = (layoutId: string, on: boolean) => wrap(async () => {
   must(await supabase.rpc('td_verify_layout', { p_layout_id: layoutId, p_on: on }));
 });
+
+// ---------- crew (TD side; crew themselves use lib/crew/api.ts with their link) ----------
+const CREW_COLS = 'id, name, roles, token, last_seen_at, revoked_at, created_at';
+export interface CrewData { crew: CrewMember[]; announcements: Announcement[]; reads: Array<{ announcement_id: string; crew_id: string; read_at: string }> }
+export const loadCrew = (eventId: string) => wrap(async (): Promise<CrewData> => {
+  const [crew, anns] = await Promise.all([
+    supabase.from('crew').select(CREW_COLS).eq('event_id', eventId).order('name'),
+    supabase.from('announcements').select('id, title, body, roles, pinned, created_at, updated_at').eq('event_id', eventId)
+      .order('pinned', { ascending: false }).order('created_at', { ascending: false }),
+  ]);
+  const a = list(anns) as Announcement[];
+  const reads = a.length
+    ? list(await supabase.from('announcement_reads').select('announcement_id, crew_id, read_at').in('announcement_id', a.map((x) => x.id))) as CrewData['reads']
+    : [];
+  return { crew: list(crew) as CrewMember[], announcements: a, reads };
+});
+export const addCrew = (eventId: string, name: string, roles: Role[]) => wrap(async (): Promise<CrewMember> =>
+  must(await supabase.from('crew').insert({ event_id: eventId, name, roles }).select(CREW_COLS).single()) as CrewMember);
+export const updateCrew = (id: string, patch: { name?: string; roles?: Role[]; revoked_at?: string | null }) => wrap(async (): Promise<CrewMember> =>
+  must(await supabase.from('crew').update(patch).eq('id', id).select(CREW_COLS).single()) as CrewMember);
+export const removeCrew = (id: string) => wrap(async () => { must(await supabase.from('crew').delete().eq('id', id)); });
+export const newCrewLink = (id: string) => wrap(async (): Promise<string> =>
+  must(await supabase.rpc('td_new_crew_link', { p_crew: id })) as string);
+export const postAnnouncement = (eventId: string, a: { title: string; body: string; roles: Role[]; pinned: boolean }, email: string) =>
+  wrap(async (): Promise<Announcement> =>
+    must(await supabase.from('announcements').insert({ event_id: eventId, ...a, created_by: email })
+      .select('id, title, body, roles, pinned, created_at, updated_at').single()) as Announcement);
+export const updateAnnouncement = (id: string, a: { title: string; body: string; roles: Role[]; pinned: boolean }) =>
+  wrap(async (): Promise<Announcement> =>
+    must(await supabase.from('announcements').update({ ...a, updated_at: new Date().toISOString() }).eq('id', id)
+      .select('id, title, body, roles, pinned, created_at, updated_at').single()) as Announcement);
+export const deleteAnnouncement = (id: string) => wrap(async () => { must(await supabase.from('announcements').delete().eq('id', id)); });
+
+export const loadRaffle = (eventId: string) => wrap(async (): Promise<RaffleSale[]> =>
+  list(await supabase.from('raffle_sales').select('id, buyer, tickets, amount, method, created_at, voided_at, logged_by')
+    .eq('event_id', eventId).order('created_at', { ascending: false })) as RaffleSale[]);
+export const tdRaffleSale = (eventId: string, s: { buyer: string; tickets: number; amount: number; method: RaffleSale['method'] }, by: string) =>
+  wrap(async () => { must(await supabase.from('raffle_sales').insert({ event_id: eventId, logged_by: by, buyer: s.buyer.trim() || null, tickets: s.tickets, amount: s.amount, method: s.method })); });
+export const voidSale = (id: string, on: boolean) => wrap(async () => {
+  must(await supabase.from('raffle_sales').update({ voided_at: on ? new Date().toISOString() : null }).eq('id', id));
+});
+/** The TD confirms the raffle total into the Winners added total. */
+export const setAddedTotal = (eventId: string, total: number) => wrap(async () => {
+  must(await supabase.from('event_prize').upsert({ event_id: eventId, added_total: total, updated_at: new Date().toISOString() }, { onConflict: 'event_id' }));
+});
+
+const CONTACT_COLS = 'id, kind, name, org, phone, email, status, amount, notes, crew_id, sponsor_id, created_by, updated_at';
+export const loadContacts = (eventId: string) => wrap(async (): Promise<Contact[]> =>
+  list(await supabase.from('contacts').select(CONTACT_COLS).eq('event_id', eventId).order('updated_at', { ascending: false })) as Contact[]);
+export const saveContact = (eventId: string, c: Partial<Contact> & { id?: string }, email: string) => wrap(async (): Promise<Contact> => {
+  const row = { kind: c.kind, name: c.name, org: c.org || null, phone: c.phone || null, email: c.email || null, status: c.status,
+    amount: c.amount ?? null, notes: c.notes || null, crew_id: c.crew_id || null, updated_at: new Date().toISOString() };
+  return (c.id
+    ? must(await supabase.from('contacts').update(row).eq('id', c.id).select(CONTACT_COLS).single())
+    : must(await supabase.from('contacts').insert({ ...row, event_id: eventId, created_by: email }).select(CONTACT_COLS).single())) as Contact;
+});
+export const deleteContact = (id: string) => wrap(async () => { must(await supabase.from('contacts').delete().eq('id', id)); });
+export const promoteContact = (id: string) => wrap(async (): Promise<string> =>
+  must(await supabase.rpc('td_promote_contact', { p_contact: id })) as string);
+
+export interface TaskNote { id: string; task_id: string; author: string; body: string; created_at: string }
+export const loadTaskNotes = (eventId: string) => wrap(async (): Promise<TaskNote[]> =>
+  list(await supabase.from('prep_task_notes').select('id, task_id, author, body, created_at').eq('event_id', eventId).order('created_at')) as TaskNote[]);
+export const addTaskNote = (eventId: string, taskId: string, author: string, body: string) => wrap(async (): Promise<TaskNote> =>
+  must(await supabase.from('prep_task_notes').insert({ event_id: eventId, task_id: taskId, author, body: body.trim() })
+    .select('id, task_id, author, body, created_at').single()) as TaskNote);

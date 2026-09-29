@@ -47,6 +47,7 @@ export const taskCategoryLabel = (c: string) => TASK_CATEGORY_LABEL[c as TaskCat
 export interface PrepTask {
   id: string; title: string; category: string; due_offset_days: number | null;
   assignee: string | null; notes: string | null; done_at: string | null; done_by: string | null; sort: number;
+  crew_id?: string | null; // assigned crew member (crew view)
 }
 export type NewTask = Pick<PrepTask, 'title' | 'category' | 'due_offset_days'> & { sort: number };
 

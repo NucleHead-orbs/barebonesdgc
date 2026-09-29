@@ -31,9 +31,22 @@ export const HELP: HelpSection[] = [
       '**DASHBOARD** shows days to go, how much of the checklist is done, what\'s overdue, the shirt count and design approvals.',
       '**TASKS:** tap **LOAD STARTER CHECKLIST** once. Due dates count back from your event date. Tick a box when it\'s done. **Edit** a task to change it, give it to another TD or add notes.',
       '**SHIRTS:** sizes come in from the Disc Golf Scene import. Add **extras** per size, then **DOWNLOAD CSV** for the printer and tap **MARK ORDERED**. Anyone missing a size is listed under **Player sizes**. Pick it there.',
+      '**CONTACTS:** vendors and sponsor prospects with status (to ask → asked → yes → paid). Crew leads show as **New lead**: approve or say no. A sponsor at yes can go straight into the Sponsors list.',
       '**DESIGNS:** tap **ADD DESIGN** (shirt front, flyer, tee sign…), then **UPLOAD FILE**. A new upload becomes v2, v3… and old versions are kept. Set it to **Approved** or **Sent to print**.',
       '**SHARE LINK** copies a link anyone can open for 7 days (good for a printer). **EXPORT ZIP** downloads the latest version of every design shown, sorted into folders.',
       'Only this event\'s TDs can see any of it. **DUPLICATE** carries the checklist over (unticked, with dates moved to the new event). Designs, shirt orders and sizes start fresh.',
+    ],
+  },
+  {
+    id: 'crew', title: 'Your crew (CREW tab)',
+    steps: [
+      '**ROSTER:** add each helper by name and tap their jobs (Check-in, Raffle, Card requests, Contacts & sponsors). Everyone gets announcements and tasks.',
+      'Tap **COPY LINK** or **TEXT IT** and send each person their own link. No password. **Cut off link** stops it instantly, and **New link** replaces a lost one.',
+      '**ANNOUNCEMENTS:** post directives to everyone or just some jobs. Each helper taps **Got it**, and you see who hasn\'t yet ("Waiting on…").',
+      'Assign prep tasks to crew in **PREP → TASKS → Edit**. They tick them off and post updates you both see.',
+      '**RAFFLE:** crew log sales on their phones. The total shows here and in **WINNERS**, where you tap **USE** to put it in the prize pool.',
+      'Crew card requests land in **REQUESTS** as new. Crew sponsor and vendor leads land in **PREP → CONTACTS** for you to approve.',
+      'Send links a week out so everyone reads their briefing before the event.',
     ],
   },
   {

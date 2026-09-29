@@ -54,7 +54,7 @@ export default function RequestsPanel({ setup, players, requests, onReload }: {
       <div key={r.id} className={`td-req td-req-${r.status}`}>
         <div className="td-req-main">
           <b>{requestLine(r.players, nameOf)}</b>
-          <span className="td-hint">{r.source === 'td' ? 'added by TD' : 'from the QR'} · {ago(r.created_at, now)}</span>
+          <span className="td-hint">{r.source === 'td' ? 'added by TD' : r.source === 'crew' ? 'from the crew' : 'from the QR'} · {ago(r.created_at, now)}</span>
           {r.note && <span className="td-req-note">“{r.note}”</span>}
           {missing.length > 0 && <span className="td-req-warn">Not checked in yet: {missing.join(', ')}</span>}
         </div>

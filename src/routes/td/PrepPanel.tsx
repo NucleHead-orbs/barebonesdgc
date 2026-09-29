@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as api from '../../lib/td/api';
 import { rpcError, type ExistingPlayer } from '../../lib/td/builder';
+import type { CrewMember } from '../../lib/crew/crew';
+import ContactsPanel from './ContactsPanel';
 import {
   DESIGN_CATEGORIES, MAX_FILE_BYTES, SIZES, STATUS_LABEL, TASK_CATEGORIES, designCategoryLabel, dueDate, fmtBytes, fmtDay,
   isImage, latest, localToday, normalizeSize, offsetLabel, orderCsv, rollup, shirtTally, sortTasks, starterToAdd,
   taskCategoryLabel, taskState, zipEntries, type DesignAsset, type DesignStatus, type PrepTask, type TaskState,
 } from '../../lib/prep/prep';
 
-type View = 'dash' | 'tasks' | 'shirts' | 'designs';
-const VIEWS: Array<[View, string]> = [['dash', 'DASHBOARD'], ['tasks', 'TASKS'], ['shirts', 'SHIRTS'], ['designs', 'DESIGNS']];
+type View = 'dash' | 'tasks' | 'shirts' | 'designs' | 'contacts';
+const VIEWS: Array<[View, string]> = [['dash', 'DASHBOARD'], ['tasks', 'TASKS'], ['shirts', 'SHIRTS'], ['designs', 'DESIGNS'], ['contacts', 'CONTACTS']];
 const STATE_LABEL: Record<TaskState, string> = { done: 'DONE', overdue: 'OVERDUE', soon: 'THIS WEEK', later: 'LATER', nodate: 'NO DATE' };
 const SHARE_DAYS = 7;
 const CORE_SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
@@ -34,11 +36,15 @@ export default function PrepPanel({ setup, players, onPlayers, email }: {
   const [err, setErr] = useState('');
   const [toast, setToast] = useState('');
   const today = localToday();
+  const [crew, setCrew] = useState<CrewMember[]>([]);
+  const [notes, setNotes] = useState<api.TaskNote[]>([]);
 
   const load = useCallback(async () => {
-    const r = await api.loadPrep(ev.id);
+    const [r, c, n] = await Promise.all([api.loadPrep(ev.id), api.loadCrew(ev.id), api.loadTaskNotes(ev.id)]);
     if (r.error || !r.data) return setErr(rpcError(r.error).message);
     setData(r.data);
+    if (c.data) setCrew(c.data.crew.filter((x) => !x.revoked_at));
+    if (n.data) setNotes(n.data);
   }, [ev.id]);
   useEffect(() => { void (async () => { await load(); })(); }, [load]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(''), 4000); return () => clearTimeout(t); }, [toast]);
@@ -50,7 +56,13 @@ export default function PrepPanel({ setup, players, onPlayers, email }: {
   const fail = (what: string) => (e: unknown) => setErr(`${what}: ${rpcError(e).message}`);
   const patchTasks = (fn: (t: PrepTask[]) => PrepTask[]) => setData((d) => (d ? { ...d, tasks: fn(d.tasks) } : d));
   const patchAssets = (fn: (a: DesignAsset[]) => DesignAsset[]) => setData((d) => (d ? { ...d, assets: fn(d.assets) } : d));
-  const ctx: Ctx = { ev, data, setData, patchTasks, patchAssets, fail, setToast, email, today, tds: setup.tds };
+  const ctx: Ctx = { ev, data, setData, patchTasks, patchAssets, fail, setToast, email, today, tds: setup.tds, crew, notes,
+    addNote: async (taskId: string, body: string) => {
+      const r = await api.addTaskNote(ev.id, taskId, email, body);
+      if (r.error || !r.data) { fail('Update')(r.error); return false; }
+      setNotes((ns) => [...ns, r.data!]);
+      return true;
+    } };
 
   return (
     <main className="td-main">
@@ -66,6 +78,7 @@ export default function PrepPanel({ setup, players, onPlayers, email }: {
       {view === 'tasks' && <Tasks ctx={ctx} />}
       {view === 'shirts' && <Shirts ctx={ctx} tally={tally} players={players} onPlayers={onPlayers} />}
       {view === 'designs' && <Designs ctx={ctx} />}
+      {view === 'contacts' && <ContactsPanel eventId={ev.id} email={email} useSponsors={ev.use_sponsors} />}
     </main>
   );
 }
@@ -74,6 +87,7 @@ interface Ctx {
   ev: api.EventSetup['event']; data: api.PrepData; setData: (d: api.PrepData) => void;
   patchTasks: (fn: (t: PrepTask[]) => PrepTask[]) => void; patchAssets: (fn: (a: DesignAsset[]) => DesignAsset[]) => void;
   fail: (what: string) => (e: unknown) => void; setToast: (s: string) => void; email: string; today: string; tds: string[];
+  crew: CrewMember[]; notes: api.TaskNote[]; addNote: (taskId: string, body: string) => Promise<boolean>;
 }
 
 const Stat = ({ v, k, color = '#fff' }: { v: string | number; k: string; color?: string }) => (
@@ -216,7 +230,8 @@ function Tasks({ ctx }: { ctx: Ctx }) {
                 <b>{t.title}</b>
                 <span>
                   {taskCategoryLabel(t.category)} · {due ? `${fmtDay(due)} (${offsetLabel(t.due_offset_days)})` : 'no date'}
-                  {t.assignee ? ` · ${t.assignee}` : ''}{t.done_at ? ` · done${t.done_by ? ` by ${t.done_by}` : ''}` : ''}
+                  {t.crew_id ? ` · ${ctx.crew.find((c) => c.id === t.crew_id)?.name ?? 'crew'}` : t.assignee ? ` · ${t.assignee}` : ''}{t.done_at ? ` · done${t.done_by ? ` by ${t.done_by}` : ''}` : ''}
+                  {(() => { const k = ctx.notes.filter((n) => n.task_id === t.id).length; return k ? ` · ${k} update${k === 1 ? '' : 's'}` : ''; })()}
                 </span>
                 {t.notes && <span className="td-task-notes">{t.notes}</span>}
               </div>
@@ -235,13 +250,17 @@ function TaskEditor({ ctx, t, onDone }: { ctx: Ctx; t: PrepTask; onDone: () => v
   const [title, setTitle] = useState(t.title);
   const [cat, setCat] = useState(t.category);
   const [days, setDays] = useState(t.due_offset_days == null ? '' : String(-t.due_offset_days));
-  const [who, setWho] = useState(t.assignee ?? '');
+  const [who, setWho] = useState(t.crew_id ? `crew:${t.crew_id}` : t.assignee ?? '');
   const [notes, setNotes] = useState(t.notes ?? '');
+  const [update, setUpdate] = useState('');
+  const thread = ctx.notes.filter((n) => n.task_id === t.id);
   const people = Array.from(new Set([ctx.email.toLowerCase(), ...ctx.tds.map((e) => e.toLowerCase()), ...(t.assignee ? [t.assignee] : [])]));
   const save = async () => {
     const d = days.trim() === '' ? null : Math.round(Number(days));
     if (!title.trim() || (d != null && !Number.isFinite(d))) return;
-    const patch = { title: title.trim().slice(0, 140), category: cat, due_offset_days: d == null ? null : -d, assignee: who || null, notes: notes.trim() || null };
+    const toCrew = who.startsWith('crew:');
+    const patch = { title: title.trim().slice(0, 140), category: cat, due_offset_days: d == null ? null : -d,
+      assignee: toCrew ? null : who || null, crew_id: toCrew ? who.slice(5) : null, notes: notes.trim() || null };
     const r = await api.updateTask(t.id, patch);
     if (r.error || !r.data) return ctx.fail(t.title)(r.error);
     ctx.patchTasks((ts) => ts.map((x) => (x.id === t.id ? r.data! : x)));
@@ -266,10 +285,16 @@ function TaskEditor({ ctx, t, onDone }: { ctx: Ctx; t: PrepTask; onDone: () => v
         </label>
         <select className="td-select" aria-label="Assigned to" value={who} onChange={(e) => setWho(e.target.value)}>
           <option value="">Nobody</option>
-          {people.map((p) => <option key={p} value={p}>{p}</option>)}
+          <optgroup label="TDs">{people.map((p) => <option key={p} value={p}>{p}</option>)}</optgroup>
+          {ctx.crew.length > 0 && <optgroup label="Crew">{ctx.crew.map((c) => <option key={c.id} value={`crew:${c.id}`}>{c.name}</option>)}</optgroup>}
         </select>
       </div>
       <textarea className="td-input" aria-label="Notes" rows={2} maxLength={1000} placeholder="Notes (vendor, phone, links…)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+      {thread.map((n) => <p key={n.id} className="td-update"><b>{n.author}</b> <span className="td-hint">{new Date(n.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span><br />{n.body}</p>)}
+      <div className="td-row">
+        <input className="td-input" style={{ flex: 1 }} aria-label="Post an update" placeholder="Post an update (crew see it)…" maxLength={1000} value={update} onChange={(e) => setUpdate(e.target.value)} />
+        <button className="td-btn cyan" disabled={!update.trim()} onClick={async () => { if (await ctx.addNote(t.id, update)) setUpdate(''); }}>POST</button>
+      </div>
       <div className="td-row">
         <button className="td-btn cta" onClick={() => void save()}>SAVE</button>
         <button className="td-btn quiet" onClick={onDone}>CANCEL</button>

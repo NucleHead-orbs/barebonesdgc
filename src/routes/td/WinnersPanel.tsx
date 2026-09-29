@@ -6,6 +6,7 @@ import { toPar } from '../../lib/jewel/leaderboard';
 import { rpcError, type ExistingPlayer } from '../../lib/td/builder';
 import { defaultPcts, money, type DivisionConfig, type FinishStatus, type Mode, type PrizeSettings } from '../../lib/prizes/payout';
 import { computeWinners, toPayload, type DivisionResult } from '../../lib/prizes/winners';
+import { raffleTotals } from '../../lib/crew/crew';
 
 const REFRESH_MS = 30_000;
 const STATUS: Array<[FinishStatus, string]> = [['dnf', 'DNF'], ['dq', 'DQ'], ['ns', 'NO-SHOW']];
@@ -27,6 +28,7 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
   const [toast, setToast] = useState('');
   const [busy, setBusy] = useState(false);
   const [addedText, setAddedText] = useState('');
+  const [raffle, setRaffle] = useState<number | null>(null);
 
   const refreshBoard = useCallback(async () => {
     try { setBoard(await loadBoard(ev.id)); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
@@ -38,6 +40,8 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
       if (r.error || !r.data) return setErr(rpcError(r.error).message);
       setPrize(r.data);
       setAddedText(String(r.data.settings.addedTotal || ''));
+      const rs = await api.loadRaffle(ev.id);
+      if (rs.data && rs.data.length) setRaffle(raffleTotals(rs.data).total);
       await refreshBoard();
     })();
     const t = window.setInterval(() => { if (document.visibilityState === 'visible') void refreshBoard(); }, REFRESH_MS);
@@ -120,6 +124,11 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
             onChange={(e) => setAddedText(e.target.value.replace(/[^0-9.]/g, ''))} onBlur={commitAdded}
             onKeyDown={(e) => { if (e.key === 'Enter') { commitAdded(); (e.target as HTMLInputElement).blur(); } }} />
           <span className="td-hint">Spread across divisions by field size (except fixed ones). Update it as raffle sales come in.</span>
+          {raffle != null && raffle !== prize.settings.addedTotal && (
+            <span className="td-hint">Raffle sales logged by the crew: <b>${raffle.toLocaleString()}</b>{' '}
+              <button className="td-btn quiet" onClick={() => { setAddedText(String(raffle)); void saveSettings({ ...prize.settings, addedTotal: raffle }); }}>USE ${raffle.toLocaleString()}</button>
+            </span>
+          )}
         </label>
         <label className="td-field">
           <span className="td-label">AM PRIZE NAME</span>

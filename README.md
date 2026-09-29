@@ -11,6 +11,7 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 | `/jewel` | Leaderboard, course guide, schedule, sponsors (tabs: `#leaders` `#score` `#course` `#info`) | Public |
 | `/e/:slug/winners` | Winners Circle: exactly what the TD last posted (places + prizes) | Public |
 | `/e/:slug/request` | Table QR: a player picks themselves + who they want on their card → TD's Requests tab | Public (server-validated, max 3 pending) |
+| `/crew/:token` | One crew member's page: briefing + Got it, tasks, and the tools their jobs unlock (check-in, raffle, card requests, contacts) | Private link |
 | `/e/:slug` | Live leaderboard + course for any event built in `/td` (event skin + palette) | Public |
 | `/c/:token` | Scorecard for one card (the QR code); takes the event's name + palette | Anyone holding the card's QR |
 | `/td` | TD Builder: event list → Setup (build menu) · Players (import, walk-ups, check-in) · Cards & QR · Sponsors | Signed-in TDs; each sees only their events |
@@ -24,6 +25,7 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 - **Card labels (`7`, `7A`):** computed by `td_publish_round` in the database. The client never builds a label; unpublished cards show "Hole 7 · group 2".
 - **TD instructions:** `src/lib/td/help.ts` is the ONE source; the HELP button in /td renders it. Change a screen → change its help section in the same commit.
 - **Winners Circle:** inputs in `event_prize` (added/raffle total, credit rounding, am prize name) and `division_payouts` (cash/credit, entry, payback %, fixed added, paid places, % table), `players.finish_status` (DNF/DQ/NS) and `playoffs`. Both prize tables are TD-only. All math is pure in `src/lib/prizes/payout.ts` + `winners.ts`. The public page reads only `winners_posts` (the snapshot the TD posts).
+- **Crew view:** `crew` (name, roles checkin/raffle/requests/contacts, private link token, revoked), `announcements` + `announcement_reads`, `prep_tasks.crew_id` + `prep_task_notes`, `raffle_sales`, `contacts`, `card_requests.source='crew'`. Crew open `/crew/<token>` with no login; every crew action is a token RPC (`crew_*`) checked for link, role and event. Role briefings: `src/lib/crew/crew.ts` (`ROLE_GUIDE`, the one source).
 - **Course library:** `courses` → `course_layouts` (source note, verified by super admin) → `course_holes` (par, feet, OB, rules). Public read; any TD saves through `td_save_layout`; `td_apply_layout` copies a layout into an event and sets `events.course_layout_id`. Pure helpers: `src/lib/courses/courses.ts`. Seeded 2026-09-29: the 10 courses Bare Bones plays; Emerald Park A/B/long-tee layouts from the club's tee sign artwork; Freedom Park's verified Jewel XI 2026 layout. Hole data never comes from UDisc (their terms forbid scraping/storing).
 - **Event prep (PREP tab):** `prep_tasks` (checklist; due = event start + `due_offset_days`), `shirt_order` (extras per size, vendor, ordered), `players.shirt_size`, `design_assets` + `design_files` (every version), files in the private `event-assets` bucket at `<event_id>/<category>/<asset_id>/v<n>-<name>`. All TD-only (RLS `can_td`, storage by folder). Pure logic: `src/lib/prep/prep.ts` (starter checklist, dates, size normalizer, tally/CSV, zip layout, dashboard rollup).
 - **Build-menu rules (client mirror + messages):** `src/lib/td/setup.ts`.
@@ -49,6 +51,7 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 - Only **approved** requests shape cards, and only Round 1 (Round 2 seeds by score). Requests chain (A+B, B+C → one group of up to 5). The generator never seats a keep-apart pair together (all rounds), and seats ⭐ players with their group or ☺ players first. It only swaps players between unlocked cards, so card sizes and the hole plan don't change.
 - Keep divisions together OFF = social mix: divisions are dealt round-robin so every card mixes them. A lone 1–2 player division rides with its neighbor instead of making a card of 1.
 - Duplicating an event carries ⭐/☺ tags and keep-apart pairs (matched by name); requests never carry.
+- **Crew:** a link only reaches its own event and dies when revoked, reissued or the event is archived. Crew can tick only tasks assigned to them, void only their own sales, update only contacts they own, and never approve their own lead. Raffle sales are voided, never deleted; the total reaches payouts only when the TD taps USE in Winners. Duplicating carries the roster with new links, never announcements, sales or notes.
 - **Courses:** applying a layout copies it (same card/score safety checks as editing holes); library edits never touch events. A non-admin save clears verification; only a super admin verifies. Save to library reads the event's saved holes (with mandos), never unsaved edits.
 - **Prep:** starter checklist is added once (titles already there are skipped). Shirt sizes are normalized only for counting ("Large"→L, "XXL"→2XL); an unrecognized size is shown to the TD, never silently counted. Uploads never overwrite: each is a new version; deleting a design removes its files first. Share links are signed URLs good for 7 days. Duplicating carries the checklist (unticked, dates stay relative), never designs, shirt orders or sizes.
 - **Payouts:** pool = players × entry × payback % + added share (added spread by field size over divisions without a fixed amount). Only players who finished every round (official = signed/paper; live = all holes) and aren't DNF/DQ/NS place. PDGA ties: tied players split the combined % of the spots they cover, including across the cash line; a tie for 1st uses the recorded playoff winner. Cash rounds down to $1, credit to $1/$5; the leftover is always shown. Default tables: pros ≈40% paid, ams ≈1/3, weights (n−i+1)^1.5. The public page changes only when the TD taps POST RESULTS. Duplicating carries fees/tables/rounding/label, never the added total, posts or statuses.
@@ -63,7 +66,7 @@ npm run build
 ```
 
 ### Database
-Apply `supabase/migrations/*.sql` in filename order. All twelve are live on the project as of 2026-09-29 (newest: `20261001000000_courses.sql`). The latest, `20260928000300_jewel_xi_holes_from_guide.sql`, sets Jewel XI distances/OB/rules from YT & Beard's course guide (par 62, 6,499 ft) and refuses to run if any par differs.
+Apply `supabase/migrations/*.sql` in filename order. All thirteen are live on the project as of 2026-09-29 (newest: `20261002000000_crew.sql`). The latest, `20260928000300_jewel_xi_holes_from_guide.sql`, sets Jewel XI distances/OB/rules from YT & Beard's course guide (par 62, 6,499 ft) and refuses to run if any par differs.
 Local check against plain Postgres (no Supabase needed):
 ```bash
 psql -d jewel -f supabase/tests/00_supabase_stub.sql   # test only, never on Supabase
@@ -76,6 +79,7 @@ psql -d jewel -f supabase/tests/30_card_requests.sql    # 23 checks: requests, p
 psql -d jewel -f supabase/tests/40_winners.sql          # 19 checks: prize privacy, posting, week-2 carry
 psql -d jewel -f supabase/tests/50_event_prep.sql       # 16 checks: prep privacy, storage folders, shirt import, next-year carry
 psql -d jewel -f supabase/tests/60_courses.sql          # 32 checks: library seed, who can edit/verify, apply copies, duplicate link
+psql -d jewel -f supabase/tests/70_crew.sql             # 49 checks: link isolation, role gates, revoke/reissue, raffle, requests, contacts
 ```
 Make a user **super admin** (event TDs need nothing here: add their email in `/td` → Setup → TDs):
 ```sql
