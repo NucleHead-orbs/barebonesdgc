@@ -34,3 +34,6 @@
 @media (max-width: 860px) { .tg-cols { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .tg-hero { grid-template-columns: 1fr; gap: 16px; } .tg-row { grid-template-columns: 60px minmax(0, 1fr) auto; } .tg-num { font-size: 26px; } }
 @media (prefers-reduced-motion: reduce) { .tg-row { transition: none; } }
+
+.tg-dtag { width: 260px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 13px; color: var(--fg-3); }
+@media (max-width: 560px) { .tg-dtag { width: min(300px, 100%); justify-self: center; } }

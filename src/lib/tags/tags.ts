@@ -74,3 +74,16 @@ export function tagMessage(err: unknown): string {
   if (/Failed to fetch|NetworkError|network|load failed/i.test(m)) return 'No signal. Nothing was saved. Try again in a moment.';
   return `Something went wrong: ${m}`;
 }
+
+/**
+ * Digital tag art per league (the physical tag's own design, from the club Drive: Tags/<league>/<year>).
+ * back = the number side (portrait, number drawn live in the circle); front = the art side (landscape).
+ * Pools without art fall back to the plain number card.
+ */
+export interface TagArt { front: string; back: string; numColor: string; cx: number; cy: number }
+export const TAG_ART: Record<string, TagArt> = {
+  'lazy-boners': {
+    front: '/assets/tags/lazy-boners/front.svg', back: '/assets/tags/lazy-boners/back.svg',
+    numColor: '#adcb36', cx: 89.85 / 180, cy: 264.55 / 306, // circle centre on the 180x306 back
+  },
+};

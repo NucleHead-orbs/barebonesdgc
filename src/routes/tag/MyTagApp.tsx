@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { Link, useParams } from 'react-router-dom';
 import * as tagApi from '../../lib/tags/api';
 import type { Match, TagHome } from '../../lib/tags/api';
-import { display, parseScore, swap, tagMessage } from '../../lib/tags/tags';
+import { TAG_ART, display, parseScore, swap, tagMessage } from '../../lib/tags/tags';
+import { DigitalTag } from '../../components/DigitalTag';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
 import '../td/td.css';
@@ -60,7 +61,16 @@ export default function MyTagApp() {
 
         {!home.holdings.length && <div className="td-warn soft">You don't hold a tag right now. Ask your league TD to issue you one.</div>}
         <div className="mt-tags">
-          {home.holdings.map((h) => (
+          {home.holdings.map((h) => TAG_ART[h.pool] ? (
+            <div key={h.pool} className="mt-dtag">
+              <DigitalTag art={TAG_ART[h.pool]} number={h.number} label={h.pool_name} />
+              <div className="mt-dtag-meta">
+                <b>{h.pool_name} #{h.number}</b>
+                <span>of {h.held}{h.moved_at ? ` · won ${niceDate(h.moved_at.slice(0, 10))}` : ''} · tap to flip</span>
+                <Link to={`/tags/${h.pool}/${h.number}`}>Tag history ›</Link>
+              </div>
+            </div>
+          ) : (
             <Link key={h.pool} to={`/tags/${h.pool}/${h.number}`} className={`mt-tag${h.number === 1 ? ' is-top' : ''}`}>
               <span className="mt-tag-pool">{h.pool_name}</span>
               <span className="mt-tag-num">#{h.number}</span>

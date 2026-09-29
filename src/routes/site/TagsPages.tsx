@@ -5,7 +5,8 @@ import { CLUB } from '../../lib/jewel/content';
 import { Banner, Button, SectionHeading, Skeleton } from '../../components/ui';
 import { useLoad } from '../../lib/useLoad';
 import * as tagApi from '../../lib/tags/api';
-import { display, type TagMember } from '../../lib/tags/tags';
+import { TAG_ART, display, type TagMember } from '../../lib/tags/tags';
+import { DigitalTag } from '../../components/DigitalTag';
 import { niceDate } from '../../lib/leagues/leagues';
 import './tags.css';
 
@@ -121,7 +122,9 @@ export function TagPage() {
         {page.data && (
           <>
             <div className="tg-hero">
-              <div className="tg-big">#{n}</div>
+              {TAG_ART[pool] && page.data.tag?.status === 'held'
+                ? <div className="tg-dtag"><DigitalTag art={TAG_ART[pool]} number={n} label={page.data.pool.name} /><span>tap to flip</span></div>
+                : <div className="tg-big">#{n}</div>}
               <div>
                 <div className="kick">{page.data.pool.name} bag tag</div>
                 {page.data.tag?.status === 'held' && page.data.holder ? (
