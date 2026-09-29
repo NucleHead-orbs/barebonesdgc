@@ -1,0 +1,145 @@
+/* Jewel XI proof pages (Design Claude "stamp proof" look): night-purple radial, Anton heads, Space Mono body.
+   Print art inside .pf-print/.pf-sign is laid out at native px (100 px/in) and scaled by <Scaled>. */
+.pf { --pf-ink: #f2f0f7; --pf-dim: #9a94ad; --pf-line: #2a2638; --pf-cy: #29e1ff; --pf-mg: #ff3ad1; --pf-card: #15131d;
+  display: flex; flex-direction: column; gap: 28px; padding: 32px clamp(16px, 3vw, 40px) 40px; border-radius: 16px;
+  background: radial-gradient(ellipse at 50% 0%, #1d1830 0%, #0b0b0f 62%); color: var(--pf-ink); font-family: 'Space Mono', ui-monospace, monospace; font-size: 14px; }
+.pf-head { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.pf-kick, .pf-sub, .pf-label { font-size: 12px; letter-spacing: .25em; color: var(--pf-dim); }
+.pf-title { margin: 0; font-family: Anton, Impact, sans-serif; font-weight: 400; font-size: clamp(34px, 5vw, 64px); letter-spacing: .02em; line-height: 1; }
+.pf-hot { color: var(--pf-mg) !important; }
+.pf-selected { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 16px; }
+.pf-selected b { font-family: Anton, sans-serif; font-weight: 400; font-size: 24px; letter-spacing: .03em; }
+.pf-preview { color: var(--pf-cy); font-size: 13px; }
+.pf-save, .pf-reset { min-height: 40px; padding: 0 16px; border-radius: 999px; font-family: inherit; font-size: 12px; letter-spacing: .15em; cursor: pointer; }
+.pf-save { border: 0; background: linear-gradient(90deg, var(--pf-cy), #7b5cff, var(--pf-mg)); color: #0b0b0f; font-weight: 700; }
+.pf-reset { border: 1px solid var(--pf-line); background: none; color: var(--pf-dim); }
+.pf-hero { display: flex; flex-wrap: wrap; gap: 40px; justify-content: center; align-items: center; }
+.pf-side { display: flex; flex-direction: column; gap: 22px; width: min(440px, 100%); }
+.pf-group { display: flex; flex-direction: column; gap: 10px; }
+.pf-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.pf-chiprow { display: flex; flex-wrap: wrap; gap: 20px 40px; justify-content: center; }
+.pf-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px 0 6px; border-radius: 999px; border: 2px solid var(--pf-line); background: var(--pf-card); color: var(--pf-ink); font-family: inherit; font-size: 12px; letter-spacing: .1em; cursor: pointer; transition: transform .18s ease, border-color .18s; }
+.pf-chip:hover, .pf-dot:hover, .pf-combo:hover, .pf-hole:hover { transform: translateY(-2px); }
+.pf-chip[aria-pressed='true'] { border-color: var(--pf-cy); }
+.pf-sw { width: 30px; height: 30px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .2); }
+.pf-tri { display: inline-flex; }
+.pf-tri i { width: 14px; height: 28px; }
+.pf-tri i:first-child { border-radius: 14px 0 0 14px; } .pf-tri i:last-child { border-radius: 0 14px 14px 0; }
+.pf-dot { width: 56px; height: 56px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .15); padding: 0; cursor: pointer; background-size: 200% 200%; box-shadow: 0 6px 14px rgba(0, 0, 0, .45); transition: transform .18s ease; }
+.pf-dot[aria-pressed='true'] { border-color: #fff; }
+.pf-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; line-height: 1.55; counter-reset: pf; }
+.pf-list li:not(.pf-label) { counter-increment: pf; }
+.pf-list li:not(.pf-label)::before { content: counter(pf) '. '; color: var(--pf-dim); }
+.pf-list.pf-wide { max-width: 760px; align-self: center; }
+.pf-ink { display: inline-block; width: 18px; height: 18px; border-radius: 4px; margin-right: 8px; vertical-align: -3px; }
+.pf-row { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; align-items: stretch; }
+.pf-card { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.pf-grow { flex: 1 1 520px; }
+
+/* disc */
+.pf-disc { position: relative; display: grid; place-items: center; aspect-ratio: 1; border-radius: 50%; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, .5), inset 0 0 0 6px rgba(255, 255, 255, .06); }
+.pf-disc-lg { width: min(560px, 100%); box-shadow: 0 40px 80px rgba(0, 0, 0, .6), inset 0 0 0 10px rgba(255, 255, 255, .06), inset 0 -20px 40px rgba(0, 0, 0, .35); }
+.pf-disc-rim { position: absolute; inset: 7%; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), 0 0 0 1px rgba(0, 0, 0, .25); }
+.pf-stamp { display: block; width: 82%; height: 82%; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
+.pf-foil { background-size: 220% 220%; animation: pf-holo 7s ease-in-out infinite alternate; }
+@keyframes pf-holo { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
+.pf-sheen { position: absolute; inset: -20%; background: linear-gradient(115deg, rgba(255, 255, 255, 0) 38%, rgba(255, 255, 255, .16) 50%, rgba(255, 255, 255, 0) 62%); animation: pf-sheen 5.5s ease-in-out infinite; pointer-events: none; }
+@keyframes pf-sheen { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(22deg); } }
+.pf-gloss { position: absolute; inset: 0; border-radius: 50%; background: linear-gradient(135deg, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, 0) 35%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, .08) 100%); pointer-events: none; }
+.pf-art { width: 260px; aspect-ratio: 1; border-radius: 16px; background: #fff; display: grid; place-items: center; box-shadow: 0 20px 40px rgba(0, 0, 0, .5); }
+.pf-art .pf-stamp { width: 92%; height: 92%; }
+.pf-combos { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 22px; width: 100%; }
+.pf-combo { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0; border: 0; background: none; color: var(--pf-ink); font-family: inherit; font-size: 12px; cursor: pointer; transition: transform .18s ease; }
+.pf-combo .pf-disc { width: 100%; max-width: 200px; }
+.pf-combo[aria-pressed='true'] .pf-disc { box-shadow: 0 0 0 4px var(--pf-cy), 0 20px 40px rgba(0, 0, 0, .5); }
+.pf-combo b { font-family: Anton, sans-serif; font-weight: 400; font-size: 20px; letter-spacing: .04em; }
+.pf-combo span:last-child { color: var(--pf-dim); text-align: center; }
+
+/* prints */
+.pf-prints { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; align-items: flex-start; }
+.pf-prints figure { margin: 0; display: flex; flex-direction: column; gap: 10px; flex: 1 1 320px; max-width: 600px; }
+.pf-prints figcaption { font-size: 12px; letter-spacing: .2em; color: var(--pf-dim); }
+.pf-tag { background: var(--pf-cy); color: #0b0b0f; padding: 2px 8px; border-radius: 3px; font-weight: 700; margin-right: 8px; }
+.pf-tag-b { background: var(--pf-mg); }
+.pf-scaled { width: 100%; }
+.pf-shadow > div { border-radius: 10px; box-shadow: 0 30px 60px rgba(0, 0, 0, .6); }
+.pf-print { position: relative; overflow: hidden; font-family: 'Archivo Black', sans-serif; color: #fff; }
+.pf-print > img { position: absolute; display: block; }
+.pf-p-foot { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; font-size: 22px; letter-spacing: 10px; }
+.pf-b-crank { position: absolute; left: 0; right: 0; top: 30px; text-align: center; font-family: 'Metal Mania', cursive; font-size: 96px; line-height: 1; }
+.pf-b-amp { position: absolute; left: 150px; right: 150px; top: 150px; height: 150px; border-radius: 10px; background: linear-gradient(180deg, #e6c46a, #a47d2c); border: 4px solid #1a1a1a; box-shadow: inset 0 0 0 3px #f6e2a4; display: flex; justify-content: space-around; align-items: center; padding: 0 16px; box-sizing: border-box; }
+.pf-b-amp.is-spot { background: none; border: 5px solid #fff; box-shadow: none; }
+.pf-b-knob { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.pf-b-dial { position: relative; width: 82px; height: 82px; border-radius: 50%; box-sizing: border-box; background: repeating-conic-gradient(#111 0 6deg, #2b2b2b 6deg 12deg); border: 3px solid #111; }
+.pf-b-cap { position: absolute; inset: 12px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #555, #111 70%); }
+.pf-b-needle { position: absolute; left: 35px; top: 3px; width: 6px; height: 34px; border-radius: 3px; transform-origin: 3px 35px; }
+.pf-b-klabel { font-size: 16px; letter-spacing: 1px; }
+.pf-b-skullwrap { position: absolute; left: 100px; top: 300px; width: 1000px; height: 1000px; transform: scale(.8); transform-origin: 50% 0; }
+.pf-b-skull { position: absolute; left: 180px; top: 120px; width: 620px; height: 556px; }
+.pf-b-skull img { width: 100%; height: 100%; display: block; }
+.pf-b-skull span { position: absolute; transform: translate(-50%, -50%); font-family: 'Permanent Marker', cursive; white-space: nowrap; }
+.pf-b-yr { font-size: 50px; letter-spacing: 2px; }
+.pf-b-dt { font-size: 33px; color: #fff; }
+.pf-b-body { position: absolute; left: 120px; right: 120px; top: 880px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.pf-b-tour { font-size: 34px; letter-spacing: 12px; }
+.pf-b-dates { width: 100%; display: flex; flex-direction: column; gap: 14px; }
+.pf-b-date { display: grid; grid-template-columns: 200px minmax(0, 1fr); align-items: baseline; gap: 24px; border-top: 3px solid; padding-top: 10px; }
+.pf-b-d { font-size: 40px; }
+.pf-b-venue { font-size: 26px; }
+.pf-b-note { font-family: 'Permanent Marker', cursive; font-size: 22px; }
+.pf-b-fans { font-family: 'Metal Mania', cursive; font-size: 40px; line-height: 1; }
+.pf-b-fanrow { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 30px; text-align: center; font-size: 26px; letter-spacing: 3px; }
+.pf-b-two { font-family: 'Metal Mania', cursive; font-size: 56px; line-height: 1; }
+.pf-b-dick { font-family: 'Permanent Marker', cursive; font-size: 30px; }
+.pf-b-club { position: absolute; left: 0; right: 0; bottom: 36px; text-align: center; font-size: 18px; letter-spacing: 6px; }
+
+/* tee signs */
+.pf-signs { display: flex; flex-wrap: wrap; gap: 36px; justify-content: center; align-items: flex-start; }
+.pf-signbox { flex: 1 1 320px; max-width: 550px; }
+.pf-sign { position: relative; width: 1100px; height: 1700px; overflow: hidden; color: #fff; font-family: 'Archivo', sans-serif; }
+.pf-s-frame { position: absolute; inset: 14px; border: 3px solid; pointer-events: none; }
+.pf-s-wm { position: absolute; left: 34px; top: 26px; width: 440px; height: 187px; }
+.pf-s-tr { position: absolute; right: 48px; top: 52px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; text-align: right; }
+.pf-s-tour { font-family: 'Archivo Black'; font-size: 22px; letter-spacing: 6px; }
+.pf-s-course { font-family: 'Permanent Marker', cursive; font-size: 26px; }
+.pf-s-when { font-family: 'Archivo Black'; font-size: 18px; letter-spacing: 4px; }
+.pf-s-top { position: absolute; left: 48px; right: 48px; top: 240px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.pf-s-stop { font-family: 'Archivo Black'; font-size: 22px; letter-spacing: 8px; }
+.pf-s-hole { font-family: 'Metal Mania', cursive; font-size: 200px; line-height: .85; }
+.pf-s-pd { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding-bottom: 8px; font-family: 'Archivo Black'; line-height: 1; }
+.pf-s-pd div:first-child { font-size: 76px; } .pf-s-pd div:last-child { font-size: 58px; }
+.pf-s-cari { position: absolute; left: 48px; top: 500px; width: 440px; height: 640px; border: 4px dashed; box-sizing: border-box; background: #000; display: grid; place-items: center; text-align: center; font-family: 'Archivo Black'; font-size: 24px; letter-spacing: 3px; }
+.pf-s-rocker { position: absolute; left: 28px; top: 1112px; width: 480px; padding: 12px 10px; box-sizing: border-box; background: linear-gradient(180deg, #f2f2f5, #9ea1ab); border: 3px solid #111; text-align: center; font-family: 'Metal Mania', cursive; font-size: 44px; line-height: 1; color: #111; }
+.pf-s-map { position: absolute; left: 520px; top: 500px; box-sizing: border-box; border: 4px solid; overflow: hidden; background-color: #1d2740; background-image: radial-gradient(rgba(255, 255, 255, .16) 1px, transparent 1.4px); background-size: 14px 14px; }
+.pf-s-line { position: absolute; height: 0; border-top: 4px dashed rgba(255, 255, 255, .45); transform-origin: 0 0; }
+.pf-s-el { position: absolute; display: flex; align-items: center; justify-content: center; text-align: center; box-sizing: border-box; padding: 4px; font-family: 'Archivo Black'; line-height: 1.1; }
+.pf-s-basket { position: absolute; transform: translate(-50%, -50%); width: 54px; height: 54px; border-radius: 50%; background: #000; border: 5px solid #fff; box-sizing: border-box; display: grid; place-items: center; }
+.pf-s-basket i { width: 14px; height: 14px; border-radius: 50%; }
+.pf-s-tee { position: absolute; width: 46px; height: 64px; border: 4px solid #000; box-sizing: border-box; display: grid; place-items: center; font-family: 'Archivo Black'; font-size: 14px; color: #000; }
+.pf-s-narr { position: absolute; left: 510px; top: 1132px; width: 552px; height: 350px; display: flex; gap: 14px; align-items: center; }
+.pf-s-head { position: relative; width: 258px; height: 348px; flex: none; }
+.pf-s-face { position: absolute; left: 108px; top: 131px; width: 100px; height: 116px; border-radius: 50%; background: #222; display: grid; place-items: center; font-family: 'Archivo Black'; font-size: 13px; color: #888; }
+.pf-s-head img { position: absolute; inset: 0; width: 258px; height: 348px; }
+.pf-s-bubble { position: relative; flex: 1; min-width: 0; background: #fff; color: #111; border: 4px solid #111; border-radius: 22px; padding: 18px 20px; box-sizing: border-box; font-family: 'Permanent Marker', cursive; line-height: 1.15; }
+.pf-s-bubble i { position: absolute; left: -26px; top: 50%; border-top: 16px solid transparent; border-bottom: 16px solid transparent; border-right: 26px solid #111; transform: translateY(-50%); }
+.pf-s-rules { position: absolute; left: 48px; top: 1210px; width: 440px; display: flex; flex-direction: column; gap: 6px; font-family: 'Archivo Black'; font-size: 17px; letter-spacing: 1px; }
+.pf-s-foot { position: absolute; left: 14px; right: 14px; bottom: 14px; height: 200px; border-top: 3px solid; display: flex; align-items: center; justify-content: space-between; gap: 30px; padding: 0 34px; box-sizing: border-box; background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .08)); }
+.pf-s-by { font-family: 'Metal Mania', cursive; font-size: 52px; line-height: 1; }
+.pf-s-dick { font-family: 'Permanent Marker', cursive; font-size: 22px; }
+.pf-s-logo { width: 520px; height: 150px; flex: none; border-radius: 8px; display: grid; place-items: center; background: rgba(255, 255, 255, .92); font-family: 'Archivo Black'; font-size: 30px; color: #111; }
+.pf-s-logo span { color: #888; font-size: 20px; letter-spacing: 3px; }
+.pf-s-logo img { max-width: 94%; max-height: 90%; object-fit: contain; }
+.pf-holes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.pf-hole { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; min-height: 52px; border-radius: 10px; border: 2px solid var(--pf-line); background: var(--pf-card); color: var(--pf-ink); font-family: inherit; text-align: left; cursor: pointer; transition: transform .18s ease; }
+.pf-hole[aria-pressed='true'] { background: #1d1830; }
+.pf-hole b { font-family: Anton, sans-serif; font-weight: 400; font-size: 24px; line-height: 1; }
+.pf-hole span { font-size: 10px; color: var(--pf-dim); }
+@media (prefers-reduced-motion: reduce) { .pf-foil, .pf-sheen { animation: none; } .pf-chip, .pf-dot, .pf-combo, .pf-hole { transition: none; } }
+@media (max-width: 560px) { .pf { padding: 22px 14px 28px; border-radius: 0; } .pf-dot { width: 46px; height: 46px; } .pf-holes { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+
+/* where proofs sit inside the TD Builder / crew page */
+.td-proof { display: flex; flex-direction: column; gap: 12px; }
+.td-proof-thumb { width: 100%; height: 100%; border: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  background: radial-gradient(ellipse at 50% 0%, #1d1830 0%, #0b0b0f 70%); color: #f2f0f7; font-family: Anton, sans-serif; }
+.td-proof-thumb b { font-weight: 400; font-size: 26px; letter-spacing: .06em; background: linear-gradient(90deg, #29e1ff, #7b5cff, #ff3ad1); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.td-proof-thumb span { font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .2em; opacity: .8; }

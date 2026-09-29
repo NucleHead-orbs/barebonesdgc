@@ -46,3 +46,20 @@ export const addContact = (t: string, c: { kind: ContactKind; name: string; org:
   call<string>('crew_add_contact', { p_token: t, p: c });
 export const updateContact = (t: string, id: string, status: ContactStatus | null, notes: string) =>
   call<null>('crew_update_contact', { p_token: t, p_contact: id, p_status: status, p_notes: notes || null });
+
+// ---------- designs the TD switched on for the crew ----------
+export interface CrewDesign {
+  id: string; category: string; title: string; status: 'draft' | 'approved' | 'sent'; notes: string | null;
+  proof: string | null; proof_opts: Record<string, unknown>; updated_at: string;
+  file: { id: string; version: number; file_name: string; mime: string | null; bytes: number | null } | null;
+}
+export const designs = (t: string) => call<CrewDesign[]>('crew_designs', { p_token: t });
+/** Short-lived link to one file: the crew-design-url function re-checks the link, then signs. */
+export async function designFileUrl(t: string, fileId: string): Promise<Result<string>> {
+  try {
+    const r = await supabase.functions.invoke('crew-design-url', { body: { token: t, file: fileId } });
+    if (r.error) return { error: r.error };
+    const d = r.data as { url?: string; error?: string };
+    return d?.url ? { data: d.url } : { error: new Error(d?.error ?? 'not_found') };
+  } catch (error) { return { error }; }
+}

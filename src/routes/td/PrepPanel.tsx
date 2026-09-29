@@ -9,6 +9,8 @@ import {
   taskCategoryLabel, taskState, zipEntries, type DesignAsset, type DesignStatus, type PrepTask, type TaskState,
 } from '../../lib/prep/prep';
 
+import { ProofView } from '../../components/proofs/Proofs';
+import { PROOF_CATEGORY, PROOF_KINDS, PROOF_LABEL, type ProofKind } from '../../lib/proofs/proofs';
 type View = 'dash' | 'tasks' | 'shirts' | 'designs' | 'contacts';
 const VIEWS: Array<[View, string]> = [['dash', 'DASHBOARD'], ['tasks', 'TASKS'], ['shirts', 'SHIRTS'], ['designs', 'DESIGNS'], ['contacts', 'CONTACTS']];
 const STATE_LABEL: Record<TaskState, string> = { done: 'DONE', overdue: 'OVERDUE', soon: 'THIS WEEK', later: 'LATER', nodate: 'NO DATE' };
@@ -426,7 +428,25 @@ function Designs({ ctx }: { ctx: Ctx }) {
   const [newTitle, setNewTitle] = useState('');
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState('');
+  const [proofId, setProofId] = useState<string | null>(null);
   const shown = data.assets.filter((a) => cat === 'all' || a.category === cat);
+  const openProof = data.assets.find((a) => a.id === proofId && a.proof) ?? null;
+  const missingProofs = PROOF_KINDS.filter((k) => !data.assets.some((a) => a.proof === k));
+  const addProofs = async () => {
+    for (const k of missingProofs) {
+      const r = await api.createAsset(ev.id, PROOF_CATEGORY[k], PROOF_LABEL[k], k);
+      if (r.error || !r.data) return ctx.fail('Add proofs')(r.error);
+      ctx.patchAssets((as) => [...as, r.data!]);
+    }
+    ctx.setToast('Tour proofs added. Open one to pick colors, then switch on SHOW CREW.');
+  };
+  const saveProof = async (a: DesignAsset, o: Record<string, string>) => {
+    const r = await api.updateAsset(a.id, { proof_opts: o });
+    if (r.error || !r.data) { ctx.fail(a.title)(r.error); return false; }
+    ctx.patchAssets((as) => as.map((x) => (x.id === a.id ? r.data! : x)));
+    ctx.setToast(`${a.title}: picks saved${a.crew_visible ? '. The crew see them now.' : '.'}`);
+    return true;
+  };
   const label = (c: string) => designCategoryLabel(c, data.creditLabel);
 
   const thumbPaths = useMemo(() => data.assets.map(latest).filter((f) => f && isImage(f)).map((f) => f!.path), [data.assets]);
@@ -485,18 +505,35 @@ function Designs({ ctx }: { ctx: Ctx }) {
           <button type="button" className="td-btn cyan" disabled={!!busy || !shown.some((a) => a.files.length)} onClick={() => void exportZip(false)}>{busy || 'EXPORT ZIP'}</button>
           <button type="button" className="td-btn quiet" disabled={!!busy || !shown.some((a) => a.files.length)} onClick={() => void exportZip(true)}>ALL VERSIONS</button>
         </form>
-        <span className="td-hint">Private to this event's TDs. Share links work for anyone with the link for {SHARE_DAYS} days. Max {fmtBytes(MAX_FILE_BYTES)} per file.</span>
+        <span className="td-hint">Private to this event's TDs until you switch on SHOW CREW (then crew see it on their crew link). Share links work for anyone with the link for {SHARE_DAYS} days. Max {fmtBytes(MAX_FILE_BYTES)} per file.</span>
+        {ev.skin === 'jewel-xi' && missingProofs.length > 0 && (
+          <div className="td-row">
+            <button type="button" className="td-btn cyan" onClick={() => void addProofs()}>ADD TOUR PROOFS</button>
+            <span className="td-hint">Disc stamp, shirt, 3-color screen print and tee signs as live proof pages: {missingProofs.map((k) => PROOF_LABEL[k]).join(' · ')}.</span>
+          </div>
+        )}
       </section>
+
+      {openProof && (
+        <section className="td-proof">
+          <div className="td-row">
+            <button type="button" className="td-btn" onClick={() => setProofId(null)}>‹ BACK TO DESIGNS</button>
+            <div style={{ flex: 1 }} />
+            <span className="td-hint">{openProof.crew_visible ? 'Crew can see this proof and your saved picks.' : 'Crew can\'t see this yet: switch on SHOW CREW on its card.'}</span>
+          </div>
+          <ProofView kind={openProof.proof as ProofKind} eventId={ev.id} saved={openProof.proof_opts} onSave={(o) => saveProof(openProof, o)} />
+        </section>
+      )}
 
       {!shown.length && <div className="td-empty">No designs here yet. Add one, then upload the file.</div>}
       <div className="td-grid td-designs">
-        {shown.map((a) => <DesignCard key={a.id} ctx={ctx} a={a} thumb={thumbs[latest(a)?.path ?? '']} label={label(a.category)} />)}
+        {shown.map((a) => <DesignCard key={a.id} ctx={ctx} a={a} thumb={thumbs[latest(a)?.path ?? '']} label={label(a.category)} onOpen={() => setProofId(a.id)} />)}
       </div>
     </>
   );
 }
 
-function DesignCard({ ctx, a, thumb, label }: { ctx: Ctx; a: DesignAsset; thumb?: string; label: string }) {
+function DesignCard({ ctx, a, thumb, label, onOpen }: { ctx: Ctx; a: DesignAsset; thumb?: string; label: string; onOpen: () => void }) {
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
   const cur = latest(a);
@@ -541,6 +578,12 @@ function DesignCard({ ctx, a, thumb, label }: { ctx: Ctx; a: DesignAsset; thumb?
     if (r.error) return ctx.fail(a.title)(r.error);
     ctx.patchAssets((as) => as.filter((x) => x.id !== a.id));
   };
+  const setCrew = async (on: boolean) => {
+    replace({ ...a, crew_visible: on });
+    const r = await api.updateAsset(a.id, { crew_visible: on });
+    if (r.error || !r.data) { replace(a); return ctx.fail(a.title)(r.error); }
+    ctx.setToast(on ? `${a.title}: crew can see it now.` : `${a.title}: hidden from crew.`);
+  };
   const rename = async (title: string) => {
     const t = title.trim().slice(0, 120);
     if (!t || t === a.title) return;
@@ -552,7 +595,8 @@ function DesignCard({ ctx, a, thumb, label }: { ctx: Ctx; a: DesignAsset; thumb?
   return (
     <article className={`td-card td-design is-${a.status}`}>
       <div className="td-thumb">
-        {thumb ? <img src={thumb} alt={`${a.title} v${cur?.version}`} loading="lazy" />
+        {a.proof && !thumb ? <button type="button" className="td-proof-thumb" onClick={onOpen}><b>LIVE PROOF</b><span>OPEN ›</span></button>
+          : thumb ? <img src={thumb} alt={`${a.title} v${cur?.version}`} loading="lazy" />
           : <span>{cur ? (cur.file_name.match(/\.([A-Za-z0-9]{1,8})$/)?.[1] ?? 'FILE').toUpperCase() : 'NO FILE YET'}</span>}
       </div>
       <div className="td-card-head">
@@ -565,6 +609,10 @@ function DesignCard({ ctx, a, thumb, label }: { ctx: Ctx; a: DesignAsset; thumb?
         <div className="td-seg">
           {(Object.keys(STATUS_LABEL) as DesignStatus[]).map((s) => <button key={s} aria-pressed={a.status === s} onClick={() => void setStatus(s)}>{STATUS_LABEL[s].toUpperCase()}</button>)}
         </div>
+        <button className="td-toggle" aria-pressed={!!a.crew_visible} onClick={() => void setCrew(!a.crew_visible)}>
+          <span className="track"><span className="knob" /></span><span>{a.crew_visible ? 'Crew can see it' : 'Show crew'}</span>
+        </button>
+        {a.proof && <button className="td-btn cyan" onClick={onOpen}>OPEN PROOF</button>}
         <div className="td-row">
           <label className={`td-btn ${cur ? 'quiet' : 'cyan'} td-file`}>{busy ? 'UPLOADING…' : cur ? `UPLOAD v${cur.version + 1}` : 'UPLOAD FILE'}
             <input type="file" disabled={busy} onChange={(e) => { void upload(e.target.files?.[0]); e.target.value = ''; }} />

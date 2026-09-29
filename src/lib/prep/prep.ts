@@ -154,11 +154,11 @@ export function orderCsv(t: Tally): string {
 }
 
 // ---------- designs ----------
-export const DESIGN_CATEGORIES = ['shirts', 'tee_signs', 'flyer', 'logos', 'prize_bucks', 'signage', 'merch', 'other'] as const;
+export const DESIGN_CATEGORIES = ['disc', 'shirts', 'tee_signs', 'flyer', 'logos', 'prize_bucks', 'signage', 'merch', 'other'] as const;
 export type DesignCategory = (typeof DESIGN_CATEGORIES)[number];
 export function designCategoryLabel(c: string, creditLabel?: string | null): string {
   const L: Record<DesignCategory, string> = {
-    shirts: 'Shirts', tee_signs: 'Tee signs', flyer: 'Flyer', logos: 'Logos',
+    disc: 'Disc', shirts: 'Shirts', tee_signs: 'Tee signs', flyer: 'Flyer', logos: 'Logos',
     prize_bucks: creditLabel && creditLabel !== 'prize credit' ? creditLabel : 'Prize bucks',
     signage: 'Event signage', merch: 'Other merch', other: 'Other',
   };
@@ -168,7 +168,11 @@ export type DesignStatus = 'draft' | 'approved' | 'sent';
 export const STATUS_LABEL: Record<DesignStatus, string> = { draft: 'Draft', approved: 'Approved', sent: 'Sent to print' };
 
 export interface DesignFile { id: string; asset_id: string; version: number; path: string; file_name: string; mime: string | null; bytes: number | null; uploaded_by: string | null; uploaded_at: string }
-export interface DesignAsset { id: string; category: string; title: string; status: DesignStatus; notes: string | null; updated_at: string; files: DesignFile[] }
+export interface DesignAsset {
+  id: string; category: string; title: string; status: DesignStatus; notes: string | null; updated_at: string; files: DesignFile[];
+  /** Built-in proof page this design renders as (disc | shirt | screen_print | tee_signs); null = plain uploaded files. */
+  proof?: string | null; proof_opts?: Record<string, unknown>; crew_visible?: boolean;
+}
 
 export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 /** Storage-safe file name: keeps the extension, drops anything odd. */

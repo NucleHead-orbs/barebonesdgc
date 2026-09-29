@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import * as crewApi from '../../lib/crew/api';
-import type { CrewHome, CrewTask } from '../../lib/crew/api';
+import type { CrewDesign, CrewHome, CrewTask } from '../../lib/crew/api';
+import { CrewDesigns } from './CrewDesigns';
 import {
   CONTACT_KINDS, KIND_LABEL, ROLE_GUIDE, ROLE_LABEL, STATUS_LABEL, crewMessage, crewNextStatuses, raffleTotals, saleProblem,
   type ContactKind, type ContactStatus, type RaffleSale, type Role,
@@ -12,8 +13,8 @@ import { useTheme } from '../../lib/theme';
 import { dateRange } from '../../lib/td/setup';
 import '../td/td.css';
 
-type Tab = 'brief' | 'tasks' | Role;
-const TAB_LABEL: Record<Tab, string> = { brief: 'BRIEFING', tasks: 'TASKS', checkin: 'CHECK-IN', raffle: 'RAFFLE', requests: 'REQUESTS', contacts: 'CONTACTS' };
+type Tab = 'brief' | 'tasks' | 'designs' | Role;
+const TAB_LABEL: Record<Tab, string> = { brief: 'BRIEFING', tasks: 'TASKS', designs: 'DESIGNS', checkin: 'CHECK-IN', raffle: 'RAFFLE', requests: 'REQUESTS', contacts: 'CONTACTS' };
 const POLL_MS = 30_000;
 const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
@@ -25,6 +26,7 @@ export default function CrewApp() {
   const [err, setErr] = useState('');
   const [toast, setToast] = useState('');
   const [tab, setTab] = useState<Tab>('brief');
+  const [designs, setDesigns] = useState<CrewDesign[]>([]);
 
   useTheme(home?.event.skin === 'jewel-xi' ? 'jewel-xi' : 'event', home?.event.palette ?? null);
 
@@ -36,6 +38,8 @@ export default function CrewApp() {
       return;
     }
     setHome(r.data); setFatal('');
+    const d = await crewApi.designs(token);
+    if (d.data) setDesigns(d.data);
   }, [token]);
   useEffect(() => {
     void (async () => { await load(); })();
@@ -57,7 +61,7 @@ export default function CrewApp() {
   if (!home) return <div className="td"><main className="td-main td-crewapp"><p className="td-empty">{err || 'Loading your crew page…'}</p></main></div>;
 
   const roles = home.me.roles;
-  const tabs: Tab[] = ['brief', 'tasks', ...(['checkin', 'raffle', 'requests', 'contacts'] as Role[]).filter((r) => roles.includes(r))];
+  const tabs: Tab[] = ['brief', 'tasks', ...(designs.length ? ['designs' as const] : []), ...(['checkin', 'raffle', 'requests', 'contacts'] as Role[]).filter((r) => roles.includes(r))];
   const cur = tabs.includes(tab) ? tab : 'brief';
   const unread = home.announcements.filter((a) => !a.read).length;
   const ctx = { token, home, act };
@@ -82,6 +86,7 @@ export default function CrewApp() {
         {err && <div className="td-warn" role="alert">{err} <button className="td-btn quiet" onClick={() => setErr('')}>OK</button></div>}
         {cur === 'brief' && <Briefing {...ctx} />}
         {cur === 'tasks' && <Tasks {...ctx} />}
+        {cur === 'designs' && <CrewDesigns token={token} eventId={home.event.id} designs={designs} onError={(m) => setErr(m)} />}
         {cur === 'checkin' && <Checkin {...ctx} />}
         {cur === 'raffle' && <Raffle {...ctx} />}
         {cur === 'requests' && <Requests {...ctx} />}

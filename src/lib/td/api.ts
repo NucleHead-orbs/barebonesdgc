@@ -299,7 +299,7 @@ export const postWinners = (eventId: string, payload: WinnersPayload) => wrap(as
 const PREP_BUCKET = 'event-assets';
 const TASK_COLS = 'id, title, category, due_offset_days, assignee, notes, done_at, done_by, sort, crew_id';
 const FILE_COLS = 'id, asset_id, version, path, file_name, mime, bytes, uploaded_by, uploaded_at';
-const ASSET_COLS = `id, category, title, status, notes, updated_at, design_files(${FILE_COLS})`;
+const ASSET_COLS = `id, category, title, status, notes, updated_at, proof, proof_opts, crew_visible, design_files(${FILE_COLS})`;
 export interface ShirtOrder { extras: Record<string, number>; vendor: string | null; notes: string | null; ordered_at: string | null }
 export interface PrepData { tasks: PrepTask[]; order: ShirtOrder; assets: DesignAsset[]; creditLabel: string | null }
 type AssetRow = Omit<DesignAsset, 'files'> & { design_files: DesignFile[] };
@@ -337,9 +337,9 @@ export const setShirtSize = (playerId: string, size: string | null) => wrap(asyn
   must(await supabase.from('players').update({ shirt_size: size }).eq('id', playerId));
 });
 
-export const createAsset = (eventId: string, category: string, title: string) => wrap(async (): Promise<DesignAsset> =>
-  toAsset(must(await supabase.from('design_assets').insert({ event_id: eventId, category, title }).select(ASSET_COLS).single()) as AssetRow));
-export const updateAsset = (id: string, patch: { title?: string; status?: DesignStatus; notes?: string | null; category?: string }) =>
+export const createAsset = (eventId: string, category: string, title: string, proof: string | null = null) => wrap(async (): Promise<DesignAsset> =>
+  toAsset(must(await supabase.from('design_assets').insert({ event_id: eventId, category, title, proof }).select(ASSET_COLS).single()) as AssetRow));
+export const updateAsset = (id: string, patch: { title?: string; status?: DesignStatus; notes?: string | null; category?: string; crew_visible?: boolean; proof_opts?: Record<string, string> }) =>
   wrap(async (): Promise<DesignAsset> =>
     toAsset(must(await supabase.from('design_assets').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select(ASSET_COLS).single()) as AssetRow));
 /** Files first, then the row, so nothing is left orphaned in storage. */

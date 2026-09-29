@@ -34,7 +34,9 @@ export const HELP: HelpSection[] = [
       '**CONTACTS:** vendors and sponsor prospects with status (to ask → asked → yes → paid). Crew leads show as **New lead**: approve or say no. A sponsor at yes can go straight into the Sponsors list.',
       '**DESIGNS:** tap **ADD DESIGN** (shirt front, flyer, tee sign…), then **UPLOAD FILE**. A new upload becomes v2, v3… and old versions are kept. Set it to **Approved** or **Sent to print**.',
       '**SHARE LINK** copies a link anyone can open for 7 days (good for a printer). **EXPORT ZIP** downloads the latest version of every design shown, sorted into folders.',
-      'Only this event\'s TDs can see any of it. **DUPLICATE** carries the checklist over (unticked, with dates moved to the new event). Designs, shirt orders and sizes start fresh.',
+      '**ADD TOUR PROOFS** (Jewel XI) adds live proofs for the disc, shirt, screen print and tee signs. **OPEN PROOF**, tap colors, then **SAVE AS SELECTED** to lock your pick. Tee signs pull par, distance and hole sponsors from the course.',
+      'Designs are TD-only. Flip **Show crew** on a design and your crew see it in a **DESIGNS** tab on their link: proofs with your pick marked, and the latest file. They can\'t change anything.',
+      'Only this event\'s TDs can see the rest of it. **DUPLICATE** carries the checklist over (unticked, with dates moved to the new event). Designs, shirt orders and sizes start fresh.',
     ],
   },
   {
@@ -45,6 +47,7 @@ export const HELP: HelpSection[] = [
       '**ANNOUNCEMENTS:** post directives to everyone or just some jobs. Each helper taps **Got it**, and you see who hasn\'t yet ("Waiting on…").',
       'Assign prep tasks to crew in **PREP → TASKS → Edit**. They tick them off and post updates you both see.',
       '**RAFFLE:** crew log sales on their phones. The total shows here and in **WINNERS**, where you tap **USE** to put it in the prize pool.',
+      'Designs you mark **Show crew** in **PREP → DESIGNS** show up on their links under **DESIGNS**.',
       'Crew card requests land in **REQUESTS** as new. Crew sponsor and vendor leads land in **PREP → CONTACTS** for you to approve.',
       'Send links a week out so everyone reads their briefing before the event.',
     ],
