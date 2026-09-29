@@ -124,6 +124,18 @@ export const HELP: HelpSection[] = [
     ],
   },
   {
+    id: 'tags', title: 'Bag tags (league admins)',
+    steps: [
+      'From your events list tap **BAG TAGS**. You see the leagues you run; the super admin adds league admins at the bottom.',
+      '**Issue a tag:** take the buy-in, type the player\'s name, tap **ISSUE TAG**. They get the next number at the bottom. Type a number only to hand back a freed tag or load someone\'s existing physical tag.',
+      'Right after issuing, have them scan the **My Tag** QR and save the page. That page is how they log casual rounds and confirm the ones they\'re on.',
+      '**League night:** after cards are signed and submitted, go to **Record a round → From the scorecard**, pick the event, check the name matches, tap **RECORD**. Tag holders trade tags by total. Each event counts once.',
+      '**Rounds waiting:** a disputed or stuck round shows here. **APPLY** swaps the tags they hold now; **VOID** drops it.',
+      'Made a mistake? **UNDO LAST ROUND** puts the latest round back, as long as none of those tags moved since.',
+      'Player quit? **TAKE BACK** frees the number (or retires it). Lost phone or shared link? **People → NEW LINK**; the old link dies.',
+    ],
+  },
+  {
     id: 'gallery', title: 'Club gallery (super admin)',
     steps: [
       'From your events list tap **CLUB GALLERY**. Only the super admin sees it.',

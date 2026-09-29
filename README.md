@@ -7,6 +7,9 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 | `/` | Club home (master brand) | Public |
 | `/sponsors` | Sponsors & Fan Club (master) | Public |
 | `/leagues` | Leagues & Pop Ups: Lazy Boners, RBFL, next Pop Up, Pop Ups past | Public |
+| `/tags` `/tags/:pool` | Bag tag boards, one per league (#1 on top), recent rounds | Public |
+| `/tags/:pool/:n` | One tag: holder + where it's been (the QR on a physical tag lands here) | Public |
+| `/tag/:token` | My Tag: a player's tags, log a casual tag round, confirm/dispute rounds they're on | Private link |
 | `/gallery` | Club archive: every Jewel, the meme wall, crew photos, videos (YouTube embeds), events & fliers | Public (approved items only) |
 | `/music` | Songs by The Boneheaded Boy (tracks in `MUSIC`, `src/lib/jewel/content.ts`; files in `public/music/`) | Public |
 | `/jewel-xi` `/jewel-xi/course` `/jewel-xi/sponsors` | Jewel XI event site (`data-theme="jewel-xi"`); `/jewel-xi/live` → `/jewel` | Public |
@@ -16,7 +19,7 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 | `/crew/:token` | One crew member's page: briefing + Got it, tasks, and the tools their jobs unlock (check-in, raffle, card requests, contacts) | Private link |
 | `/e/:slug` | Live leaderboard + course for any event built in `/td` (event skin + palette) | Public |
 | `/c/:token` | Scorecard for one card (the QR code); takes the event's name + palette | Anyone holding the card's QR |
-| `/td` | TD Builder: event list → Setup (build menu) · Players (import, walk-ups, check-in) · Cards & QR · Sponsors · `?view=gallery` Club Gallery (super admin) | Signed-in TDs; each sees only their events |
+| `/td` | TD Builder: event list → Setup (build menu) · Players (import, walk-ups, check-in) · Cards & QR · Sponsors · `?view=gallery` Club Gallery (super admin) · `?view=tags` Bag Tags (league admins) | Signed-in TDs; each sees only their events |
 
 ## Sources of truth
 - **Data:** Supabase project `jjywfkonerwbhpesyyxa` (West US). `supabase/migrations/` is the only schema definition. Never edit tables in the dashboard.
@@ -25,6 +28,7 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 - **Sponsors:** Disc Golf Scene's "Jewel hole sponsor" column → `td_import_sponsors` (adds only, never overwrites, lands hidden) → TD sets public name / hole / tier / logo and flips Visible in `/td` → Sponsors. Logos in the public `sponsor-logos` storage bucket (TD-only writes). Public sees approved sponsors only (RLS).
 - **Gallery:** `gallery_items` (kind image|video, category jewel|meme|photo|event, year, jewel_no, event_label, caption, sort, hidden). Events & Fliers show one tile per `event_label` (`groupEvents`) that opens into that event's pictures. Images in the public `gallery` bucket (8 MB cap, PNG/JPG/WebP/GIF, super-admin-only writes), shrunk in the browser to 1600px WebP (GIFs untouched). Videos live on YouTube (@barebonesdiscgolfclub) and are stored as the 11-char id; the page shows the thumbnail and loads the youtube-nocookie player only on tap. Google Drive "Disc Golf/Bare Bones" is the raw archive; the Club Gallery import tags from folder names (`guessFromPath`) and dedupes on `source_path`. Pure logic: `src/lib/gallery/gallery.ts`. Everything lands hidden; the public sees approved rows only (RLS).
 - **Leagues & Pop Ups:** league facts (who runs it, when, where, buy-in) in `LEAGUES`, `src/lib/leagues/leagues.ts`; a missing buy-in stays hidden. Live parts come from `events` by name: "This week's scores" = the league's newest started, non-archived event (name starts with Lazy Boners / RBFL / Root Beer Float); "Next Pop Up" = soonest non-archived event with "Pop Up" in its name that hasn't ended. No match → the button hides / the card says watch the group.
+- **Bag tags:** `tag_pools` (one numbered set per league: lazy-boners, rbfl) → `tags` (pool, number → holder; held/available/retired) held by `tag_members` (club-level people, unique name, private My Tag token). Rounds in `tag_matches` + `tag_match_players`; every change in the append-only `tag_history`. League admins in `tag_pool_admins` (super admin runs all). The swap rule lives once in SQL (`_tag_apply`), mirrored for previews by `swap()` in `src/lib/tags/tags.ts`: best score takes the lowest number on the round, ties keep their order, players without a tag in that league are ignored. Casual rounds: logged from My Tag, applied when everyone confirms (dispute → admin; 7-day expiry). League nights: an admin who is also the event's TD records the official finishers from the scorecard (names matched to the tag roster), once per event. Undo = latest round only, if its tags haven't moved since.
 - **Event copy (schedule, register link, tagline):** `src/lib/jewel/content.ts`. House rules are empty until the TD supplies them; the section stays hidden meanwhile.
 - **Card labels (`7`, `7A`):** computed by `td_publish_round` in the database. The client never builds a label; unpublished cards show "Hole 7 · group 2".
 - **TD instructions:** `src/lib/td/help.ts` is the ONE source; the HELP button in /td renders it. Change a screen → change its help section in the same commit.
@@ -70,7 +74,7 @@ npm run build
 ```
 
 ### Database
-Apply `supabase/migrations/*.sql` in filename order. All fourteen are live on the project as of 2026-09-29 (newest: `20261003000000_gallery.sql`). The latest, `20260928000300_jewel_xi_holes_from_guide.sql`, sets Jewel XI distances/OB/rules from YT & Beard's course guide (par 62, 6,499 ft) and refuses to run if any par differs.
+Apply `supabase/migrations/*.sql` in filename order. All fifteen are live on the project as of 2026-09-29 (newest: `20261004000000_bag_tags.sql`). The latest, `20260928000300_jewel_xi_holes_from_guide.sql`, sets Jewel XI distances/OB/rules from YT & Beard's course guide (par 62, 6,499 ft) and refuses to run if any par differs.
 Local check against plain Postgres (no Supabase needed):
 ```bash
 psql -d jewel -f supabase/tests/00_supabase_stub.sql   # test only, never on Supabase
@@ -85,6 +89,7 @@ psql -d jewel -f supabase/tests/50_event_prep.sql       # 16 checks: prep privac
 psql -d jewel -f supabase/tests/60_courses.sql          # 32 checks: library seed, who can edit/verify, apply copies, duplicate link
 psql -d jewel -f supabase/tests/70_crew.sql             # 49 checks: link isolation, role gates, revoke/reissue, raffle, requests, contacts
 psql -d jewel -f supabase/tests/80_gallery.sql          # 24 checks: lands hidden, public sees approved only, super-admin-only writes + storage
+psql -d jewel -f supabase/tests/90_bag_tags.sql         # 47 checks: who issues, token privacy, swap/tie rules, confirm/dispute/expiry, league night once, undo
 ```
 Make a user **super admin** (event TDs need nothing here: add their email in `/td` → Setup → TDs):
 ```sql

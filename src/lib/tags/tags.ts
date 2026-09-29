@@ -1,0 +1,76 @@
+/**
+ * Digital bag tags (pure). Source of truth: supabase/migrations/20261004000000_bag_tags.sql.
+ * One numbered set per league (pool). #1 is best. A round swaps tags among the players on it who hold one
+ * in that pool: best score takes the lowest of their numbers; ties keep their order from before.
+ * The database does the real swap (_tag_apply); swap() here is the same rule for previews.
+ */
+export interface TagPool { id: string; slug: string; name: string; sort: number }
+export interface Tag { pool_id: string; number: number; holder_id: string | null; status: 'held' | 'available' | 'retired'; issued_at: string; moved_at: string | null; moves: number }
+export interface TagMember { id: string; name: string; nickname: string | null }
+export type MatchStatus = 'pending' | 'applied' | 'disputed' | 'void';
+
+export interface SwapIn { id: string; score: number; tag: number | null }
+export interface SwapOut { id: string; score: number; before: number | null; after: number | null }
+
+/** Same rule as the database. Players without a tag pass through untouched (before = after = null). */
+export function swap(players: SwapIn[]): SwapOut[] {
+  const holders = players.filter((p) => p.tag !== null);
+  const nums = holders.map((p) => p.tag as number).sort((a, b) => a - b);
+  const order = holders.slice().sort((a, b) => a.score - b.score || (a.tag as number) - (b.tag as number));
+  const after = new Map(order.map((p, i) => [p.id, nums[i]]));
+  return players.map((p) => ({ id: p.id, score: p.score, before: p.tag, after: p.tag === null ? null : after.get(p.id) ?? null }));
+}
+
+/** "Mike 'Whitey' Minnier" style display. */
+export const display = (m: { name: string; nickname?: string | null }) => (m.nickname ? `${m.name} "${m.nickname}"` : m.name);
+
+/** Name matching for event results -> tag holders: case, spacing and punctuation don't matter. */
+export const normName = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+
+export function matchMembers<T extends { name: string }>(rows: T[], members: TagMember[]): Array<T & { member_id: string | null }> {
+  const byName = new Map<string, string>();
+  for (const m of members) {
+    byName.set(normName(m.name), m.id);
+    if (m.nickname && !byName.has(normName(m.nickname))) byName.set(normName(m.nickname), m.id);
+  }
+  return rows.map((r) => ({ ...r, member_id: byName.get(normName(r.name)) ?? null }));
+}
+
+export const myTagUrl = (origin: string, token: string) => `${origin.replace(/\/$/, '')}/tag/${encodeURIComponent(token)}`;
+export const tagPageUrl = (origin: string, pool: string, n: number) => `${origin.replace(/\/$/, '')}/tags/${encodeURIComponent(pool)}/${n}`;
+
+/** A score box value -> integer or null (blank / junk). */
+export function parseScore(v: string): number | null {
+  const t = v.trim();
+  return /^-?\d{1,3}$/.test(t) ? Number(t) : null;
+}
+
+export function tagMessage(err: unknown): string {
+  const e = (err && typeof err === 'object' ? err : {}) as { message?: string; code?: string };
+  const m = e.message ?? String(err);
+  if (/invalid_link/.test(m)) return "This link doesn't work anymore. Ask your league TD for a new one.";
+  if (/no_tag_in_pool/.test(m)) return "Everyone on the round needs a tag in this league. Someone doesn't have one.";
+  if (/must_include_you/.test(m)) return 'You can only log rounds you played in.';
+  if (/players_2_to_6/.test(m)) return 'A tag round needs 2 to 6 tag holders.';
+  if (/duplicate_player/.test(m)) return 'Someone is on the round twice.';
+  if (/invalid_score/.test(m)) return 'Every player needs a score (whole number).';
+  if (/invalid_date/.test(m)) return 'Pick a date in the last two weeks.';
+  if (/too_many_open/.test(m)) return 'You already have 3 rounds waiting on confirmations. Get those confirmed (or withdraw one) first.';
+  if (/not_your_round/.test(m)) return "That round isn't one of yours.";
+  if (/round_expired/.test(m)) return 'Nobody confirmed that round within 7 days, so it expired. Log it again if it still counts.';
+  if (/round_applied|already_applied/.test(m)) return 'That round already counted.';
+  if (/round_disputed/.test(m)) return 'That round is disputed. Your league TD will settle it.';
+  if (/round_void|already_void/.test(m)) return 'That round was withdrawn or voided.';
+  if (/cannot_withdraw/.test(m)) return 'Only whoever logged it can withdraw it, and only before anyone else confirms.';
+  if (/already_has_tag/.test(m)) return 'That person already has a tag in this league.';
+  if (/tag_taken/.test(m)) return 'Somebody already holds that number.';
+  if (/name_required/.test(m)) return 'Type a name.';
+  if (/invalid_number/.test(m)) return 'Tag numbers run 1 to 9999.';
+  if (/event_already_recorded/.test(m)) return 'That event already moved tags in this league. Undo it first to record it again.';
+  if (/nothing_to_undo/.test(m)) return 'Nothing to undo yet.';
+  if (/tags_changed_since/.test(m)) return "Can't undo: one of those tags changed hands since. Fix it by hand with release/issue.";
+  if (/unknown_member/.test(m)) return 'Someone on that list isn\'t in the tag roster. Reload and try again.';
+  if (/forbidden|permission denied|row-level security/i.test(m) || e.code === '42501') return "This account doesn't run that league's tags. Ask the super admin to add your email.";
+  if (/Failed to fetch|NetworkError|network|load failed/i.test(m)) return 'No signal. Nothing was saved. Try again in a moment.';
+  return `Something went wrong: ${m}`;
+}

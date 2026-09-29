@@ -1,0 +1,24 @@
+/* My Tag (/tag/:token): mobile first, rides td.css. */
+.mt-app { max-width: 640px; margin: 0 auto; }
+.mt-tags { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.mt-tag { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: var(--r-card); border: 3px solid var(--cyan); background: var(--surface); color: #fff; text-decoration: none; }
+.mt-tag.is-top { border-color: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 30%, transparent); }
+.mt-tag-pool { font-family: var(--font-label); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; opacity: .75; }
+.mt-tag-num { font-family: var(--font-display); font-size: 64px; line-height: 1; color: var(--cyan); }
+.mt-tag.is-top .mt-tag-num { color: var(--gold); }
+.mt-tag-meta { font-size: 13px; opacity: .75; }
+.mt-log-open { min-height: 52px; font-size: 15px; }
+.mt-round { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--page); }
+.mt-round-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+.mt-round-head span { opacity: .75; }
+.mt-round-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.mt-round-table td { padding: 5px 0; border-top: 1px solid var(--border); }
+.mt-round-table tr.is-me td { font-weight: 700; }
+.mt-num { text-align: right; white-space: nowrap; padding-left: 10px !important; }
+.mt-roster { max-height: 220px; overflow-y: auto; }
+.mt-scores { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.mt-score { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; }
+.mt-score input { font-size: 20px; text-align: center; }
+.mt-preview { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 10px; border: 2px dashed var(--cyan); }
+.mt-preview-row { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.mt-foot { margin-top: 8px; }

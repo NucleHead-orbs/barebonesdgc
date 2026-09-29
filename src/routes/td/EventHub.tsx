@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import * as api from '../../lib/td/api';
+import { isTagAdmin } from '../../lib/tags/api';
 import { rpcError } from '../../lib/td/builder';
 import { DIVISION_PRESETS, addDays, dateRange, daysBetween, divisionsProblem, isoDate, normalizeDivCode, type DivisionRow, type EventConfig } from '../../lib/td/setup';
 import { useTheme } from '../../lib/theme';
@@ -10,9 +11,10 @@ import { LayoutSelect } from './CourseLibrary';
 import { findLayout, sortLibrary, type LibCourse } from '../../lib/courses/courses';
 
 const GalleryPanel = lazy(() => import('./GalleryPanel'));
+const TagsPanel = lazy(() => import('./TagsPanel'));
 
 /**
- * Home of /td: the events this account runs. ?e=<id> opens one. ?view=gallery (super admin) curates the club gallery.
+ * Home of /td: the events this account runs. ?e=<id> opens one. ?view=gallery (super admin) curates the club gallery. ?view=tags runs bag tags (league admins).
  * Super admin creates events from scratch; any TD of an event can duplicate it (league week 2).
  */
 export default function EventHub({ email, admin, onSignOut }: { email: string; admin: boolean; onSignOut: () => void }) {
@@ -23,6 +25,8 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
   const [creating, setCreating] = useState(false);
   const [dupOf, setDupOf] = useState<EventConfig | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [tagAdmin, setTagAdmin] = useState(admin);
+  useEffect(() => { if (!admin) void (async () => { const r = await isTagAdmin(); setTagAdmin(!!r.data); })(); }, [admin]);
 
   const reload = useCallback(async () => {
     const r = await api.myEvents();
@@ -32,6 +36,14 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
   useEffect(() => { void (async () => { await reload(); })(); }, [reload]);
 
   const open = (id: string | null) => setParams(id ? { e: id } : {});
+
+  if (tagAdmin && params.get('view') === 'tags') {
+    return (
+      <HubShell email={email} onSignOut={onSignOut} admin={admin}>
+        <Suspense fallback={<p className="td-empty">Loading bag tags…</p>}><TagsPanel admin={admin} onBack={() => setParams({})} /></Suspense>
+      </HubShell>
+    );
+  }
 
   if (admin && params.get('view') === 'gallery') {
     return (
@@ -57,6 +69,7 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
           {events?.some((e) => e.archived) && (
             <button className="td-btn quiet" onClick={() => setShowArchived(!showArchived)}>{showArchived ? 'HIDE ARCHIVED' : 'SHOW ARCHIVED'}</button>
           )}
+          {tagAdmin && <button className="td-btn" onClick={() => setParams({ view: 'tags' })}>BAG TAGS</button>}
           {admin && <button className="td-btn" onClick={() => setParams({ view: 'gallery' })}>CLUB GALLERY</button>}
           {admin && <button className="td-btn cta" onClick={() => setCreating(true)}>+ NEW EVENT</button>}
         </div>

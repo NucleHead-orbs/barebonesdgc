@@ -10,6 +10,7 @@ export interface League {
   runBy: string; startedBy?: string; when: string; where: string; whereNote?: string;
   buyIn: string | null; // null = hidden until the TD supplies it
   eventPrefixes: string[]; // lowercase; an event whose name starts with one of these belongs to this league
+  tagPool: string; // tag_pools.slug: this league's bag tag set
   banner?: string; logos?: Array<{ src: string; alt: string }>;
 }
 
@@ -18,12 +19,12 @@ export const LEAGUES: League[] = [
     id: 'lazy', name: 'Lazy Boners', tag: 'Club league', title: 'Lazy Boners', scrawl: 'Minimum effort. Maximum Boner.',
     runBy: 'T-Bone', startedBy: 'T-Bone & Fixer', when: 'Sundays · 7:30 AM',
     where: 'Traveling league', whereNote: 'Course rotates. The group posts where.',
-    buyIn: null, eventPrefixes: ['lazy boners'], banner: '/assets/leagues/lazy-boners-banner.webp',
+    buyIn: null, eventPrefixes: ['lazy boners'], tagPool: 'lazy-boners', banner: '/assets/leagues/lazy-boners-banner.webp',
   },
   {
     id: 'rbfl', name: 'RBFL', tag: 'Root Beer Float League', title: 'Root Beer Float League', scrawl: 'Float on, Boners.',
     runBy: 'George', when: 'Thursdays · 4:30 PM', where: 'Emerald Park',
-    buyIn: null, eventPrefixes: ['rbfl', 'root beer float'],
+    buyIn: null, eventPrefixes: ['rbfl', 'root beer float'], tagPool: 'rbfl',
     logos: [
       { src: '/assets/leagues/rbfl-logo.webp', alt: 'RBFL logo' },
       { src: '/assets/leagues/root-beer-float-league-logo.webp', alt: 'Root Beer Float League logo' },

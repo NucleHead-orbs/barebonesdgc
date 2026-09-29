@@ -94,6 +94,7 @@ function LeagueCard({ league: l, event, group }: { league: League; event: Public
         </div>
         <div className="row lg-card-actions">
           {event && <Button to={`/e/${event.slug}`}>This week's scores</Button>}
+          <Button to={`/tags/${l.tagPool}`} variant="outline-accent">Tag board</Button>
           {group && <Button href={group} external variant="outline">Ask in the group ↗</Button>}
         </div>
       </div>

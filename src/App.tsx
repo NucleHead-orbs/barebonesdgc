@@ -10,6 +10,10 @@ const SponsorsPage = lazy(() => pages().then((m) => ({ default: m.Sponsors })));
 const MusicPage = lazy(() => pages().then((m) => ({ default: m.Music })));
 const GalleryPage = lazy(() => import('./routes/site/GalleryPage'));
 const LeaguesPage = lazy(() => import('./routes/site/LeaguesPage'));
+const tagPages = () => import('./routes/site/TagsPages');
+const TagsBoard = lazy(() => tagPages().then((m) => ({ default: m.TagsBoard })));
+const TagPage = lazy(() => tagPages().then((m) => ({ default: m.TagPage })));
+const MyTagApp = lazy(() => import('./routes/tag/MyTagApp'));
 // Each app loads only on its own route, so the first page stays small on course signal.
 const TdRoute = lazy(() => import('./routes/td/TdRoute'));
 const JewelApp = lazy(() => import('./routes/jewel/JewelApp'));
@@ -38,6 +42,9 @@ export default function App() {
           <Route path="/sponsors" element={<SponsorsPage />} />
           <Route path="/music" element={<MusicPage />} />
           <Route path="/leagues" element={<LeaguesPage />} />
+          <Route path="/tags" element={<TagsBoard />} />
+          <Route path="/tags/:pool" element={<TagsBoard />} />
+          <Route path="/tags/:pool/:number" element={<TagPage />} />
           <Route path="/gallery" element={<GalleryPage />} />
         </Route>
         <Route path="/jewel-xi" element={<JewelLayout />}>
@@ -51,6 +58,7 @@ export default function App() {
         <Route path="/e/:slug/winners" element={<RouteGuard><Suspense fallback={null}><WinnersPage /></Suspense></RouteGuard>} />
         <Route path="/e/:slug/request" element={<RouteGuard><Suspense fallback={null}><RequestPage /></Suspense></RouteGuard>} />
         <Route path="/e/:slug" element={<RouteGuard><Suspense fallback={null}><EventBoard /></Suspense></RouteGuard>} />
+        <Route path="/tag/:token" element={<RouteGuard><Suspense fallback={null}><MyTagApp /></Suspense></RouteGuard>} />
         <Route path="/crew/:token" element={<RouteGuard><Suspense fallback={null}><CrewApp /></Suspense></RouteGuard>} />
         <Route path="/td" element={<RouteGuard><Suspense fallback={null}><TdRoute /></Suspense></RouteGuard>} />
         <Route path="*" element={<Placeholder title="Not here" note="That page doesn't exist. Head back to barebonesdiscgolf.club." />} />
