@@ -1,0 +1,15 @@
+/* Club Gallery panel (TD Builder, super admin). Mirrors the sponsor rows. */
+.td-gal { display: flex; flex-direction: column; gap: 10px; }
+.td-gal-row { display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px; border-radius: var(--r-card); background: var(--surface); border: 2px solid var(--border); }
+.td-gal-row.waiting { border-color: var(--gold); }
+.td-gal-row[aria-busy='true'] { opacity: .6; }
+.td-gal-thumb { position: relative; width: 120px; height: 90px; border-radius: 8px; overflow: hidden; background: #000; display: block; }
+.td-gal-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.td-gal-badge { position: absolute; left: 6px; bottom: 6px; font-family: var(--font-label); font-size: 10px; letter-spacing: 1px; padding: 2px 6px; border-radius: 4px; background: var(--cyan); color: #000; }
+.td-gal-fields { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.td-btn.disabled { opacity: .5; pointer-events: none; }
+@media (max-width: 640px) {
+  .td-gal-row { grid-template-columns: 88px minmax(0, 1fr); }
+  .td-gal-thumb { width: 88px; height: 66px; }
+  .td-gal-row .td-sponsor-actions { grid-column: 1 / -1; }
+}

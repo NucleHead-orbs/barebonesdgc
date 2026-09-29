@@ -116,6 +116,17 @@ export const HELP: HelpSection[] = [
     ],
   },
   {
+    id: 'gallery', title: 'Club gallery (super admin)',
+    steps: [
+      'From your events list tap **CLUB GALLERY**. Only the super admin sees it.',
+      '**IMPORT A FOLDER** and pick a folder from the Drive archive (download it first). Funny Pics become memes, Events/The Jewel/<year> become that Jewel, Events/<name> become events, the rest are photos. Big pictures are shrunk before upload.',
+      'Everything lands **Hidden**. Fix the title, category, year, Jewel # or event name, then switch on **Visible**. **MAKE THESE VISIBLE** approves the whole page you are looking at.',
+      'Importing the same folder again skips files that are already in, so it\'s safe to re-run.',
+      'Videos: upload to the club YouTube channel, paste the link under **ADD VIDEO**, then switch it on.',
+      'Nothing is ever public until you switch it on. **DELETE** asks twice and removes the file too.',
+    ],
+  },
+  {
     id: 'trouble', title: 'Something went wrong',
     steps: [
       'A red message tells you what to do. It never loses your work silently.',

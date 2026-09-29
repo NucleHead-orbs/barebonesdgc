@@ -6,6 +6,7 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 |---|---|---|
 | `/` | Club home (master brand) | Public |
 | `/sponsors` | Sponsors & Fan Club (master) | Public |
+| `/gallery` | Club archive: every Jewel, the meme wall, crew photos, videos (YouTube embeds), events & fliers | Public (approved items only) |
 | `/music` | Songs by The Boneheaded Boy (tracks in `MUSIC`, `src/lib/jewel/content.ts`; files in `public/music/`) | Public |
 | `/jewel-xi` `/jewel-xi/course` `/jewel-xi/sponsors` | Jewel XI event site (`data-theme="jewel-xi"`); `/jewel-xi/live` → `/jewel` | Public |
 | `/jewel` | Leaderboard, course guide, schedule, sponsors (tabs: `#leaders` `#score` `#course` `#info`) | Public |
@@ -14,13 +15,14 @@ One app, one Cloudflare Workers deploy: the Bare Bones club site, the Jewel XI e
 | `/crew/:token` | One crew member's page: briefing + Got it, tasks, and the tools their jobs unlock (check-in, raffle, card requests, contacts) | Private link |
 | `/e/:slug` | Live leaderboard + course for any event built in `/td` (event skin + palette) | Public |
 | `/c/:token` | Scorecard for one card (the QR code); takes the event's name + palette | Anyone holding the card's QR |
-| `/td` | TD Builder: event list → Setup (build menu) · Players (import, walk-ups, check-in) · Cards & QR · Sponsors | Signed-in TDs; each sees only their events |
+| `/td` | TD Builder: event list → Setup (build menu) · Players (import, walk-ups, check-in) · Cards & QR · Sponsors · `?view=gallery` Club Gallery (super admin) | Signed-in TDs; each sees only their events |
 
 ## Sources of truth
 - **Data:** Supabase project `jjywfkonerwbhpesyyxa` (West US). `supabase/migrations/` is the only schema definition. Never edit tables in the dashboard.
 - **An event's configuration (the build menu):** the `events` row (club, dates, skin, palette, rounds 1–2, waves 1 or AM/PM, check-in, sponsors), its `holes`, its `divisions` (order + default wave) and `builder_settings` (card rules per round). Edited only through `td_update_event` / `td_set_holes` / `td_set_divisions` (they enforce the rules below). Jewel XI's holes/divisions were seeded by `20260926000100_jewel_seed.sql`, with the course (distances, OB, rules) replaced by `20260928000300_jewel_xi_holes_from_guide.sql`; its double-up order lives in its saved card rules (`20260928000100_jewel_card_rules.sql`).
 - **Who can run an event:** super admin = `app_metadata.role = 'td'` (all events; the only one who creates events from scratch or deletes them). Event TD = a **confirmed** email listed in `event_tds` for that event. `can_td(event_id)` is the single check behind every TD RLS policy and RPC. Signing up grants nothing by itself.
 - **Sponsors:** Disc Golf Scene's "Jewel hole sponsor" column → `td_import_sponsors` (adds only, never overwrites, lands hidden) → TD sets public name / hole / tier / logo and flips Visible in `/td` → Sponsors. Logos in the public `sponsor-logos` storage bucket (TD-only writes). Public sees approved sponsors only (RLS).
+- **Gallery:** `gallery_items` (kind image|video, category jewel|meme|photo|event, year, jewel_no, event_label, caption, sort, hidden). Images in the public `gallery` bucket (8 MB cap, PNG/JPG/WebP/GIF, super-admin-only writes), shrunk in the browser to 1600px WebP (GIFs untouched). Videos live on YouTube (@barebonesdiscgolfclub) and are stored as the 11-char id; the page shows the thumbnail and loads the youtube-nocookie player only on tap. Google Drive "Disc Golf/Bare Bones" is the raw archive; the Club Gallery import tags from folder names (`guessFromPath`) and dedupes on `source_path`. Pure logic: `src/lib/gallery/gallery.ts`. Everything lands hidden; the public sees approved rows only (RLS).
 - **Event copy (schedule, register link, tagline):** `src/lib/jewel/content.ts`. House rules are empty until the TD supplies them; the section stays hidden meanwhile.
 - **Card labels (`7`, `7A`):** computed by `td_publish_round` in the database. The client never builds a label; unpublished cards show "Hole 7 · group 2".
 - **TD instructions:** `src/lib/td/help.ts` is the ONE source; the HELP button in /td renders it. Change a screen → change its help section in the same commit.
@@ -66,7 +68,7 @@ npm run build
 ```
 
 ### Database
-Apply `supabase/migrations/*.sql` in filename order. All thirteen are live on the project as of 2026-09-29 (newest: `20261002000000_crew.sql`). The latest, `20260928000300_jewel_xi_holes_from_guide.sql`, sets Jewel XI distances/OB/rules from YT & Beard's course guide (par 62, 6,499 ft) and refuses to run if any par differs.
+Apply `supabase/migrations/*.sql` in filename order. All fourteen are live on the project as of 2026-09-29 (newest: `20261003000000_gallery.sql`). The latest, `20260928000300_jewel_xi_holes_from_guide.sql`, sets Jewel XI distances/OB/rules from YT & Beard's course guide (par 62, 6,499 ft) and refuses to run if any par differs.
 Local check against plain Postgres (no Supabase needed):
 ```bash
 psql -d jewel -f supabase/tests/00_supabase_stub.sql   # test only, never on Supabase
@@ -80,6 +82,7 @@ psql -d jewel -f supabase/tests/40_winners.sql          # 19 checks: prize priva
 psql -d jewel -f supabase/tests/50_event_prep.sql       # 16 checks: prep privacy, storage folders, shirt import, next-year carry
 psql -d jewel -f supabase/tests/60_courses.sql          # 32 checks: library seed, who can edit/verify, apply copies, duplicate link
 psql -d jewel -f supabase/tests/70_crew.sql             # 49 checks: link isolation, role gates, revoke/reissue, raffle, requests, contacts
+psql -d jewel -f supabase/tests/80_gallery.sql          # 24 checks: lands hidden, public sees approved only, super-admin-only writes + storage
 ```
 Make a user **super admin** (event TDs need nothing here: add their email in `/td` → Setup → TDs):
 ```sql

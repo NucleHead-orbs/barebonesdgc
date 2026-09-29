@@ -3,6 +3,7 @@ import { Suspense, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { CLUB, EVENT } from '../lib/jewel/content';
 import { useTheme } from '../lib/theme';
+import { YOUTUBE_CHANNEL } from '../lib/gallery/gallery';
 import { Button } from './ui';
 import './site.css';
 
@@ -26,6 +27,7 @@ export function MasterLayout() {
           <nav className="mh-nav" aria-label="Main">
             <NavLink to="/" end>Home</NavLink>
             <NavLink to="/jewel-xi">Jewel XI</NavLink>
+            <NavLink to="/gallery">Gallery</NavLink>
             <NavLink to="/music">Music</NavLink>
             <NavLink to="/sponsors">Sponsors</NavLink>
           </nav>
@@ -72,6 +74,7 @@ export function Footer({ jewel }: { jewel?: boolean }) {
         <div className="ft-tag">{EVENT.tagline}.</div>
         <nav className="ft-links" aria-label="Footer">
           {CLUB.facebookUrl && <a href={CLUB.facebookUrl} target="_blank" rel="noreferrer">Facebook group</a>}
+          <a href={YOUTUBE_CHANNEL} target="_blank" rel="noreferrer">YouTube</a>
           <a href={EVENT.registerUrl} target="_blank" rel="noreferrer">Disc Golf Scene</a>
           <Link to="/td" className="ft-muted">TD login</Link>
         </nav>

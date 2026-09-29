@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import * as api from '../../lib/td/api';
 import { rpcError } from '../../lib/td/builder';
@@ -9,8 +9,10 @@ import { HelpButton } from './Help';
 import { LayoutSelect } from './CourseLibrary';
 import { findLayout, sortLibrary, type LibCourse } from '../../lib/courses/courses';
 
+const GalleryPanel = lazy(() => import('./GalleryPanel'));
+
 /**
- * Home of /td: the events this account runs. ?e=<id> opens one.
+ * Home of /td: the events this account runs. ?e=<id> opens one. ?view=gallery (super admin) curates the club gallery.
  * Super admin creates events from scratch; any TD of an event can duplicate it (league week 2).
  */
 export default function EventHub({ email, admin, onSignOut }: { email: string; admin: boolean; onSignOut: () => void }) {
@@ -31,6 +33,14 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
 
   const open = (id: string | null) => setParams(id ? { e: id } : {});
 
+  if (admin && params.get('view') === 'gallery') {
+    return (
+      <HubShell email={email} onSignOut={onSignOut} admin={admin}>
+        <Suspense fallback={<p className="td-empty">Loading the gallery…</p>}><GalleryPanel onBack={() => setParams({})} /></Suspense>
+      </HubShell>
+    );
+  }
+
   if (openId) {
     return <EventWorkspace key={openId} eventId={openId} email={email} admin={admin} onSignOut={onSignOut}
       onBack={() => { open(null); void reload(); }} />;
@@ -47,6 +57,7 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
           {events?.some((e) => e.archived) && (
             <button className="td-btn quiet" onClick={() => setShowArchived(!showArchived)}>{showArchived ? 'HIDE ARCHIVED' : 'SHOW ARCHIVED'}</button>
           )}
+          {admin && <button className="td-btn" onClick={() => setParams({ view: 'gallery' })}>CLUB GALLERY</button>}
           {admin && <button className="td-btn cta" onClick={() => setCreating(true)}>+ NEW EVENT</button>}
         </div>
         {creating && <NewEventForm onCancel={() => setCreating(false)} onCreated={(id) => { setCreating(false); open(id); }} />}
