@@ -199,3 +199,30 @@
   .td-hole { grid-template-columns: 34px 60px 70px minmax(0, 1fr); }
   .td-title { font-size: 22px; }
 }
+
+/* ---------- requests, private tags ---------- */
+.td-badge { display: inline-block; min-width: 20px; margin-left: 6px; padding: 1px 6px; border-radius: var(--r-pill); background: var(--magenta); color: #000; font-size: 11px; text-align: center; }
+.td-req { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 12px 14px; border-radius: 10px; background: var(--surface); border: 2px solid var(--border); }
+.td-req-new { border-color: var(--magenta); }
+.td-req-approved { border-color: var(--under); }
+.td-req-declined { opacity: .6; }
+.td-req-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.td-req-main b { font-size: 16px; }
+.td-req-note { font-size: 13px; font-style: italic; }
+.td-req-warn { font-size: 12px; color: var(--gold); font-weight: 700; }
+.td-picker { display: flex; flex-direction: column; gap: 8px; }
+.td-picker-hits { display: flex; flex-direction: column; gap: 4px; }
+.td-picker-hits button { text-align: left; min-height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--raised); color: #fff; font-size: 14px; }
+.td-roster-name { background: none; border: 0; color: inherit; text-align: left; padding: 0; }
+.td-vibe { min-width: 36px; min-height: 36px; border-radius: 18px; border: 1px dashed var(--control-muted); background: transparent; color: var(--text-muted); font-size: 16px; line-height: 1; }
+.td-vibe.is-star, .td-vibe.is-easy { border-style: solid; color: #fff; }
+.td-private { margin: -2px 0 6px 12px; padding: 12px; border-left: 3px solid var(--gold); background: var(--surface); border-radius: 0 10px 10px 0; display: flex; flex-direction: column; gap: 8px; }
+.td-mark { font-size: 11px; }
+.td-sign { background: #fff; color: #000; border-radius: var(--r-card); padding: 32px 24px; max-width: 640px; margin: 0 auto; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.td-sign h1 { margin: 0; font-family: var(--font-label); font-size: 40px; line-height: 1.05; }
+.td-sign p { margin: 0; font-size: 20px; line-height: 1.35; max-width: 460px; }
+.td-sign-event { font-size: 16px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+.td-sign-qr { width: 100%; max-width: 360px; }
+.td-sign-qr svg { width: 100%; height: auto; display: block; }
+.td-sign-url { font-size: 12px; opacity: .6; word-break: break-all; }
+@media print { .td-sign { border: 0; max-width: none; } }

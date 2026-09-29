@@ -78,6 +78,7 @@ export default function EventBoard() {
           </section>
         )}
         <p className="jw-note">Scores update every 30 seconds. Players score by scanning the QR code on their card.</p>
+        {ev && <a className="jw-note" href={`/e/${ev.slug}/request`} style={{ color: 'var(--accent-a)' }}>Want to play with someone? Send a card request ›</a>}
       </main>
     </div>
   );

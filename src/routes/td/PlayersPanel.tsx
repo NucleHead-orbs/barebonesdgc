@@ -1,17 +1,19 @@
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import type { ImportRow } from '../../lib/import/dgs';
 import * as api from '../../lib/td/api';
 import { importDiff, rpcError, type ExistingPlayer } from '../../lib/td/builder';
+import { cycleVibe, VIBE_LABEL, VIBE_MARK } from '../../lib/td/requests';
 import ImportReview from './ImportReview';
+import { PlayerPicker } from './PlayerPicker';
 
 /**
  * Players tab: the check-in table. Built for a folding table at the course:
  * big tap targets, search-as-you-type, walk-up add in one line, DGS import for pre-registration.
  * Check-in state is saved the moment it's tapped (and reverted on screen if the save fails).
  */
-export default function PlayersPanel({ setup, players, sponsors, onPlayers, onReload, onSponsors }: {
-  setup: api.EventSetup; players: ExistingPlayer[]; sponsors: api.Sponsor[];
-  onPlayers: (p: ExistingPlayer[]) => void; onReload: () => Promise<void>; onSponsors: (s: api.Sponsor[]) => void;
+export default function PlayersPanel({ setup, players, sponsors, priv, onPlayers, onReload, onSponsors, onPrivate }: {
+  setup: api.EventSetup; players: ExistingPlayer[]; sponsors: api.Sponsor[]; priv: api.PrivateInfo;
+  onPlayers: (p: ExistingPlayer[]) => void; onReload: () => Promise<void>; onSponsors: (s: api.Sponsor[]) => void; onPrivate: () => Promise<void>;
 }) {
   const ev = setup.event;
   const divCodes = setup.divisions.map((d) => d.code);
@@ -23,6 +25,7 @@ export default function PlayersPanel({ setup, players, sponsors, onPlayers, onRe
   const [toast, setToast] = useState('');
   const [err, setErr] = useState('');
   const [pending, setPending] = useState<{ fileName: string; text: string } | null>(null);
+  const [open, setOpen] = useState<string | null>(null); // player whose private details are expanded
 
   const loadLocked = useCallback(async () => {
     const r = await api.lockedPlayerIds(ev.id);
@@ -72,6 +75,23 @@ export default function PlayersPanel({ setup, players, sponsors, onPlayers, onRe
     await onReload();
     setName('');
     setToast(`${dupe ? 'Updated' : 'Added'} ${n} (${div})${ev.use_checkin ? ', checked in' : ''}.`);
+  };
+
+  /** Private tag: none → ⭐ (needs a good card) → ☺ (plays with anyone) → none. TD-only table. */
+  const tag = async (p: ExistingPlayer) => {
+    const r = await api.setVibe(ev.id, p.id, cycleVibe(priv.vibe[p.id]));
+    if (r.error) setErr(`${p.name}: ${rpcError(r.error).message}`);
+    await onPrivate();
+  };
+  const apartOf = (id: string) => priv.apart.flatMap(([a, b]) => (a === id ? [b] : b === id ? [a] : []));
+  const setApart = async (p: ExistingPlayer, next: string[]) => {
+    const cur = apartOf(p.id);
+    const added = next.filter((x) => !cur.includes(x));
+    const gone = cur.filter((x) => !next.includes(x));
+    const rs = await Promise.all([...added.map((x) => api.addApart(ev.id, p.id, x)), ...gone.map((x) => api.removeApart(p.id, x))]);
+    const bad = rs.find((r) => r.error);
+    if (bad) setErr(rpcError(bad.error).message);
+    await onPrivate();
   };
 
   const remove = async (p: ExistingPlayer) => {
@@ -143,16 +163,34 @@ export default function PlayersPanel({ setup, players, sponsors, onPlayers, onRe
         <section key={d} className="td-roster" aria-label={`${d} players`}>
           <div className="td-label">{d} · {ps.length}{ev.use_checkin ? ` · ${ps.filter((p) => p.checked_in).length} IN` : ''}</div>
           {ps.map((p) => (
-            <div key={p.id} className={`td-roster-row${p.checked_in ? ' is-in' : ''}`}>
+            <Fragment key={p.id}>
+            <div className={`td-roster-row${p.checked_in ? ' is-in' : ''}`}>
               {ev.use_checkin && (
                 <button className="td-checkin" aria-pressed={!!p.checked_in} aria-label={`${p.name} checked in`} onClick={() => void setIn(p, !p.checked_in)}>
                   {p.checked_in ? '✓ IN' : 'CHECK IN'}
                 </button>
               )}
-              <span className="td-roster-name">{p.name}</span>
+              <button className="td-roster-name" onClick={() => setOpen(open === p.id ? null : p.id)} aria-expanded={open === p.id}>
+                {p.name}{apartOf(p.id).length > 0 && <span className="td-hint"> · ⊘{apartOf(p.id).length}</span>}
+              </button>
+              <button className={`td-vibe${priv.vibe[p.id] ? ` is-${priv.vibe[p.id]}` : ''}`} onClick={() => void tag(p)}
+                title={priv.vibe[p.id] ? `${VIBE_LABEL[priv.vibe[p.id]]} (private). Tap to change.` : 'Private tag: tap for ⭐ needs a good card, again for ☺ plays with anyone'}
+                aria-label={`${p.name} private tag: ${priv.vibe[p.id] ? VIBE_LABEL[priv.vibe[p.id]] : 'none'}`}>
+                {priv.vibe[p.id] ? VIBE_MARK[priv.vibe[p.id]] : '·'}
+              </button>
               <span className="td-hint">{p.reg_order != null ? `#${p.reg_order}` : ''}</span>
               {!locked.has(p.id) && <button className="td-btn quiet" onClick={() => void remove(p)} aria-label={`Remove ${p.name}`}>REMOVE</button>}
             </div>
+            {open === p.id && (
+              <div className="td-private">
+                <div className="td-label">PRIVATE · ONLY TDS SEE THIS</div>
+                <div className="td-hint">Tag: {priv.vibe[p.id] ? `${VIBE_MARK[priv.vibe[p.id]]} ${VIBE_LABEL[priv.vibe[p.id]]}` : 'none'} (tap the dot next to their name to change)</div>
+                <div className="td-label">KEEP APART FROM</div>
+                <PlayerPicker players={players} picked={apartOf(p.id)} max={10} exclude={[p.id]} placeholder="Type a name. The generator never puts them on the same card."
+                  onChange={(ids) => void setApart(p, ids)} />
+              </div>
+            )}
+            </Fragment>
           ))}
         </section>
       ))}

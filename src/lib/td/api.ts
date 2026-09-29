@@ -179,3 +179,53 @@ export const uploadLogo = (eventId: string, sponsorId: string, file: File) => wr
   must(await supabase.storage.from(LOGO_BUCKET).upload(path, file, { contentType: file.type, upsert: false }));
   return supabase.storage.from(LOGO_BUCKET).getPublicUrl(path).data.publicUrl;
 });
+
+// ---------- card requests, private tags, keep-apart (TD-only tables) ----------
+export type RequestStatus = 'new' | 'approved' | 'declined';
+export interface CardRequest {
+  id: string; status: RequestStatus; source: 'player' | 'td'; note: string | null; created_at: string;
+  requester: string | null; players: string[]; // requester first
+}
+
+export const loadRequests = (eventId: string) => wrap(async (): Promise<CardRequest[]> => {
+  const rows = list(await supabase.from('card_requests')
+    .select('id, status, source, note, created_at, card_request_players(player_id, is_requester)')
+    .eq('event_id', eventId).order('created_at')) as Array<Omit<CardRequest, 'requester' | 'players'> & {
+      card_request_players: Array<{ player_id: string; is_requester: boolean }> }>;
+  return rows.map(({ card_request_players: m, ...r }) => {
+    const req = m.find((x) => x.is_requester)?.player_id ?? null;
+    return { ...r, requester: req, players: [...(req ? [req] : []), ...m.filter((x) => x.player_id !== req).map((x) => x.player_id)] };
+  });
+});
+
+export const setRequestStatus = (id: string, status: RequestStatus) => wrap(async () => {
+  must(await supabase.from('card_requests').update({ status, decided_at: status === 'new' ? null : new Date().toISOString() }).eq('id', id));
+});
+export const deleteRequest = (id: string) => wrap(async () => { must(await supabase.from('card_requests').delete().eq('id', id)); });
+export const addRequest = (eventId: string, playerIds: string[], note: string) => wrap(async (): Promise<string> =>
+  must(await supabase.rpc('td_add_card_request', { p_event_id: eventId, p_players: playerIds, p_note: note || null })) as string);
+
+export interface PrivateInfo { vibe: Record<string, 'star' | 'easy'>; apart: Array<[string, string]> }
+export const loadPrivate = (eventId: string) => wrap(async (): Promise<PrivateInfo> => {
+  const [tags, pairs] = await Promise.all([
+    supabase.from('player_private').select('player_id, vibe').eq('event_id', eventId),
+    supabase.from('keep_apart').select('player_a, player_b').eq('event_id', eventId),
+  ]);
+  const vibe: PrivateInfo['vibe'] = {};
+  for (const t of list(tags) as Array<{ player_id: string; vibe: 'star' | 'easy' | null }>) if (t.vibe) vibe[t.player_id] = t.vibe;
+  return { vibe, apart: (list(pairs) as Array<{ player_a: string; player_b: string }>).map((p) => [p.player_a, p.player_b]) };
+});
+
+export const setVibe = (eventId: string, playerId: string, vibe: 'star' | 'easy' | null) => wrap(async () => {
+  if (vibe) must(await supabase.from('player_private').upsert({ player_id: playerId, event_id: eventId, vibe, updated_at: new Date().toISOString() }));
+  else must(await supabase.from('player_private').delete().eq('player_id', playerId));
+});
+const ordered = (a: string, b: string) => (a < b ? [a, b] : [b, a]);
+export const addApart = (eventId: string, a: string, b: string) => wrap(async () => {
+  const [x, y] = ordered(a, b);
+  must(await supabase.from('keep_apart').upsert({ event_id: eventId, player_a: x, player_b: y }, { onConflict: 'player_a,player_b', ignoreDuplicates: true }));
+});
+export const removeApart = (a: string, b: string) => wrap(async () => {
+  const [x, y] = ordered(a, b);
+  must(await supabase.from('keep_apart').delete().eq('player_a', x).eq('player_b', y));
+});

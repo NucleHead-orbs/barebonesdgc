@@ -6,13 +6,15 @@ import {
   hasUnpublishedChanges, unassignedIds, rpcError, type ExistingPlayer, type PublishedCard, type RpcErrorKind,
 } from '../../lib/td/builder';
 import { cardPool, settingsForFormat } from '../../lib/td/setup';
+import { cardIssues } from '../../lib/cards/pairing';
+import { pairingFor, VIBE_MARK } from '../../lib/td/requests';
 import QrSheet from './QrSheet';
 
 type Round = 1 | 2;
 type PerRound<T> = Record<Round, T>;
 const SORT_OPTS: Array<[SortBy, string]> = [['rating', 'Rating (high → low)'], ['r1', 'R1 score (for R2)'], ['reg', 'Registration order'], ['random', 'Random']];
 const TOGGLES: Array<[keyof BuilderSettings, string]> = [
-  ['keepDivisions', 'Keep divisions together'],
+  ['keepDivisions', 'Keep divisions together (off = mix divisions so people meet)'],
   ['mergeSmall', 'Merge tiny divisions (1–2 players) onto shared cards'],
   ['balance', 'Balance card sizes (4-4-3, not 4-4-4-1)'],
 ];
@@ -23,7 +25,9 @@ const holeTextOf = (s: BuilderSettings) => ({ double: s.doubleUp.join(', '), ski
  * Cards & QR for one event. Format comes from the build menu (Setup): number of rounds, single or
  * AM/PM wave, holes, divisions, check-in. Card rules (size, sort, double-up…) live here, per round.
  */
-export default function CardBuilder({ setup, players: allPlayers }: { setup: api.EventSetup; players: ExistingPlayer[] }) {
+export default function CardBuilder({ setup, players: allPlayers, requests, priv }: {
+  setup: api.EventSetup; players: ExistingPlayer[]; requests: api.CardRequest[]; priv: api.PrivateInfo;
+}) {
   const ev = setup.event;
   const holeCount = setup.holes.length;
   const divOrder = useMemo(() => setup.divisions.map((d) => d.code), [setup.divisions]);
@@ -125,6 +129,7 @@ export default function CardBuilder({ setup, players: allPlayers }: { setup: api
         players: api.toBuilderPlayers(players), settings: next, divOrder, holeCount,
         lockedCards: roundCards, // generate drops anyone no longer in the pool (e.g. un-checked-in) from locked cards
         r1Strokes: next.sortBy === 'r1' ? r1 : undefined,
+        pairing: pairingFor(requests, priv, round),
       });
       setCardsFor(res.cards);
       setGenWarn((w) => ({ ...w, [round]: res.warnings }));
@@ -174,8 +179,8 @@ export default function CardBuilder({ setup, players: allPlayers }: { setup: api
     return <QrSheet round={round} eventName={ev.name} cards={published[round]} names={names} onBack={() => setView('builder')} />;
   }
 
-  // ---- warnings (red), in the order the TD should fix them
-  const warnings: string[] = [...genWarn[round]];
+  // ---- warnings (red), in the order the TD should fix them. Pairing issues are recomputed live, so hand moves show them too.
+  const warnings: string[] = [...genWarn[round], ...cardIssues(roundCards.map((c) => c.playerIds), pairingFor(requests, priv, round), (id) => byId.get(id)?.name ?? '?')];
   if (roundCards.length && unassigned.length) warnings.push(`${unassigned.length} ${twoWaves ? `${shownWave} ` : ''}player(s) are not on a card. Regenerate or move them.`);
   if (waveCards.length > holeCount * 2) warnings.push(`${waveCards.length} cards for ${holeCount} holes, more than 2 per hole. Consider card size 5${twoWaves ? ' or moving divisions to the other wave' : ''}.`);
   if (waveCards.some((c) => c.playerIds.length > 5)) warnings.push('A card has more than 5 players.');
@@ -297,7 +302,7 @@ export default function CardBuilder({ setup, players: allPlayers }: { setup: api
                   <div className="td-card-title"><b>Not on a card · {unassigned.length}</b><span>Tap a player, then Move here</span></div>
                 </div>
                 {unassigned.map((id) => byId.get(id)!).map((p) => (
-                  <PlayerRow key={p.id} name={p.name} div={p.div_code} metric={metric(p)} selected={sel === p.id} match={hit(p.id)}
+                  <PlayerRow key={p.id} name={p.name} mark={priv.vibe[p.id] ? VIBE_MARK[priv.vibe[p.id]] : ''} div={p.div_code} metric={metric(p)} selected={sel === p.id} match={hit(p.id)}
                     onClick={() => setSel(sel === p.id ? null : p.id)} />
                 ))}
               </div>
@@ -316,7 +321,7 @@ export default function CardBuilder({ setup, players: allPlayers }: { setup: api
                       onClick={() => setCardsFor(toggleLock(roundCards, k))}>{c.locked ? '🔒' : '🔓'}</button>
                   </div>
                   {ps.map((p) => (
-                    <PlayerRow key={p.id} name={p.name} div={p.div_code} metric={metric(p)} selected={sel === p.id} match={hit(p.id)}
+                    <PlayerRow key={p.id} name={p.name} mark={priv.vibe[p.id] ? VIBE_MARK[priv.vibe[p.id]] : ''} div={p.div_code} metric={metric(p)} selected={sel === p.id} match={hit(p.id)}
                       onClick={() => setSel(sel === p.id ? null : p.id)} />
                   ))}
                   {sel && !c.playerIds.includes(sel) && <button className="td-drop" onClick={() => drop(c)}>MOVE HERE</button>}
@@ -335,12 +340,12 @@ const Stat = ({ v, k, color = '#fff' }: { v: string | number; k: string; color?:
   <div className="td-stat"><b style={{ color }}>{v}</b><span>{k}</span></div>
 );
 
-function PlayerRow({ name, div, metric, selected, match, onClick }: {
-  name: string; div: string; metric: string | number; selected: boolean; match: boolean; onClick: () => void;
+function PlayerRow({ name, mark, div, metric, selected, match, onClick }: {
+  name: string; mark: string; div: string; metric: string | number; selected: boolean; match: boolean; onClick: () => void;
 }) {
   return (
     <button className={`td-player${match ? ' match' : ''}`} aria-pressed={selected} onClick={onClick}>
-      <span className="n">{name}</span><span className="d">{div}</span><span className="m">{metric}</span>
+      <span className="n">{name}{mark && <span className="td-mark"> {mark}</span>}</span><span className="d">{div}</span><span className="m">{metric}</span>
     </button>
   );
 }

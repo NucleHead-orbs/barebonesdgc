@@ -7,6 +7,8 @@
  * Pure and deterministic: same inputs + seed => same cards.
  * Labels ('7', '7A') are NOT computed here; the database owns that rule.
  */
+import { seatPairing, type PairingInput } from './pairing';
+
 export type Wave = 'AM' | 'PM';
 export type SortBy = 'rating' | 'r1' | 'reg' | 'random';
 
@@ -45,6 +47,7 @@ export interface GenerateInput {
   holeCount: number;
   lockedCards?: Card[];
   r1Strokes?: Record<string, number>; // official, complete R1 totals only (r2_seed view)
+  pairing?: PairingInput; // approved requests, keep-apart, ⭐/☺ (see pairing.ts)
 }
 
 export interface GenerateResult {
@@ -114,6 +117,18 @@ function sortGroup(g: BuilderPlayer[], s: BuilderSettings, r1: Record<string, nu
   }
 }
 
+/**
+ * One list that alternates divisions (A1 B1 C1 A2 B2 C2 …), each division in its own sort order.
+ * Chunking it into cards gives every card as many different divisions as the field allows.
+ */
+export function mixDivisions(pool: BuilderPlayer[], divOrder: string[], sort: (g: BuilderPlayer[]) => BuilderPlayer[]): BuilderPlayer[] {
+  const extra = [...new Set(pool.map((p) => p.div))].filter((d) => !divOrder.includes(d)).sort();
+  const lanes = [...divOrder, ...extra].map((d) => sort(pool.filter((p) => p.div === d))).filter((l) => l.length);
+  const out: BuilderPlayer[] = [];
+  for (let i = 0; out.length < pool.length; i++) for (const l of lanes) if (i < l.length) out.push(l[i]);
+  return out;
+}
+
 export function generateCards(input: GenerateInput): GenerateResult {
   const { players, settings: s, divOrder, holeCount } = input;
   const locked = (input.lockedCards ?? []).filter((c) => c.locked);
@@ -137,10 +152,11 @@ export function generateCards(input: GenerateInput): GenerateResult {
     if (s.keepDivisions) {
       const unknownDivs = [...new Set(pool.map((p) => p.div))].filter((d) => !divOrder.includes(d)).sort();
       groups = [...divOrder, ...unknownDivs].map((d) => pool.filter((p) => p.div === d)).filter((g) => g.length);
+      groups = groups.map((g) => sortGroup(g, s, r1, rand));
     } else {
-      groups = pool.length ? [pool] : [];
+      // Social mix: sort each division, then deal them out round-robin so every card mixes divisions.
+      groups = pool.length ? [mixDivisions(pool, divOrder, (g) => sortGroup(g, s, r1, rand))] : [];
     }
-    groups = groups.map((g) => sortGroup(g, s, r1, rand));
     if (s.keepDivisions && s.mergeSmall) {
       const small = groups.filter((g) => g.length < 3);
       if (small.length > 1) groups = [...groups.filter((g) => g.length >= 3), small.flat()];
@@ -153,6 +169,16 @@ export function generateCards(input: GenerateInput): GenerateResult {
         fresh.push({ wave, startHole: 0, groupNo: 0, locked: false, playerIds: g.slice(at, at + n).map((p) => p.id) });
         at += n;
       }
+    }
+
+    if (input.pairing && fresh.length) {
+      const div = new Map(players.map((p) => [p.id, p.div]));
+      const name = new Map(players.map((p) => [p.id, p.name]));
+      const r = seatPairing(fresh.map((c) => c.playerIds), input.pairing, {
+        keepDivisions: s.keepDivisions, divOf: (id) => div.get(id) ?? '', nameOf: (id) => name.get(id) ?? '?',
+      });
+      r.cards.forEach((ids, i) => { fresh[i].playerIds = ids; });
+      warnings.push(...r.warnings);
     }
 
     // Occupancy per hole, and which group numbers are already used on it.
