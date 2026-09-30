@@ -88,15 +88,37 @@ export const GALLERY: Array<{ name: string; alt: string }> = [
   { name: 'merry-christmas-boners', alt: 'Merry Christmas from the Boners: the skeleton on Santa\'s lap' },
 ];
 
-/** Music page. Files in public/music: <slug>.mp3 + <slug>.webp (600px square cover). */
+/**
+ * Music page. Files in public/music: <slug>.mp3 + <slug>.webp (600px square cover).
+ * A track without `length` has no audio yet and shows as "coming soon". `cover` overrides <slug>.webp.
+ */
+export interface MusicTrack { slug: string; title: string; note?: string; length?: string; cover?: string }
+export interface MusicRelease { title: string; kicker: string; tracks: MusicTrack[] }
 export const MUSIC = {
   artist: 'The Boneheaded Boy',
   youtubeMusic: 'https://music.youtube.com/channel/UCiqbewAUHg4A_S3wVQMiAkg',
   logo: '/music/bhb-logo.webp',
-  tracks: [
-    { slug: 'throw-it-like-andy-p', title: 'Throw It Like Andy P', length: '5:09' },
-    { slug: 'the-jewel-x', title: 'The Jewel X', length: '3:10' },
-    { slug: 'boner-nation', title: 'Boner Nation', length: '2:14' },
-    { slug: 'boners-rise', title: 'Boners Rise!', note: 'Cover', length: '2:40' },
-  ] as Array<{ slug: string; title: string; note?: string; length: string }>,
+  releases: [
+    {
+      title: "Jewel XI: Freedom Don't Wear Stripes", kicker: 'EP · 2026',
+      tracks: [
+        { slug: 'throw-it-like-andy-p', title: 'Throw It Like Andy P', length: '5:46' },
+        { slug: 'whoa-shit', title: 'Whoa Shit!', length: '5:06' },
+        { slug: 'corn-nuts', title: 'Corn Nuts!', length: '5:23' },
+        { slug: 'no-peace-here-man', title: 'No Peace Here Man' },
+        { slug: 'gator-gangbang', title: 'Gator Gangbang', length: '4:40' },
+        { slug: 'lumen-limit-city', title: 'Lumen Limit City', length: '5:07' },
+        { slug: 'get-rolley', title: 'Get Rolley' },
+      ],
+    },
+    {
+      title: 'Singles', kicker: 'More from the Boners',
+      tracks: [
+        { slug: 'wheres-dave', title: "Where's Dave?", length: '5:09', cover: '/music/bhb-logo.webp' },
+        { slug: 'the-jewel-x', title: 'The Jewel X', length: '3:10' },
+        { slug: 'boner-nation', title: 'Boner Nation', length: '2:14' },
+        { slug: 'boners-rise', title: 'Boners Rise!', note: 'Cover', length: '2:40' },
+      ],
+    },
+  ] as MusicRelease[],
 };

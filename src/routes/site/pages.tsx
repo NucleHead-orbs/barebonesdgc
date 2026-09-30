@@ -161,7 +161,7 @@ export function Music() {
   return (
     <section className="sec">
       <div className="sec-inner" style={{ maxWidth: 860 }}>
-        <SectionHeading kicker={MUSIC.artist} title="Music" size="l" as="h1" aside={`${MUSIC.tracks.length} tracks`} />
+        <SectionHeading kicker={MUSIC.artist} title="Music" size="l" as="h1" aside={`${MUSIC.releases.flatMap((r) => r.tracks).filter((t) => t.length).length} tracks`} />
         <div className="bhb">
           <img src={MUSIC.logo} alt="Boneheaded Boy Productions" width={160} height={174} />
           <div>
@@ -170,7 +170,19 @@ export function Music() {
             <Button href={MUSIC.youtubeMusic} external variant="cta">Listen on YouTube Music</Button>
           </div>
         </div>
-        <Tracks tracks={MUSIC.tracks} artist={MUSIC.artist} />
+        {MUSIC.releases.map((r) => {
+          const out = r.tracks.filter((t) => t.length).length, soon = r.tracks.length - out;
+          return (
+            <div key={r.title}>
+              <div className="trk-rel">
+                <div className="trk-rel-k">{r.kicker}</div>
+                <h2>{r.title}</h2>
+                <p>{r.tracks.length} tracks{soon ? ` · ${out} out now, ${soon} coming soon` : ''}</p>
+              </div>
+              <Tracks tracks={r.tracks} artist={MUSIC.artist} />
+            </div>
+          );
+        })}
       </div>
     </section>
   );

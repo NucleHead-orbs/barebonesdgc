@@ -7,6 +7,12 @@
 .trk-title { font-family: var(--font-display); text-transform: var(--display-case); font-size: 24px; line-height: 1.05; flex: 1; min-width: 0; }
 .trk-note { font-family: var(--font-body); text-transform: none; font-size: 14px; color: var(--fg-3); }
 .trk-len { font-family: var(--font-label); font-weight: var(--label-weight); font-size: 13px; color: var(--fg-3); }
+.trk-soon { font-family: var(--font-label); font-weight: var(--label-weight); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 2px solid var(--border); color: var(--fg-3); white-space: nowrap; }
+.trk-row.is-soon .trk-cover { filter: saturate(.55) brightness(.8); }
+.trk-rel { margin: 28px 0 12px; }
+.trk-rel-k { font-family: var(--font-label); font-weight: var(--label-weight); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-c); }
+.trk-rel h2 { margin: 2px 0 0; font-family: var(--font-display); font-weight: 400; text-transform: var(--display-case); font-size: 30px; line-height: 1.05; }
+.trk-rel p { margin: 4px 0 0; font-size: 14px; color: var(--fg-3); }
 .trk-artist { font-size: 13px; color: var(--fg-3); }
 .trk-audio { width: 100%; height: 44px; margin-top: 4px; }
 @media (max-width: 520px) {
