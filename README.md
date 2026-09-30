@@ -102,6 +102,9 @@ Make a user **super admin** (event TDs need nothing here: add their email in `/t
 ```sql
 update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role":"td"}' where email = '...';
 ```
+**Auth URLs** (Supabase → Authentication → URL Configuration). Confirmation and reset emails link to the Site URL, so a leftover `localhost` default breaks every new TD's email confirm:
+- Site URL: `https://barebonesdiscgolf.club`
+- Redirect URLs: `https://barebonesdiscgolf.club/**`, `https://barebonesdgc.*.workers.dev/**`, `http://localhost:5173/**`
 
 ### Deploy (Cloudflare Workers, static assets)
 Workers Builds on `main`: build `npm run build`, deploy `npx wrangler deploy` (config in `wrangler.jsonc`, output `dist`).
