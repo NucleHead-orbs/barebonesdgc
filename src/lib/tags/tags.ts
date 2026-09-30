@@ -4,7 +4,7 @@
  * in that pool: best score takes the lowest of their numbers; ties keep their order from before.
  * The database does the real swap (_tag_apply); swap() here is the same rule for previews.
  */
-export interface TagPool { id: string; slug: string; name: string; sort: number }
+export interface TagPool { id: string; slug: string; name: string; sort: number; invite_only: boolean }
 export interface Tag { pool_id: string; number: number; holder_id: string | null; status: 'held' | 'available' | 'retired'; issued_at: string; moved_at: string | null; moves: number }
 export interface TagMember { id: string; name: string; nickname: string | null }
 export type MatchStatus = 'pending' | 'applied' | 'disputed' | 'void';
@@ -80,10 +80,19 @@ export function tagMessage(err: unknown): string {
  * back = the number side (portrait, number drawn live in the circle); front = the art side (landscape).
  * Pools without art fall back to the plain number card.
  */
-export interface TagArt { front: string; back: string; numColor: string; cx: number; cy: number }
+export interface TagArt {
+  front: string; back: string; numColor: string; cx: number; cy: number;
+  /** 'tall' (default) = portrait number side + landscape art side; 'square' = both sides square, plain flip. */
+  shape?: 'tall' | 'square'; numStroke?: string; numSize?: number;
+}
 export const TAG_ART: Record<string, TagArt> = {
   'lazy-boners': {
     front: '/assets/tags/lazy-boners/front.svg', back: '/assets/tags/lazy-boners/back.svg',
     numColor: '#adcb36', cx: 89.85 / 180, cy: 264.55 / 306, // circle centre on the 180x306 back
+  },
+  // Invite-only set (admins + core members). Art: Mike's Golden Boners tag; number side drawn to match (public/assets/tags/golden-boners).
+  'golden-boners': {
+    front: '/assets/tags/golden-boners/front.svg', back: '/assets/tags/golden-boners/back.svg', shape: 'square',
+    numColor: '#ffe12e', numStroke: '#22061f', numSize: 24, cx: 0.5, cy: 0.6, // medallion centre on the 1000x1000 back
   },
 };

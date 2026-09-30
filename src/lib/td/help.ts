@@ -135,6 +135,7 @@ export const HELP: HelpSection[] = [
       '**Issue a tag:** take the buy-in, type the player\'s name, tap **ISSUE TAG**. They get the next number at the bottom. Type a number only to hand back a freed tag or load someone\'s existing physical tag.',
       'Right after issuing, have them scan the **My Tag** QR and save the page. That page is how they log casual rounds and confirm the ones they\'re on.',
       '**League night:** after cards are signed and submitted, go to **Record a round → From the scorecard**, pick the event, check the name matches, tap **RECORD**. Tag holders trade tags by total. Each event counts once.',
+      '**Golden Boners** is the invite-only set: admins and core members only. It works like a league (issue, My Tag, rounds, undo) but only the super admin, or someone they add as its admin, can issue one.',
       '**Rounds waiting:** a disputed or stuck round shows here. **APPLY** swaps the tags they hold now; **VOID** drops it.',
       'Made a mistake? **UNDO LAST ROUND** puts the latest round back, as long as none of those tags moved since.',
       'Player quit? **TAKE BACK** frees the number (or retires it). Lost phone or shared link? **People → NEW LINK**; the old link dies.',

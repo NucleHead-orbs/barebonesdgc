@@ -23,9 +23,9 @@ export function TagsBoard() {
     <>
       <section className="hero">
         <div className="sec-inner" style={{ gap: 18 }}>
-          <div className="kick">Bag Tags · one set per league</div>
+          <div className="kick">Bag Tags · one set per league, plus the Golden Boners</div>
           <h1>Bag<span className="hl">Tags</span></h1>
-          <p className="lead tg-lead">#1 is the one to beat. Play anyone with a tag in the same league, lower score takes the better number. The board never loses a tag, even when your bag does.</p>
+          <p className="lead tg-lead">#1 is the one to beat. Play anyone with a tag in the same set, lower score takes the better number. The board never loses a tag, even when your bag does.</p>
           {pools.data && (
             <nav className="chips" aria-label="Leagues">
               {pools.data.map((p) => (
@@ -45,7 +45,8 @@ export function TagsBoard() {
             {board.data && (
               <>
                 <SectionHeading kicker={board.data.pool.name} title="The Board" aside={`${board.data.tags.length} tags out`} />
-                {!board.data.tags.length && <Banner>No tags issued in {board.data.pool.name} yet. Ask your league TD for one.</Banner>}
+                {board.data.pool.invite_only && <Banner>Invite only. Golden Boners are carried by the club admins and core members, for bragging rights. Same rules as every tag: beat a holder, take the better number.</Banner>}
+                {!board.data.tags.length && <Banner>No tags issued in {board.data.pool.name} yet.{board.data.pool.invite_only ? '' : ' Ask your league TD for one.'}</Banner>}
                 <ol className="tg-board">
                   {board.data.tags.map((t) => {
                     const m = t.holder_id ? board.data!.members[t.holder_id] : null;
@@ -89,12 +90,12 @@ export function TagsBoard() {
               <div className="ds-card-head"><span className="ds-card-title">How it works</span></div>
               <div className="ds-card-body">
                 <ol>
-                  <li>Your league TD issues your tag. New tags start at the bottom.</li>
-                  <li>Play anyone with a tag in the same league. League nights count once the TD records them from the scorecard.</li>
+                  <li>{board.data?.pool.invite_only ? `${board.data.pool.name} are invite only: an admin issues them.` : 'Your league TD issues your tag.'} New tags start at the bottom.</li>
+                  <li>Play anyone with a tag in the same set. League nights count once the TD records them from the scorecard.</li>
                   <li>Log the round from your <b>My Tag</b> link. Everyone on it confirms, then the tags swap.</li>
                   <li>Best score takes the lowest number. Ties keep the order they had.</li>
                 </ol>
-                {CLUB.facebookUrl && <Button href={CLUB.facebookUrl} external variant="outline" size="sm">Get a tag · ask the group ↗</Button>}
+                {CLUB.facebookUrl && !board.data?.pool.invite_only && <Button href={CLUB.facebookUrl} external variant="outline" size="sm">Get a tag · ask the group ↗</Button>}
               </div>
             </div>
           </aside>
