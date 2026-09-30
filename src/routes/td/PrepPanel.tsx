@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import * as api from '../../lib/td/api';
 import { rpcError, type ExistingPlayer } from '../../lib/td/builder';
 import type { CrewMember } from '../../lib/crew/crew';
@@ -11,8 +11,9 @@ import {
 
 import { ProofView } from '../../components/proofs/Proofs';
 import { PROOF_CATEGORY, PROOF_KINDS, PROOF_LABEL, type ProofKind } from '../../lib/proofs/proofs';
-type View = 'dash' | 'tasks' | 'shirts' | 'designs' | 'contacts';
-const VIEWS: Array<[View, string]> = [['dash', 'DASHBOARD'], ['tasks', 'TASKS'], ['shirts', 'SHIRTS'], ['designs', 'DESIGNS'], ['contacts', 'CONTACTS']];
+const DiscOrderPanel = lazy(() => import('./DiscOrderPanel'));
+type View = 'dash' | 'tasks' | 'shirts' | 'designs' | 'innova' | 'contacts';
+const VIEWS: Array<[View, string]> = [['dash', 'DASHBOARD'], ['tasks', 'TASKS'], ['shirts', 'SHIRTS'], ['designs', 'DESIGNS'], ['innova', 'INNOVA ORDER'], ['contacts', 'CONTACTS']];
 const STATE_LABEL: Record<TaskState, string> = { done: 'DONE', overdue: 'OVERDUE', soon: 'THIS WEEK', later: 'LATER', nodate: 'NO DATE' };
 const SHARE_DAYS = 7;
 const CORE_SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
@@ -80,6 +81,7 @@ export default function PrepPanel({ setup, players, onPlayers, email }: {
       {view === 'tasks' && <Tasks ctx={ctx} />}
       {view === 'shirts' && <Shirts ctx={ctx} tally={tally} players={players} onPlayers={onPlayers} />}
       {view === 'designs' && <Designs ctx={ctx} />}
+      {view === 'innova' && <Suspense fallback={<p className="td-empty">Loading…</p>}><DiscOrderPanel ev={ev} email={email} /></Suspense>}
       {view === 'contacts' && <ContactsPanel eventId={ev.id} email={email} useSponsors={ev.use_sponsors} />}
     </main>
   );
