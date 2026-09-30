@@ -93,7 +93,7 @@ psql -d jewel -f supabase/tests/70_crew.sql             # 49 checks: link isolat
 psql -d jewel -f supabase/tests/80_gallery.sql          # 24 checks: lands hidden, public sees approved only, super-admin-only writes + storage
 psql -d jewel -f supabase/tests/90_bag_tags.sql         # 47 checks: who issues, token privacy, swap/tie rules, confirm/dispute/expiry, league night once, undo
 psql -d jewel -f supabase/tests/95_design_proofs.sql     # 14 checks: proof kinds/picks, crew see shared designs only, no paths leak, file check per event
-psql -d jewel -f supabase/tests/97_disc_orders.sql      # 11 checks: TD-only, card data can't be stored, sent_at follows status, deletes with the event
+psql -d jewel -f supabase/tests/97_disc_orders.sql      # 12 checks: TD-only, card data can't be stored, sent_at follows status, deletes with the event
 ```
 Make a user **super admin** (event TDs need nothing here: add their email in `/td` → Setup → TDs):
 ```sql
