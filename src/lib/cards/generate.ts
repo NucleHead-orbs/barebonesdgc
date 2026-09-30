@@ -30,6 +30,8 @@ export interface BuilderSettings {
   doubleUp: number[]; // hole order for 2nd+ cards once every hole is used
   skip: number[]; // never used as a start hole
   seed: number;
+  /** Doubles rounds only: teams per card (a 3rd team or a Cali joins when the field doesn't split evenly). */
+  teamsPerCard?: 2 | 3;
 }
 
 export interface Card {
@@ -48,6 +50,8 @@ export interface GenerateInput {
   lockedCards?: Card[];
   r1Strokes?: Record<string, number>; // official, complete R1 totals only (r2_seed view)
   pairing?: PairingInput; // approved requests, keep-apart, ⭐/☺ (see pairing.ts)
+  /** Card size limits and what a seat is called. Default: 3–5 players. Doubles passes teams (see doubles.ts). */
+  sizing?: { min: number; max: number; noun: string };
 }
 
 export interface GenerateResult {
@@ -88,10 +92,10 @@ export const MAX_CARD = 5;
  * Balanced: as even as possible (11 -> 4,4,3). If even-splitting would leave a card
  * under 3, use one fewer card as long as none exceeds 5 (5 -> one card of 5, not 3+2).
  */
-export function splitSizes(n: number, size: number, balance: boolean): number[] {
+export function splitSizes(n: number, size: number, balance: boolean, min = MIN_CARD, max = MAX_CARD): number[] {
   if (n <= 0) return [];
   let k = Math.ceil(n / size);
-  if (balance) while (k > 1 && Math.floor(n / k) < MIN_CARD && Math.ceil(n / (k - 1)) <= MAX_CARD) k--;
+  if (balance) while (k > 1 && Math.floor(n / k) < min && Math.ceil(n / (k - 1)) <= max) k--;
   if (balance) return Array.from({ length: k }, (_, i) => Math.floor(n / k) + (i < n % k ? 1 : 0));
   return Array.from({ length: k }, (_, i) => Math.min(size, n - i * size));
 }
@@ -135,6 +139,7 @@ export function generateCards(input: GenerateInput): GenerateResult {
   const r1 = input.r1Strokes ?? {};
   const rand = rng(s.seed);
   const warnings: string[] = [];
+  const sz = input.sizing ?? { min: MIN_CARD, max: MAX_CARD, noun: 'player' };
 
   const skip = new Set(s.skip);
   const holes = Array.from({ length: holeCount }, (_, i) => i + 1).filter((n) => !skip.has(n));
@@ -172,7 +177,7 @@ export function generateCards(input: GenerateInput): GenerateResult {
     const fresh: Card[] = [];
     for (const g of groups) {
       let at = 0;
-      for (const n of splitSizes(g.length, s.size, s.balance)) {
+      for (const n of splitSizes(g.length, s.size, s.balance, sz.min, sz.max)) {
         fresh.push({ wave, startHole: 0, groupNo: 0, locked: false, playerIds: g.slice(at, at + n).map((p) => p.id) });
         at += n;
       }
@@ -228,9 +233,9 @@ export function generateCards(input: GenerateInput): GenerateResult {
   }
 
   for (const c of out) {
-    if (c.playerIds.length > 5) warnings.push(`${c.wave} hole ${c.startHole}: ${c.playerIds.length} players (over 5).`);
-    if (c.playerIds.length > 0 && c.playerIds.length < 3 && !c.locked)
-      warnings.push(`${c.wave} hole ${c.startHole}: only ${c.playerIds.length} player(s).`);
+    if (c.playerIds.length > sz.max) warnings.push(`${c.wave} hole ${c.startHole}: ${c.playerIds.length} ${sz.noun}s (over ${sz.max}).`);
+    if (c.playerIds.length > 0 && c.playerIds.length < sz.min && !c.locked)
+      warnings.push(`${c.wave} hole ${c.startHole}: only ${c.playerIds.length} ${sz.noun}(s).`);
   }
 
   const cards = out

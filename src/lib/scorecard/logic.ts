@@ -12,6 +12,19 @@ export interface CardPlayer { id: string; name: string; div_code: string; seat: 
 export interface HoleInfo { n: number; par: number; dist_ft: number | null; ob: string | null }
 export type ScoreMap = Record<string, Record<number, number>>; // playerId -> hole -> strokes
 
+/** Doubles: one scoring line per team, keyed to the captain (the server keeps team scores + signatures there). */
+export interface TeamRef { team_no: number; a: string; b: string | null }
+export function scoringSeats(players: CardPlayer[], teams: TeamRef[]): CardPlayer[] {
+  const byId = new Map(players.map((p) => [p.id, p]));
+  const seats = teams.filter((t) => byId.has(t.a)).map((t, i) => {
+    const a = byId.get(t.a)!, b = t.b ? byId.get(t.b) : undefined;
+    return { id: a.id, name: b ? `${a.name} & ${b.name}` : a.name, div_code: b ? `TEAM ${t.team_no}` : `CALI · TEAM ${t.team_no}`, seat: i + 1 };
+  });
+  const inTeam = new Set(teams.flatMap((t) => [t.a, t.b]).filter(Boolean));
+  const loose = players.filter((p) => !inTeam.has(p.id)).map((p, i) => ({ ...p, seat: seats.length + i + 1 }));
+  return [...seats, ...loose];
+}
+
 export const MIN_STROKES = 1;
 export const MAX_STROKES = 12;
 
@@ -112,7 +125,9 @@ export function resultMessage(r: string): string {
 
 /** Short names for the sign-off grid: first names, plus a last initial wherever first names collide. */
 export function shortNames(players: Pick<CardPlayer, 'id' | 'name'>[]): Record<string, string> {
-  const parts = players.map((p) => ({ id: p.id, words: p.name.trim().split(/\s+/) }));
+  // Doubles seats are named "Ann Smith & Bob Jones": show first names joined, "Ann/Bob".
+  const team = (name: string) => name.includes(' & ') ? name.split(' & ').map((n) => n.trim().split(/\s+/)[0]).join('/') : null;
+  const parts = players.map((p) => ({ id: p.id, words: (team(p.name) ?? p.name).trim().split(/\s+/) }));
   const firsts = parts.map((p) => p.words[0].toLowerCase());
   return Object.fromEntries(parts.map((p, i) => {
     const clash = firsts.filter((f) => f === firsts[i]).length > 1;

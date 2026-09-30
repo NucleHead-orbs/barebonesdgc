@@ -9,6 +9,7 @@ import type { ImportRow } from '../import/dgs';
 import type { ExistingPlayer, PublishCard, PublishedCard } from './builder';
 import type { DivisionRow, EventConfig, HoleRow } from './setup';
 import type { DivisionConfig, FinishStatus, PrizeSettings } from '../prizes/payout';
+import type { TeamPayoutConfig } from '../prizes/winners';
 import type { Announcement, Contact, CrewMember, RaffleSale, Role } from '../crew/crew';
 import { summarize, toLayoutPayload, type LayoutHole, type LibCourse, type LibLayout } from '../courses/courses';
 import { filePath, nextVersion, type DesignAsset, type DesignFile, type DesignStatus, type NewTask, type PrepTask } from '../prep/prep';
@@ -21,7 +22,7 @@ const must = <T>(r: { data: T; error: unknown }): T => { if (r.error) throw r.er
 const list = <T>(r: { data: T[] | null; error: unknown }): T[] => must(r) ?? [];
 
 // ---------- events (build menu) ----------
-const EVENT_COLS = 'id, slug, name, club_name, starts_on, ends_on, skin, palette, rounds, waves, use_checkin, use_sponsors, archived, course_layout_id';
+const EVENT_COLS = 'id, slug, name, club_name, starts_on, ends_on, skin, palette, rounds, waves, use_checkin, use_sponsors, archived, course_layout_id, r1_format, r2_format, dubs_style';
 
 /** Events this account can run (super admin: all). */
 export const myEvents = () => wrap(async (): Promise<EventConfig[]> =>
@@ -68,7 +69,7 @@ export const lockedPlayerIds = (eventId: string) => wrap(async (): Promise<Set<s
   return new Set([...list(onCards), ...list(scored)].map((r) => (r as { player_id: string }).player_id));
 });
 
-export type EventPatch = Partial<Pick<EventConfig, 'name' | 'club_name' | 'starts_on' | 'ends_on' | 'palette' | 'rounds' | 'waves' | 'use_checkin' | 'use_sponsors' | 'archived'>>;
+export type EventPatch = Partial<Pick<EventConfig, 'name' | 'club_name' | 'starts_on' | 'ends_on' | 'palette' | 'rounds' | 'waves' | 'use_checkin' | 'use_sponsors' | 'archived' | 'r1_format' | 'r2_format' | 'dubs_style'>>;
 export const updateEvent = (eventId: string, patch: EventPatch) => wrap(async (): Promise<EventConfig> =>
   must(await supabase.rpc('td_update_event', { p_event_id: eventId, p: patch })) as EventConfig);
 
@@ -239,6 +240,7 @@ export interface PrizeSetup {
   settings: PrizeSettings;
   configs: Record<string, DivisionConfig>;
   playoffs: Record<string, string>;        // div -> winner player id
+  teamConfigs: Partial<Record<1 | 2, TeamPayoutConfig>>; // doubles rounds (round_payouts)
   post: { payload: WinnersPayload; posted_at: string } | null;
 }
 export interface WinnersPayload {
@@ -249,12 +251,18 @@ export interface WinnersPayload {
 const num = (v: unknown) => (v == null ? null : Number(v));
 
 export const loadPrizeSetup = (eventId: string) => wrap(async (): Promise<PrizeSetup> => {
-  const [p, d, o, w] = await Promise.all([
+  const [p, d, o, w, rp] = await Promise.all([
     supabase.from('event_prize').select('added_total, credit_round, credit_label').eq('event_id', eventId).maybeSingle(),
     supabase.from('division_payouts').select('div_code, currency, entry_fee, payback_pct, added_override, paid_places, pcts').eq('event_id', eventId),
     supabase.from('playoffs').select('div_code, winner_player_id').eq('event_id', eventId),
     supabase.from('winners_posts').select('payload, posted_at').eq('event_id', eventId).maybeSingle(),
+    supabase.from('round_payouts').select('round, currency, entry_fee, payback_pct, added_override, paid_places, pcts').eq('event_id', eventId),
   ]);
+  const teamConfigs: PrizeSetup['teamConfigs'] = {};
+  for (const r of list(rp) as Array<{ round: 1 | 2; currency: 'cash' | 'credit'; entry_fee: number; payback_pct: number; added_override: number | null; paid_places: number | null; pcts: number[] | null }>) {
+    teamConfigs[r.round] = { round: r.round, currency: r.currency, entryFee: Number(r.entry_fee), paybackPct: Number(r.payback_pct),
+      addedOverride: num(r.added_override), paidPlaces: r.paid_places, pcts: r.pcts ? r.pcts.map(Number) : null };
+  }
   const prize = must(p) as { added_total: number; credit_round: 1 | 5; credit_label: string } | null;
   const configs: Record<string, DivisionConfig> = {};
   for (const r of list(d) as Array<{ div_code: string; currency: 'cash' | 'credit'; entry_fee: number; payback_pct: number; added_override: number | null; paid_places: number | null; pcts: number[] | null }>) {
@@ -268,6 +276,7 @@ export const loadPrizeSetup = (eventId: string) => wrap(async (): Promise<PrizeS
     configs,
     playoffs: Object.fromEntries((list(o) as Array<{ div_code: string; winner_player_id: string }>).map((x) => [x.div_code, x.winner_player_id])),
     post: (must(w) as PrizeSetup['post']) ?? null,
+    teamConfigs,
   };
 });
 
@@ -279,6 +288,12 @@ export const savePrizeSettings = (eventId: string, s: PrizeSettings) => wrap(asy
 export const saveDivisionPayout = (eventId: string, c: DivisionConfig) => wrap(async () => {
   must(await supabase.from('division_payouts').upsert({
     event_id: eventId, div_code: c.div, currency: c.currency, entry_fee: c.entryFee, payback_pct: c.paybackPct,
+    added_override: c.addedOverride, paid_places: c.paidPlaces, pcts: c.pcts, updated_at: new Date().toISOString(),
+  }));
+});
+export const saveRoundPayout = (eventId: string, c: TeamPayoutConfig) => wrap(async () => {
+  must(await supabase.from('round_payouts').upsert({
+    event_id: eventId, round: c.round, currency: c.currency, entry_fee: c.entryFee, payback_pct: c.paybackPct,
     added_override: c.addedOverride, paid_places: c.paidPlaces, pcts: c.pcts, updated_at: new Date().toISOString(),
   }));
 });
@@ -466,3 +481,12 @@ export const loadTaskNotes = (eventId: string) => wrap(async (): Promise<TaskNot
 export const addTaskNote = (eventId: string, taskId: string, author: string, body: string) => wrap(async (): Promise<TaskNote> =>
   must(await supabase.from('prep_task_notes').insert({ event_id: eventId, task_id: taskId, author, body: body.trim() })
     .select('id, task_id, author, body, created_at').single()) as TaskNote);
+
+// ---------- doubles: the draw ----------
+/** Saved teams for a doubles round, in team order: [captain, partner | null]. */
+export const loadTeams = (eventId: string, round: 1 | 2) => wrap(async (): Promise<Array<[string, string | null]>> =>
+  list(await supabase.from('teams').select('team_no, player_a, player_b').eq('event_id', eventId).eq('round', round).order('team_no'))
+    .map((t: { player_a: string; player_b: string | null }) => [t.player_a, t.player_b] as [string, string | null]));
+/** Replace the draw. The server clears this round's (unscored) cards; refuses once scoring started. */
+export const saveTeams = (eventId: string, round: 1 | 2, teams: Array<[string, string | null]>) => wrap(async (): Promise<number> =>
+  must(await supabase.rpc('td_set_teams', { p_event_id: eventId, p_round: round, p_teams: teams.map(([a, b]) => (b ? [a, b] : [a])) })) as number);

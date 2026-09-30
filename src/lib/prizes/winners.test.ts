@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { LbRow } from '../jewel/leaderboard';
+import type { LbRow, TeamRow } from '../jewel/leaderboard';
 import { defaultConfig } from './payout';
-import { computeWinners, toPayload } from './winners';
+import { computeTeamWinners, computeWinners, defaultTeamConfig, teamPayload, toPayload } from './winners';
 
 const row = (id: string, div: string, toPar: number, official = true, holes = 9): LbRow => ({
   player_id: id, name: id, div_code: div, div_sort: 1, r1_holes: holes, r1_to_par: toPar, r1_official: official,
@@ -48,5 +48,27 @@ describe('computeWinners', () => {
     const p = toPayload('League Night', 'Boner Bucks', 'official', computeWinners(base));
     expect(p.divisions.map((d) => [d.div, d.rows.length])).toEqual([['MPO', 2], ['MA1', 2]]);
     expect(p.divisions[0].rows[0]).toEqual({ place: '1', name: 'p1', total: -4, amount: 108 });
+  });
+});
+
+describe('computeTeamWinners (doubles)', () => {
+  const t = (id: string, a: string, b: string | null, toPar: number, official = true, holes = 9): TeamRow =>
+    ({ team_id: id, round: 1, team_no: 1, a_name: a, b_name: b, holes_played: holes, hole_count: 9, to_par: toPar, official, card_label: '1' });
+  // 5 teams: 4 pairs + a Cali = 9 players x $5 = $45
+  const rows = [t('t1', 'Ann', 'Bob', -6), t('t2', 'Cal', 'Dee', -4), t('t3', 'Eve', null, -4), t('t4', 'Fay', 'Gus', 0), t('t5', 'Hal', 'Ivy', 2, false)];
+  const cfg = { ...defaultTeamConfig(1), entryFee: 5, paidPlaces: 2, pcts: [60, 40] };
+  it('pool = every player\'s fee; ties split; each partner gets half, rounded down', () => {
+    const r = computeTeamWinners(rows, cfg, 5, 'official');
+    expect(r.players).toBe(9);
+    expect(r.pool.total).toBe(45);
+    expect(r.result.rows.map((x) => [x.place, x.name, x.amount])).toEqual([['1', 'Ann & Bob', 27], ['T2', 'Cal & Dee', 9], ['T2', 'Eve (Cali)', 9], ['4', 'Fay & Gus', 0]]);
+    expect(r.each).toMatchObject({ t1: 13, t2: 4, t3: 9 }); // 27/2 -> 13 each (1 left), 9/2 -> 4 each (1 left), Cali keeps 9
+    expect(r.leftover).toBe(2);
+    expect(r.unfinished).toEqual(['Hal & Ivy']);
+  });
+  it('public rows show each partner\'s share', () => {
+    const p = teamPayload(computeTeamWinners(rows, cfg, 5, 'official'), 'credit');
+    expect(p.div).toBe('DUBS · R1');
+    expect(p.rows.map((x) => x.name)).toEqual(['Ann & Bob · $13 each', 'Cal & Dee · $4 each', 'Eve (Cali)']);
   });
 });

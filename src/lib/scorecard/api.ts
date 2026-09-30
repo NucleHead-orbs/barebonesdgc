@@ -6,9 +6,13 @@
  */
 import { createStore, get, set } from 'idb-keyval';
 import { supabase } from '../supabase';
-import type { CardPlayer, HoleInfo, ScoreMap } from './logic';
+import { scoringSeats, type CardPlayer, type HoleInfo, type ScoreMap, type TeamRef } from './logic';
 
-export interface CardInfo { id: string; event_id: string; round: number; wave: string; label: string; start_hole: number }
+export interface CardInfo {
+  id: string; event_id: string; round: number; wave: string; label: string; start_hole: number;
+  /** Missing on snapshots cached before doubles (= singles). */
+  format?: 'singles' | 'doubles'; dubs_style?: string;
+}
 export interface CardEvent { name: string; slug: string; club_name: string | null; skin: 'event' | 'jewel-xi'; palette: string; rounds: number; waves: number }
 export interface CardSnapshot {
   card: CardInfo;
@@ -38,7 +42,10 @@ export async function fetchCard(token: string): Promise<CardSnapshot> {
     if (/invalid_token/.test(r.error.message)) throw new CardError("This QR code doesn't match a live card. Check with the TD.", 'invalid_token');
     throw new CardError("Couldn't reach the scoring server. Your taps are saved on this phone.", 'network');
   }
-  const d = r.data as Omit<CardSnapshot, 'holes' | 'scores' | 'fetchedAt'>;
+  const raw = r.data as Omit<CardSnapshot, 'holes' | 'scores' | 'fetchedAt'> & { teams?: TeamRef[] };
+  // Doubles: one line per team (keyed to the captain). Everything below (scores, taps, signing) then works per team.
+  const { teams, ...rest } = raw;
+  const d = raw.card.format === 'doubles' ? { ...rest, players: scoringSeats(raw.players, teams ?? []) } : rest;
   const ids = d.players.map((p) => p.id);
   const [h, s] = await Promise.all([
     supabase.from('holes').select('n, par, dist_ft, ob').eq('event_id', d.card.event_id).order('n'),

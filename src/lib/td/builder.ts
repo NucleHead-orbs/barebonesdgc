@@ -43,6 +43,7 @@ export function mergeSettings(saved: unknown, round: 1 | 2, holeCount: number, p
     balance: typeof s.balance === 'boolean' ? s.balance : d.balance,
     doubleUp: intList(s.doubleUp, holeCount) ?? d.doubleUp,
     skip: intList(s.skip, holeCount) ?? d.skip,
+    ...(s.teamsPerCard === 3 ? { teamsPerCard: 3 as const } : {}),
     seed: Number.isInteger(s.seed) ? (s.seed as number) : d.seed,
   };
 }
@@ -146,6 +147,9 @@ export function rpcError(err: unknown, round?: number): { kind: RpcErrorKind; me
   const r = round ? `Round ${round}` : 'This round';
   const setup = setupMessage(msg);
   if (setup) return { kind: 'other', message: setup };
+  if (/team_split/.test(msg)) return { kind: 'other', message: 'A card splits a team. Partners must share a card: regenerate, or move the whole team.' };
+  if (/player_without_team/.test(msg)) return { kind: 'other', message: 'Someone on a card isn\'t in the draw. Add latecomers to the draw, then regenerate.' };
+  if (/not_doubles/.test(msg)) return { kind: 'other', message: `${r} is set to singles. Switch it to doubles in Setup to draw partners.` };
   if (/round_has_scores/.test(msg))
     return { kind: 'has_scores', message: `${r} already has scores, so publishing was refused. Nothing changed. Force republish keeps every score but drops signatures and submissions on the rebuilt cards.` };
   if (/forbidden|permission denied/i.test(msg) || e.code === '42501') return { kind: 'forbidden', message: "This account isn't a TD for this event. Ask the organizer to add your email." };

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as api from '../../lib/td/api';
-import { loadBoard } from '../../lib/jewel/api';
-import type { LbRow } from '../../lib/jewel/leaderboard';
+import { loadBoard, loadTeamBoard } from '../../lib/jewel/api';
+import { onlyRound, type LbRow, type TeamRow } from '../../lib/jewel/leaderboard';
 import { toPar } from '../../lib/jewel/leaderboard';
 import { rpcError, type ExistingPlayer } from '../../lib/td/builder';
 import { defaultPcts, money, type DivisionConfig, type FinishStatus, type Mode, type PrizeSettings } from '../../lib/prizes/payout';
-import { computeWinners, toPayload, type DivisionResult } from '../../lib/prizes/winners';
+import { computeTeamWinners, computeWinners, defaultTeamConfig, teamPayload, toPayload, type DivisionResult, type TeamPayoutConfig, type TeamResult } from '../../lib/prizes/winners';
+import { hasDoubles, roundFormat } from '../../lib/td/setup';
 import { raffleTotals } from '../../lib/crew/crew';
 
 const REFRESH_MS = 30_000;
@@ -23,6 +24,7 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
   const ev = setup.event;
   const [prize, setPrize] = useState<api.PrizeSetup | null>(null);
   const [board, setBoard] = useState<LbRow[]>([]);
+  const [teamRows, setTeamRows] = useState<TeamRow[]>([]);
   const [mode, setMode] = useState<Mode>('official');
   const [err, setErr] = useState('');
   const [toast, setToast] = useState('');
@@ -31,7 +33,7 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
   const [raffle, setRaffle] = useState<number | null>(null);
 
   const refreshBoard = useCallback(async () => {
-    try { setBoard(await loadBoard(ev.id)); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
+    try { const [b, t] = await Promise.all([loadBoard(ev.id), loadTeamBoard(ev.id)]); setBoard(b); setTeamRows(t); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
   }, [ev.id]);
 
   useEffect(() => {
@@ -49,15 +51,31 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
   }, [ev.id, refreshBoard]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(''), 4000); return () => clearTimeout(t); }, [toast]);
 
+  // Mixed formats (locked 2026-09-30): divisions are paid from the singles round only; each doubles round is its own team pool.
+  const mixed = hasDoubles(ev);
+  const roundsList = ev.rounds === 2 ? [1, 2] as const : [1] as const;
+  const singles = roundsList.filter((r) => roundFormat(ev, r) === 'singles');
+  const dubsRounds = roundsList.filter((r) => roundFormat(ev, r) === 'doubles');
   const w = useMemo(() => prize && computeWinners({
-    divOrder: setup.divisions.map((d) => d.code), players, board, configs: prize.configs, settings: prize.settings,
-    playoffs: prize.playoffs, rounds: ev.rounds, mode,
-  }), [prize, setup.divisions, players, board, ev.rounds, mode]);
+    divOrder: mixed && !singles.length ? [] : setup.divisions.map((d) => d.code), players,
+    board: mixed && singles.length ? onlyRound(board, singles[singles.length - 1]) : board, configs: prize.configs, settings: prize.settings,
+    playoffs: prize.playoffs, rounds: mixed ? 1 : ev.rounds, mode,
+  }), [prize, setup.divisions, players, board, ev.rounds, mode, mixed, singles]);
+  const teamResults = useMemo(() => (prize ? dubsRounds.map((r) => computeTeamWinners(teamRows.filter((t) => t.round === r), prize.teamConfigs[r] ?? defaultTeamConfig(r), prize.settings.creditRound, mode)) : []),
+    [prize, dubsRounds, teamRows, mode]);
 
   if (!prize || !w) return <main className="td-main">{err ? <div className="td-warn" role="alert">{err}</div> : <p className="td-empty">Loading…</p>}</main>;
 
   const label = prize.settings.creditLabel;
-  const payload = toPayload(ev.name, label, mode, w);
+  const base = toPayload(ev.name, label, mode, w);
+  const payload = { ...base, divisions: [...teamResults.map((t) => teamPayload(t, label)).filter((d) => d.rows.length), ...base.divisions] };
+  const teamSum = (f: (t: TeamResult) => number) => Math.round(teamResults.reduce((a, t) => a + f(t), 0) * 100) / 100;
+  const totals = {
+    pool: w.totals.pool + teamSum((t) => t.pool.total),
+    cash: w.totals.cash + teamSum((t) => (t.config.currency === 'cash' ? t.result.awarded : 0)),
+    credit: w.totals.credit + teamSum((t) => (t.config.currency === 'credit' ? t.result.awarded : 0)),
+    leftover: w.totals.leftover + teamSum((t) => t.leftover),
+  };
   const posted = prize.post;
   const changed = posted ? JSON.stringify(posted.payload) !== JSON.stringify(payload) : true;
 
@@ -65,6 +83,11 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
     setPrize({ ...prize, settings: s });
     const r = await api.savePrizeSettings(ev.id, s);
     if (r.error) setErr(rpcError(r.error).message);
+  };
+  const saveTeamConfig = async (c: TeamPayoutConfig) => {
+    setPrize((p) => (p ? { ...p, teamConfigs: { ...p.teamConfigs, [c.round]: c } } : p));
+    const r = await api.saveRoundPayout(ev.id, c);
+    if (r.error) setErr(`Doubles R${c.round}: ${rpcError(r.error).message}`);
   };
   const saveConfig = async (c: DivisionConfig) => {
     setPrize((p) => (p ? { ...p, configs: { ...p.configs, [c.div]: c } } : p));
@@ -139,15 +162,17 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
           <div className="td-seg">{([1, 5] as const).map((r) => <button key={r} aria-pressed={prize.settings.creditRound === r} onClick={() => void saveSettings({ ...prize.settings, creditRound: r })}>${r}</button>)}</div>
         </div>
         <div className="td-counts">
-          <Stat v={`$${w.totals.pool.toLocaleString()}`} k="TOTAL POOL" />
-          <Stat v={`$${w.totals.cash.toLocaleString()}`} k="CASH OUT" color="var(--under)" />
-          <Stat v={w.totals.credit.toLocaleString()} k={label.toUpperCase()} color="var(--cyan)" />
-          <Stat v={`$${w.totals.leftover.toLocaleString()}`} k="LEFTOVER" color={w.totals.leftover ? 'var(--gold)' : '#fff'} />
+          <Stat v={`$${totals.pool.toLocaleString()}`} k="TOTAL POOL" />
+          <Stat v={`$${totals.cash.toLocaleString()}`} k="CASH OUT" color="var(--under)" />
+          <Stat v={totals.credit.toLocaleString()} k={label.toUpperCase()} color="var(--cyan)" />
+          <Stat v={`$${totals.leftover.toLocaleString()}`} k="LEFTOVER" color={totals.leftover ? 'var(--gold)' : '#fff'} />
         </div>
         {w.overBy > 0 && <div className="td-warn">Fixed division amounts add up to ${w.overBy} more than the added total.</div>}
       </section>
 
-      {!w.divisions.length && <div className="td-empty">No players yet.</div>}
+      {mixed && <div className="td-hint">{singles.length ? `Divisions are paid from Round ${singles[singles.length - 1]} (singles). ` : 'No singles round, so no division payouts. '}Each doubles round is its own team pool, and every prize is split between partners.</div>}
+      {teamResults.map((t) => <TeamCard key={t.config.round} t={t} label={label} onConfig={(c) => void saveTeamConfig(c)} />)}
+      {!w.divisions.length && !teamResults.length && <div className="td-empty">No players yet.</div>}
       {w.divisions.map((d) => (
         <DivisionCard key={d.config.div} d={d} label={label} players={players}
           onConfig={(c) => void saveConfig(c)} onStatus={(p, st) => void setStatus(p, st)} onPlayoff={(id) => void setPlayoff(d.config.div, id)}
@@ -274,6 +299,60 @@ function DivisionCard({ d, label, players, playoffWinner, onConfig, onStatus, on
       )}
       {d.standing.unfinished.map((u) => <span key={u.id} className="td-inline-status">{u.name}: {statusRow(u.id)}</span>)}
       {d.result.leftover > 0 && <p className="td-req-warn">Leftover {money(d.result.leftover, 'cash')} from rounding / unclaimed places.</p>}
+    </section>
+  );
+}
+
+function TeamCard({ t, label, onConfig }: { t: TeamResult; label: string; onConfig: (c: TeamPayoutConfig) => void }) {
+  const c = t.config;
+  const [open, setOpen] = useState(false);
+  const cur = c.currency;
+  const pctOk = Math.abs(t.result.pctTotal - 100) < 0.05 || t.paid === 0;
+  const setPct = (i: number, v: number | null) => { const next = [...t.pcts]; next[i] = v ?? 0; onConfig({ ...c, pcts: next }); };
+  return (
+    <section className={`td-panel td-windiv${cur === 'cash' ? ' is-cash' : ''}`}>
+      <div className="td-row">
+        <h2>Doubles · Round {c.round}</h2>
+        <span className="td-hint">{t.teams} teams · {t.players} players · pays {t.paid}</span>
+        <div className="td-seg">
+          {(['cash', 'credit'] as const).map((v) => <button key={v} aria-pressed={cur === v} onClick={() => onConfig({ ...c, currency: v })}>{v === 'cash' ? 'CASH' : label.toUpperCase()}</button>)}
+        </div>
+        <div style={{ flex: 1 }} />
+        <div className="td-stat"><b style={{ color: 'var(--under)' }}>${t.pool.total.toLocaleString()}</b><span>POOL</span></div>
+      </div>
+      <div className="td-poolrow">
+        <label>ENTRY $ / PLAYER<NumBox label={`Doubles round ${c.round} entry per player`} value={c.entryFee} onCommit={(v) => onConfig({ ...c, entryFee: v ?? 0 })} /></label>
+        <label>PAYBACK %<NumBox label={`Doubles round ${c.round} payback percent`} value={c.paybackPct} onCommit={(v) => onConfig({ ...c, paybackPct: Math.min(100, v ?? 0) })} width={70} /></label>
+        <label>ADDED $<NumBox label={`Doubles round ${c.round} added`} value={c.addedOverride} placeholder="0" onCommit={(v) => onConfig({ ...c, addedOverride: v })} /></label>
+        <span className="td-hint">= ${t.pool.entryPart.toLocaleString()} entries + ${t.pool.added.toLocaleString()} added. The raffle/added total above goes to divisions; add team money here.</span>
+        <button className="td-link" onClick={() => setOpen(!open)}>{open ? 'Hide' : 'Edit'} payout table</button>
+      </div>
+      {open && (
+        <div className="td-pcts">
+          <label>PAID PLACES<NumBox label={`Doubles round ${c.round} paid places`} value={c.paidPlaces} placeholder={`auto ${t.paid}`} width={80}
+            onCommit={(v) => onConfig({ ...c, paidPlaces: v == null ? null : Math.round(v), pcts: null })} /></label>
+          <div className="td-pct-list">
+            {t.pcts.map((p, i) => <label key={i}>{i + 1}.<NumBox label={`Doubles place ${i + 1} percent`} value={p} width={64} onCommit={(v) => setPct(i, v)} />%</label>)}
+          </div>
+          <span className={pctOk ? 'td-hint' : 'td-req-warn'}>Total {t.result.pctTotal}%{pctOk ? '' : ' (should be 100%)'}</span>
+          <button className="td-btn quiet" onClick={() => onConfig({ ...c, paidPlaces: null, pcts: null })}>RESET TO STANDARD</button>
+        </div>
+      )}
+      {t.result.needsPlayoff && <div className="td-warn soft">Tie for 1st: those teams split 1st and 2nd. Settle it on the course first if you want a single winner.</div>}
+      <table className="td-table td-results">
+        <thead><tr><th>PLACE</th><th>TEAM</th><th>SCORE</th><th style={{ textAlign: 'right' }}>PRIZE</th><th style={{ textAlign: 'right' }}>EACH</th></tr></thead>
+        <tbody>
+          {t.result.rows.map((r) => (
+            <tr key={r.id} className={r.amount > 0 ? 'is-paid' : ''}>
+              <td>{r.place}</td><td>{r.name}</td><td>{toPar(r.total)}</td>
+              <td style={{ textAlign: 'right' }}>{r.amount > 0 ? money(r.amount, cur, label) : '–'}</td>
+              <td style={{ textAlign: 'right' }}>{r.amount > 0 ? money(t.each[r.id], cur, label) : ''}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {t.unfinished.length > 0 && <p className="td-hint">Not finished yet (not placed): {t.unfinished.join(', ')}.</p>}
+      {t.leftover > 0 && <p className="td-req-warn">Leftover {money(t.leftover, 'cash')} from rounding, splitting prizes, or unclaimed places.</p>}
     </section>
   );
 }

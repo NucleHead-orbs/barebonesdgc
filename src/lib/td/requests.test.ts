@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ago, cycleVibe, pairingFor, requestError, requestLine } from './requests';
+import { ago, cycleVibe, pairingFor, requestError, requestLine, seatRequest } from './requests';
+import type { Card } from '../cards/generate';
 
 describe('pairingFor', () => {
   const reqs = [
@@ -38,5 +39,39 @@ describe('small helpers', () => {
     expect(requestError('too_many')).toMatch(/3 requests/);
     expect(requestError('unknown_player')).toMatch(/Check in first/);
     expect(requestError('weird')).toMatch(/tell the TD/);
+  });
+});
+
+describe('seatRequest (approved after cards are out)', () => {
+  const card = (hole: number, ids: string[], locked = false): Card => ({ wave: 'AM', startHole: hole, groupNo: 1, locked, playerIds: ids });
+  const keyOf = (c: Card) => `${c.wave}-${c.startHole}-${c.groupNo}`;
+  const self = (id: string) => id;
+  const none = { groups: [], apart: [], vibe: {} };
+  const opts = (o: Partial<Parameters<typeof seatRequest>[2]> = {}) => ({ unitOf: self, max: 5, keyOf, pairing: none, nameOf: self, ...o });
+  it('moves into free room and locks the card', () => {
+    const r = seatRequest([card(1, ['a', 'b', 'c']), card(2, ['d', 'e', 'f', 'g'])], ['a', 'd'], opts());
+    expect(r.ok && r.cards.map((c) => [c.playerIds, c.locked])).toEqual([[['a', 'b', 'c', 'd'], true], [['e', 'f', 'g'], false]]);
+  });
+  it('swaps when the card is full', () => {
+    const r = seatRequest([card(1, ['a', 'b', 'c', 'x', 'y']), card(2, ['d', 'e', 'f', 'g'])], ['a', 'd'], opts());
+    expect(r.ok && r.cards.map((c) => c.playerIds)).toEqual([['a', 'c', 'x', 'y', 'd'], ['e', 'f', 'g', 'b']]); // first free seat-mate swaps out
+  });
+  it('never touches locked cards, and says why', () => {
+    expect(seatRequest([card(1, ['a', 'b']), card(2, ['d', 'e'], true)], ['a', 'd'], opts())).toEqual({ ok: false, reason: 'locked' });
+    expect(seatRequest([card(1, ['a', 'b']), card(2, ['d'])], ['a', 'b'], opts())).toEqual({ ok: false, reason: 'already' });
+    expect(seatRequest([card(1, ['a'])], ['a', 'zz'], opts())).toEqual({ ok: false, reason: 'missing' });
+  });
+  it('picks a swap that keeps keep-apart pairs apart', () => {
+    const r = seatRequest([card(1, ['a', 'b', 'c', 'x', 'y']), card(2, ['d', 'e', 'f', 'g'])], ['a', 'd'], opts({ pairing: { groups: [], apart: [['b', 'e']], vibe: {} } }));
+    expect(r.ok && r.cards[1].playerIds).toEqual(['e', 'f', 'g', 'c']);
+  });
+  it('refuses a request whose players are marked keep-apart', () => {
+    const r = seatRequest([card(1, ['a', 'b', 'c', 'x', 'y']), card(2, ['d', 'e', 'f', 'g'])], ['a', 'd'], opts({ pairing: { groups: [], apart: [['d', 'a']], vibe: {} } })); // asked together but marked keep-apart
+    expect(r).toEqual({ ok: false, reason: 'conflict' });
+  });
+  it('doubles: whole teams move together and swap for another team', () => {
+    const team: Record<string, string> = { a: 'a', b: 'a', c: 'c', d: 'c', e: 'e', f: 'e', g: 'g', h: 'g' };
+    const r = seatRequest([card(1, ['a', 'b', 'c', 'd']), card(2, ['e', 'f', 'g', 'h'])], ['b', 'g'], opts({ unitOf: (id) => team[id], max: 6 }));
+    expect(r.ok && r.cards[0].playerIds.sort()).toEqual(['a', 'b', 'c', 'd', 'g', 'h']);
   });
 });

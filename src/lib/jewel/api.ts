@@ -1,6 +1,6 @@
 /** Public reads for /jewel. Anon key + RLS: everything here is public-read by design. */
 import { supabase } from '../supabase';
-import type { LbRow } from './leaderboard';
+import type { LbRow, TeamRow } from './leaderboard';
 
 export const EVENT_SLUG = 'jewel-xi-2026';
 
@@ -45,4 +45,12 @@ export async function loadBoard(eventId: string): Promise<LbRow[]> {
     .select('player_id, name, div_code, div_sort, r1_holes, r1_to_par, r1_official, r2_holes, r2_to_par, r2_official, hole_count')
     .eq('event_id', eventId);
   return need(r, 'the leaderboard') as LbRow[];
+}
+
+/** Doubles rounds: one row per team (team_rounds view, public). */
+export async function loadTeamBoard(eventId: string): Promise<TeamRow[]> {
+  const r = await supabase.from('team_rounds')
+    .select('team_id, round, team_no, a_name, b_name, holes_played, hole_count, to_par, official, card_label')
+    .eq('event_id', eventId);
+  return need(r, 'the doubles board') as TeamRow[];
 }

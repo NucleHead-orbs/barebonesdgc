@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { display, matchMembers, parseScore, swap } from './tags';
+import { display, matchMembers, parseScore, swap, tagSources } from './tags';
 
 describe('swap (same rule as the database)', () => {
   it('best score takes the lowest of the numbers on the round', () => {
@@ -34,5 +34,20 @@ describe('small helpers', () => {
   it('display shows the nickname when there is one', () => {
     expect(display({ name: 'Mike', nickname: 'Whitey' })).toBe('Mike "Whitey"');
     expect(display({ name: 'Bob', nickname: null })).toBe('Bob');
+  });
+});
+
+describe('tagSources', () => {
+  it('pop up (R1 dubs + R2 singles) records the tag round', () => {
+    expect(tagSources({ rounds: 2, r1_format: 'doubles', r2_format: 'singles' })).toEqual({ options: [[2, 'Round 2 (the singles round)']], dflt: 2 });
+  });
+  it('all-singles 2-rounder keeps the event total by default', () => {
+    expect(tagSources({ rounds: 2, r1_format: 'singles', r2_format: 'singles' }).dflt).toBe('total');
+  });
+  it('a doubles-only event cannot record tags', () => {
+    expect(tagSources({ rounds: 1, r1_format: 'doubles', r2_format: 'singles' })).toEqual({ options: [], dflt: null });
+  });
+  it('old rows without formats are singles', () => {
+    expect(tagSources({ rounds: 1 }).dflt).toBe(1);
   });
 });

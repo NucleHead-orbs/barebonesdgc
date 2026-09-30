@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rankDivision, divisionsPresent, onCourse, statusLine, toPar, parTone, type LbRow } from './leaderboard';
+import { rankDivision, divisionsPresent, onCourse, statusLine, toPar, parTone, rankTeams, onlyRound, type LbRow, type TeamRow } from './leaderboard';
 
 const row = (name: string, o: Partial<LbRow> = {}): LbRow => ({
   player_id: name, name, div_code: 'MA1', div_sort: 7, hole_count: 20,
@@ -57,5 +57,24 @@ describe('display helpers', () => {
     const rs = [row('a', { div_code: 'MA2', div_sort: 12 }), row('b', { div_code: 'MPO', div_sort: 1, r1_holes: 4 }), row('c', { div_code: 'MA2', div_sort: 12, r1_holes: 20 })];
     expect(divisionsPresent(rs)).toEqual(['MPO', 'MA2']);
     expect(onCourse(rs)).toBe(1);
+  });
+});
+
+describe('doubles + per-round boards', () => {
+  const t = (id: string, a: string, b: string | null, holes: number, toPar: number | null, official: boolean): TeamRow =>
+    ({ team_id: id, round: 1, team_no: 1, a_name: a, b_name: b, holes_played: holes, hole_count: 18, to_par: toPar, official, card_label: '1' });
+  it('ranks teams with ties, Cali named, unstarted last', () => {
+    const r = rankTeams([t('1', 'Ann', 'Bob', 18, -5, true), t('2', 'Cal', 'Dee', 18, -5, true), t('3', 'Eve', null, 18, -7, true), t('4', 'Fay', 'Gus', 0, null, false)], 'official');
+    expect(r.map((x) => [x.pos, x.name])).toEqual([['1', 'Eve (Cali)'], ['T2', 'Ann & Bob'], ['T2', 'Cal & Dee'], ['–', 'Fay & Gus']]);
+  });
+  it('official mode ignores unsigned teams', () => {
+    expect(rankTeams([t('1', 'Ann', 'Bob', 9, -3, false)], 'official')[0].pos).toBe('–');
+    expect(rankTeams([t('1', 'Ann', 'Bob', 9, -3, false)], 'live')[0].status).toBe('thru 9 · unofficial');
+  });
+  it('onlyRound(2) puts round 2 in the r1 slots and never sums', () => {
+    const row = { player_id: 'p', name: 'P', div_code: 'MA1', div_sort: 1, r1_holes: 18, r1_to_par: -4, r1_official: true, r2_holes: 18, r2_to_par: 2, r2_official: true, hole_count: 18 };
+    const [only] = onlyRound([row], 2);
+    expect(rankDivision([only], 'official')[0].total).toBe(2);
+    expect(rankDivision(onlyRound([row], 1), 'official')[0].total).toBe(-4);
   });
 });

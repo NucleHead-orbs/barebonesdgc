@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   holeOrder, mergeScores, holeDone, firstOpenHole, playerLine, cardComplete, tileTone, bump, cleanInitials,
-  signState, signStatusLine, toParText, resultMessage, shortNames, type CardPlayer, type HoleInfo,
+  signState, signStatusLine, toParText, resultMessage, shortNames, scoringSeats, type CardPlayer, type HoleInfo,
 } from './logic';
 import type { QueuedScore } from '../offline/queue';
 
@@ -99,5 +99,22 @@ describe('shortNames', () => {
     expect(shortNames([{ id: 'a', name: 'Test Alpha' }, { id: 'b', name: 'Test Bravo' }, { id: 'c', name: 'Mike Minnier' }]))
       .toEqual({ a: 'Test A.', b: 'Test B.', c: 'Mike' });
     expect(shortNames([{ id: 'a', name: 'Cher' }])).toEqual({ a: 'Cher' });
+    expect(shortNames([{ id: 'a', name: 'Ann Smith & Bob Jones' }, { id: 'e', name: 'Eve Long' }])).toEqual({ a: 'Ann/Bob', e: 'Eve' });
+  });
+});
+
+describe('scoringSeats (doubles)', () => {
+  const ps = [
+    { id: 'a', name: 'Ann', div_code: 'MA1', seat: 1 }, { id: 'b', name: 'Bob', div_code: 'MA1', seat: 2 },
+    { id: 'e', name: 'Eve', div_code: 'MA1', seat: 3 },
+  ];
+  it('one line per team keyed to the captain; Cali labelled', () => {
+    expect(scoringSeats(ps, [{ team_no: 1, a: 'a', b: 'b' }, { team_no: 3, a: 'e', b: null }])).toEqual([
+      { id: 'a', name: 'Ann & Bob', div_code: 'TEAM 1', seat: 1 },
+      { id: 'e', name: 'Eve', div_code: 'CALI · TEAM 3', seat: 2 },
+    ]);
+  });
+  it('anyone not in a team still gets a line (never hidden)', () => {
+    expect(scoringSeats(ps, [{ team_no: 1, a: 'a', b: 'b' }]).map((p) => p.id)).toEqual(['a', 'e']);
   });
 });

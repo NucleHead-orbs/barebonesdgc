@@ -4,6 +4,7 @@ import { rpcError, type ExistingPlayer } from '../../lib/td/builder';
 import {
   PALETTES, coursePar, divisionsProblem, emailOk, holesProblem, normEmail, resizeHoles, withWaves,
   type DivisionRow, type EventConfig, type HoleRow,
+  DUBS_STYLES, type DubsStyle,
 } from '../../lib/td/setup';
 import { DivisionPicker, Field } from './EventHub';
 import { LibraryBar } from './CourseLibrary';
@@ -86,6 +87,7 @@ function EventSection({ ev, onSaved }: { ev: EventConfig; onSaved: () => Promise
     void run(() => api.updateEvent(ev.id, {
       name: f.name, club_name: f.club_name ?? '', starts_on: f.starts_on, ends_on: f.ends_on, palette: f.palette,
       rounds: f.rounds, waves: f.waves, use_checkin: f.use_checkin, use_sponsors: f.use_sponsors, archived: f.archived,
+      r1_format: f.r1_format, r2_format: f.r2_format, dubs_style: f.dubs_style,
     }), 'Event saved.');
   };
   return (
@@ -110,6 +112,20 @@ function EventSection({ ev, onSaved }: { ev: EventConfig; onSaved: () => Promise
         <Field label="ROUNDS"><Seg value={f.rounds} options={[[1, '1 ROUND'], [2, '2 ROUNDS']]} onChange={(v) => set({ rounds: v })} /></Field>
         <Field label="WAVES"><Seg value={f.waves} options={[[1, 'SINGLE'], [2, 'AM / PM']]} onChange={(v) => set({ waves: v })} /></Field>
       </div>
+      <div className="td-fields">
+        <Field label="ROUND 1"><Seg value={f.r1_format} options={[['singles', 'SINGLES'], ['doubles', 'RANDOM DRAW DUBS']]} onChange={(v) => set({ r1_format: v })} /></Field>
+        {f.rounds === 2 && <Field label="ROUND 2"><Seg value={f.r2_format} options={[['singles', 'SINGLES'], ['doubles', 'RANDOM DRAW DUBS']]} onChange={(v) => set({ r2_format: v })} /></Field>}
+        {(f.r1_format === 'doubles' || (f.rounds === 2 && f.r2_format === 'doubles')) && (
+          <Field label="DUBS STYLE (printed on cards)">
+            <select className="td-select" value={f.dubs_style} onChange={(e) => set({ dubs_style: e.target.value as DubsStyle })}>
+              {DUBS_STYLES.map((s) => <option key={s}>{s}</option>)}
+            </select>
+          </Field>
+        )}
+      </div>
+      {(f.r1_format === 'doubles' || (f.rounds === 2 && f.r2_format === 'doubles')) && (
+        <div className="td-hint">Doubles: on the Cards tab you DRAW PARTNERS (random, re-drawable), then generate cards by team. An odd player out plays Cali (solo, two throws). Each round keeps its own results; bag tags only record from a singles round.</div>
+      )}
       <div className="td-group">
         <Toggle on={f.use_checkin} label="Check-in: cards are built from checked-in players only" onChange={(v) => set({ use_checkin: v })} />
         <Toggle on={f.use_sponsors} label="Hole sponsors (DGS import, logos, hole assignment)" onChange={(v) => set({ use_sponsors: v })} />

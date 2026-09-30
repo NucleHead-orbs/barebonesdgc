@@ -6,7 +6,8 @@ import * as tdApi from '../../lib/td/api';
 import { loadBoard as loadLeaderboard } from '../../lib/jewel/api';
 import { standings } from '../../lib/prizes/payout';
 import type { EventConfig } from '../../lib/td/setup';
-import { display, matchMembers, myTagUrl, parseScore, swap, tagMessage, tagPageUrl, type Tag, type TagPool } from '../../lib/tags/tags';
+import { display, matchMembers, myTagUrl, parseScore, swap, tagMessage, tagPageUrl, tagSources, type Tag, type TagPool, type TagSource } from '../../lib/tags/tags';
+import { onlyRound, type LbRow } from '../../lib/jewel/leaderboard';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
 import './tags-panel.css';
 
@@ -243,6 +244,8 @@ function RecordRound({ pool, held, members, act }: Ctx) {
   const [course, setCourse] = useState('');
   const [day, setDay] = useState(localDate());
   const [busy, setBusy] = useState(false);
+  const [src, setSrc] = useState<TagSource | null>(null);
+  const [loaded, setLoaded] = useState<{ ev: EventConfig; board: LbRow[]; status: Parameters<typeof standings>[2] } | null>(null);
   const tagOf = useCallback((id: string | null) => (id ? held.find((t) => t.holder_id === id)?.number ?? null : null), [held]);
 
   useEffect(() => { void (async () => {
@@ -259,14 +262,23 @@ function RecordRound({ pool, held, members, act }: Ctx) {
       const [board, pl] = await Promise.all([loadLeaderboard(id), tdApi.loadPlayers(id)]);
       if (pl.error) throw pl.error;
       const status = Object.fromEntries((pl.data ?? []).filter((p) => p.finish_status).map((p) => [p.id, p.finish_status!]));
-      const st = standings(board, (ev.rounds === 2 ? 2 : 1), status, 'official');
-      const matched = matchMembers(st.ranked.map((f) => ({ key: f.id, name: f.name, score: f.total })), members);
-      setRows(matched.map((r) => ({ key: r.key, name: r.name, score: r.score, member_id: r.member_id })));
-      setLeft([...st.unfinished.map((u) => u.name), ...st.out.map((o) => `${o.name} (${o.status.toUpperCase()})`)]);
+      const first = tagSources(ev).dflt;
+      setLoaded({ ev, board, status }); setSrc(first);
+      fill(board, ev, status, first);
       setDay(ev.starts_on);
     } catch (e) { act(Promise.resolve({ error: e })); }
     setLoading(false);
   };
+
+  // Tags record from singles rounds only (a Pop Up's dubs round never moves tags).
+  function fill(board: LbRow[], ev: EventConfig, status: Parameters<typeof standings>[2], from: TagSource | null) {
+    if (from === null) { setRows([]); setLeft([]); return; }
+    const st = from === 'total' ? standings(board, ev.rounds === 2 ? 2 : 1, status, 'official') : standings(onlyRound(board, from), 1, status, 'official');
+    const matched = matchMembers(st.ranked.map((f) => ({ key: f.id, name: f.name, score: f.total })), members);
+    setRows(matched.map((r) => ({ key: r.key, name: r.name, score: r.score, member_id: r.member_id })));
+    setLeft([...st.unfinished.map((u) => u.name), ...st.out.map((o) => `${o.name} (${o.status.toUpperCase()})`)]);
+  }
+  const srcOpts = loaded ? tagSources(loaded.ev) : null;
 
   const holders = rows.filter((r) => r.member_id && tagOf(r.member_id) !== null && r.score !== null);
   const pv = swap(holders.map((r) => ({ id: r.member_id!, score: r.score!, tag: tagOf(r.member_id) })));
@@ -297,6 +309,14 @@ function RecordRound({ pool, held, members, act }: Ctx) {
             <option value="">Pick an event…</option>
             {events.map((e) => <option key={e.id} value={e.id}>{e.name} · {niceDate(e.starts_on)}</option>)}
           </select>
+          {loaded && eventId && srcOpts && srcOpts.options.length === 0 && <div className="td-warn soft">That event has no singles round (doubles only), so it can't move tags.</div>}
+          {loaded && eventId && srcOpts && srcOpts.options.length > 1 && (
+            <select className="td-select" aria-label="Which round counts" value={String(src)}
+              onChange={(e) => { const v = (e.target.value === 'total' ? 'total' : Number(e.target.value)) as TagSource; setSrc(v); fill(loaded.board, loaded.ev, loaded.status, v); }}>
+              {srcOpts.options.map(([v, l]) => <option key={String(v)} value={String(v)}>{l}</option>)}
+            </select>
+          )}
+          {loaded && eventId && srcOpts && srcOpts.options.length === 1 && <div className="td-hint">Counting {srcOpts.options[0][1]}. Doubles rounds never move tags.</div>}
           {loading && <div className="td-empty">Loading scores…</div>}
           {eventId && !loading && !rows.length && <div className="td-empty">Nobody has an official finished round in that event yet.</div>}
         </>

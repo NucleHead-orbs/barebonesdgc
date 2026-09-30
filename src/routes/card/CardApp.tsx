@@ -127,7 +127,8 @@ export default function CardApp() {
       <header className="sc-top">
         <div>
           <div className="sc-label">{snap.card.label}</div>
-          <div className="sc-sub">{[(snap.event?.rounds ?? 2) > 1 ? `Round ${snap.card.round}` : '', (snap.event?.waves ?? 2) > 1 ? `${snap.card.wave} wave` : '', `starts on ${snap.card.start_hole}`].filter(Boolean).join(' · ')}</div>
+          <div className="sc-sub">{[(snap.event?.rounds ?? 2) > 1 ? `Round ${snap.card.round}` : '', (snap.event?.waves ?? 2) > 1 ? `${snap.card.wave} wave` : '', `starts on ${snap.card.start_hole}`, snap.card.format === 'doubles' ? `Dubs · ${snap.card.dubs_style ?? 'Best shot'}` : ''].filter(Boolean).join(' · ')}</div>
+          {snap.card.format === 'doubles' && <div className="sc-sub">One score per team. Either partner can enter it and sign for the team.</div>}
         </div>
         <div className={`sc-net ${online ? (pending.length ? 'is-pending' : 'is-ok') : 'is-off'}`} role="status">
           {!online ? `offline · ${pending.length} saved on phone` : pending.length ? `syncing ${pending.length}…` : '✓ saved'}

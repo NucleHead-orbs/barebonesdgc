@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
 import * as api from '../../lib/td/api';
-import { rpcError, type ExistingPlayer } from '../../lib/td/builder';
-import { ago, requestLine } from '../../lib/td/requests';
+import { rpcError, slotKey, toPublishPayload, type ExistingPlayer } from '../../lib/td/builder';
+import { SEAT_REASON, ago, pairingFor, requestLine, seatRequest } from '../../lib/td/requests';
+import { captainMap } from '../../lib/cards/doubles';
+import { roundFormat } from '../../lib/td/setup';
 import { PlayerPicker } from './PlayerPicker';
 
 const publicOrigin = (): string =>
@@ -20,6 +22,7 @@ export default function RequestsPanel({ setup, players, requests, onReload }: {
   const nameOf = (id: string) => byId.get(id)?.name;
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
+  const [info, setInfo] = useState('');
   const [showDeclined, setShowDeclined] = useState(false);
   const [sign, setSign] = useState(false);
   const [pick, setPick] = useState<string[]>([]);
@@ -35,9 +38,49 @@ export default function RequestsPanel({ setup, players, requests, onReload }: {
     if (r.error) setErr(rpcError(r.error).message);
   };
 
+  /**
+   * Approved after Round 1 cards are published: seat them together now (swaps only, locked cards untouched, never once
+   * scoring started) and republish. QR codes survive (they're tied to the start slot, not the players).
+   */
+  const seatNow = async (ids: string[], asked: api.CardRequest[]): Promise<string> => {
+    const pub = await api.loadPublished(ev.id, 1);
+    if (pub.error || !pub.data) return `Approved. Couldn't check Round 1 cards (${rpcError(pub.error).message}).`;
+    if (!pub.data.cards.length) return 'Approved. They\'ll be seated together when you generate Round 1.';
+    const dubs = roundFormat(ev, 1) === 'doubles';
+    const [teams, priv] = await Promise.all([dubs ? api.loadTeams(ev.id, 1) : Promise.resolve({ data: [] as Array<[string, string | null]>, error: undefined }), api.loadPrivate(ev.id)]);
+    if (teams.error || priv.error || !priv.data) return 'Approved. Couldn\'t load the draw / keep-apart list, so cards didn\'t change. Move them by hand in Cards.';
+    const cap = captainMap(teams.data ?? []);
+    const res = seatRequest(pub.data.cards, ids, {
+      unitOf: (id) => cap.get(id) ?? id, max: dubs ? 6 : 5, keyOf: slotKey, nameOf: (id) => nameOf(id) ?? '?',
+      pairing: pairingFor(asked, priv.data, 1),
+    });
+    if (!res.ok) return res.reason === 'already' ? 'Approved. They\'re already on the same card.' : `Approved, but not moved: ${SEAT_REASON[res.reason]}`;
+    const r = await api.publishRound(ev.id, 1, toPublishPayload(res.cards), false);
+    if (r.error || !r.data) {
+      const m = rpcError(r.error, 1);
+      return m.kind === 'has_scores' ? 'Approved. Round 1 is already being scored, so cards didn\'t change. Move them by hand if they haven\'t teed off.' : `Approved, but republishing failed: ${m.message}`;
+    }
+    const label = r.data.find((c) => c.wave === res.target.wave && c.start_hole === res.target.startHole && ids.every((id) => c.players.includes(id)))?.label ?? res.target.startHole;
+    return `Approved and seated together on hole ${label} (${res.moved} moved). Round 1 republished; every QR code still works. Reprint only if you hand out printed player lists.`;
+  };
+  const approve = async (r: api.CardRequest) => {
+    setBusy(r.id); setErr(''); setInfo('');
+    const a = await api.setRequestStatus(r.id, 'approved');
+    if (a.error) { await onReload(); setBusy(''); return setErr(rpcError(a.error).message); }
+    const asked = requests.map((x) => (x.id === r.id ? { ...x, status: 'approved' as const } : x));
+    const msg = await seatNow(r.players, asked);
+    await onReload(); setBusy(''); setInfo(msg);
+  };
   const add = () => {
     if (pick.length < 2) return setErr('Pick at least 2 players.');
-    void act('add', () => api.addRequest(ev.id, pick, note.trim())).then(() => { setPick([]); setNote(''); });
+    const ids = pick;
+    setBusy('add'); setErr(''); setInfo('');
+    void (async () => {
+      const r = await api.addRequest(ev.id, ids, note.trim());
+      if (r.error) { await onReload(); setBusy(''); return setErr(rpcError(r.error).message); }
+      const msg = await seatNow(ids, [...requests, { id: 'new', status: 'approved', players: ids } as api.CardRequest]);
+      await onReload(); setBusy(''); setInfo(msg); setPick([]); setNote('');
+    })();
   };
 
   if (sign) return <RequestSign url={`${publicOrigin()}/e/${ev.slug}/request`} eventName={ev.name} onBack={() => setSign(false)} />;
@@ -60,7 +103,7 @@ export default function RequestsPanel({ setup, players, requests, onReload }: {
         </div>
         <div className="td-actions">
           {r.status === 'new' && <>
-            <button className="td-btn cta" disabled={!!busy} onClick={() => void act(r.id, () => api.setRequestStatus(r.id, 'approved'))}>✓ APPROVE</button>
+            <button className="td-btn cta" disabled={!!busy} onClick={() => void approve(r)}>{busy === r.id ? 'SEATING…' : '✓ APPROVE'}</button>
             <button className="td-btn" disabled={!!busy} onClick={() => void act(r.id, () => api.setRequestStatus(r.id, 'declined'))}>✗ DECLINE</button>
           </>}
           {r.status !== 'new' && <button className="td-btn quiet" disabled={!!busy} onClick={() => void act(r.id, () => api.setRequestStatus(r.id, 'new'))}>UNDO</button>}
@@ -79,9 +122,10 @@ export default function RequestsPanel({ setup, players, requests, onReload }: {
       </div>
       <p className="td-hint">
         Players scan the table QR, pick themselves and who they want to play with. It shows up here, no line-stopping.
-        Approved requests are seated together when you generate Round 1. New ones show up on their own every 20 seconds.
+        Approving seats them together right away: if Round 1 cards are already out (and nobody has scored), they're swapped onto one card and Round 1 republishes (QR codes keep working). Before cards exist, they're seated together when you generate. In doubles their whole teams move. New ones show up on their own every 20 seconds.
       </p>
       {err && <div className="td-warn" role="alert">{err}</div>}
+      {info && <div className={/^Approved and seated|already/.test(info) ? 'td-ok' : 'td-warn soft'} role="status">{info} <button className="td-btn quiet" onClick={() => setInfo('')}>OK</button></div>}
 
       <section className="td-group">
         <div className="td-label">NEW · {fresh.length}</div>

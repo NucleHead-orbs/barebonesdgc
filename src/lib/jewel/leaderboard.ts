@@ -64,3 +64,33 @@ export function onCourse(rows: LbRow[]): number {
 
 export const toPar = (n: number | null): string => (n == null ? '–' : n === 0 ? 'E' : n > 0 ? `+${n}` : String(n));
 export const parTone = (n: number | null): 'under' | 'over' | 'even' => (n == null || n === 0 ? 'even' : n < 0 ? 'under' : 'over');
+
+/** One round of a mixed-format event, shaped as a one-round board (its numbers sit in the r1 slots). */
+export function onlyRound(rows: LbRow[], round: 1 | 2): LbRow[] {
+  return rows.map((r) => round === 1
+    ? { ...r, r2_holes: 0, r2_to_par: null, r2_official: false }
+    : { ...r, r1_holes: r.r2_holes, r1_to_par: r.r2_to_par, r1_official: r.r2_official, r2_holes: 0, r2_to_par: null, r2_official: false });
+}
+
+/** Doubles board row (team_rounds view). A Cali has no b_name. */
+export interface TeamRow {
+  team_id: string; round: number; team_no: number; a_name: string; b_name: string | null;
+  holes_played: number; hole_count: number; to_par: number | null; official: boolean; card_label: string | null;
+}
+export interface RankedTeam { id: string; name: string; pos: string; first: boolean; total: number | null; status: string; cali: boolean }
+export const teamName = (t: Pick<TeamRow, 'a_name' | 'b_name'>) => (t.b_name ? `${t.a_name} & ${t.b_name}` : `${t.a_name} (Cali)`);
+
+export function rankTeams(rows: TeamRow[], mode: Mode): RankedTeam[] {
+  const scored = rows.map((t) => ({ t, total: counts(t.holes_played, t.official, mode) ? t.to_par ?? 0 : null }));
+  scored.sort((a, b) => (a.total == null ? 1 : 0) - (b.total == null ? 1 : 0) || (a.total ?? 0) - (b.total ?? 0) || teamName(a.t).localeCompare(teamName(b.t)));
+  const totals = scored.map((s) => s.total).filter((x): x is number => x != null);
+  return scored.map(({ t, total }) => {
+    let pos = '–';
+    if (total != null) {
+      const n = 1 + totals.filter((x) => x < total).length;
+      pos = totals.filter((x) => x === total).length > 1 ? `T${n}` : String(n);
+    }
+    const status = t.holes_played === 0 ? 'Not started' : t.official ? '✓ signed' : `thru ${t.holes_played} · unofficial`;
+    return { id: t.team_id, name: teamName(t), pos, first: pos === '1' || pos === 'T1', total, status, cali: !t.b_name };
+  });
+}

@@ -7,6 +7,9 @@ import type { BuilderSettings } from '../cards/generate';
 
 export type Palette = 'cosmic' | 'sunset' | 'toxic' | 'blood' | 'bone';
 export type Skin = 'event' | 'jewel-xi';
+export type RoundFormat = 'singles' | 'doubles';
+export type DubsStyle = 'Best shot' | 'Best disc' | 'Alternate shot';
+export const DUBS_STYLES: DubsStyle[] = ['Best shot', 'Best disc', 'Alternate shot'];
 
 /** One events row: the saved build-menu selections. */
 export interface EventConfig {
@@ -24,7 +27,16 @@ export interface EventConfig {
   use_sponsors: boolean;
   archived: boolean;
   course_layout_id?: string | null; // library layout the course was loaded from (reference only)
+  r1_format: RoundFormat;
+  r2_format: RoundFormat;
+  dubs_style: DubsStyle;
 }
+
+export const roundFormat = (ev: Pick<EventConfig, 'r1_format' | 'r2_format'>, round: number): RoundFormat =>
+  (round === 2 ? ev.r2_format : ev.r1_format) ?? 'singles';
+/** Any doubles round = results are shown per round (never summed across formats). */
+export const hasDoubles = (ev: Pick<EventConfig, 'r1_format' | 'r2_format' | 'rounds'>) =>
+  ev.r1_format === 'doubles' || (ev.rounds === 2 && ev.r2_format === 'doubles');
 
 export interface HoleRow { n: number; par: number; dist_ft: number | null; ob: string | null }
 export interface DivisionRow { code: string; wave: 'AM' | 'PM' }
@@ -89,10 +101,12 @@ export const withWaves = (divs: DivisionRow[], waves: 1 | 2): DivisionRow[] =>
 
 export const coursePar = (holes: Pick<HoleRow, 'par'>[]) => holes.reduce((a, h) => a + h.par, 0);
 
-export function formatSummary(ev: Pick<EventConfig, 'rounds' | 'waves'>, holeCount: number): string {
+export function formatSummary(ev: Pick<EventConfig, 'rounds' | 'waves'> & Partial<Pick<EventConfig, 'r1_format' | 'r2_format'>>, holeCount: number): string {
+  const f = (r: number) => (roundFormat({ r1_format: ev.r1_format ?? 'singles', r2_format: ev.r2_format ?? 'singles' }, r) === 'doubles' ? 'doubles' : 'singles');
+  const dubs = ev.r1_format === 'doubles' || (ev.rounds === 2 && ev.r2_format === 'doubles');
   return [
     `${holeCount} hole${holeCount === 1 ? '' : 's'}`,
-    ev.rounds === 2 ? '2 rounds' : '1 round',
+    ev.rounds === 2 ? (dubs ? `R1 ${f(1)} + R2 ${f(2)}` : '2 rounds') : dubs ? '1 round of doubles' : '1 round',
     ev.waves === 2 ? 'AM/PM shotgun' : 'single shotgun',
   ].join(' · ');
 }
@@ -128,7 +142,7 @@ export const dateRange = (e: { starts_on: string; ends_on: string }) => {
 
 /** Server refusal code -> what the TD should do. Null when the code isn't one of the build-menu rules. */
 export function setupMessage(raw: string): string | null {
-  const m = raw.match(/(division_in_use|holes_have_cards|holes_have_scores|no_divisions|invalid_division|duplicate_division|invalid_round|invalid_wave|round2_has_cards|pm_cards_exist|invalid_name|invalid_dates|invalid_holes|protected_event|unknown_layout|courses_name_key|course_layouts_name_key)\s*([A-Z0-9]*)/);
+  const m = raw.match(/(division_in_use|holes_have_cards|holes_have_scores|no_divisions|invalid_division|duplicate_division|invalid_round|invalid_wave|round2_has_cards|round_has_cards|pm_cards_exist|invalid_name|invalid_dates|invalid_holes|protected_event|unknown_layout|courses_name_key|course_layouts_name_key)\s*([A-Z0-9]*)/);
   if (!m) return null;
   switch (m[1]) {
     case 'division_in_use': return `${m[2] ? `Division ${m[2]}` : 'A division you removed'} still has players. Move or remove them first.`;
@@ -140,6 +154,7 @@ export function setupMessage(raw: string): string | null {
     case 'invalid_round': return 'This event isn\'t set up for that round. Change Rounds in Setup.';
     case 'invalid_wave': return 'This is a single-wave event, so PM cards can\'t publish. Regenerate the cards.';
     case 'round2_has_cards': return 'Round 2 already has cards. Clear them before switching to 1 round.';
+    case 'round_has_cards': return 'That round already has cards. A round\'s format (singles/doubles) can only change before its cards are made.';
     case 'pm_cards_exist': return 'PM cards are published. Republish as one wave before switching to a single wave.';
     case 'invalid_name': return 'The event needs a name.';
     case 'invalid_dates': return 'The end date can\'t be before the start date.';

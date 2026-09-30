@@ -5,7 +5,8 @@ import {
   mergeSettings, parseHoleList, slotKey, movePlayer, toggleLock, toPublishPayload, matchPublished,
   hasUnpublishedChanges, unassignedIds, rpcError, type ExistingPlayer, type PublishedCard, type RpcErrorKind,
 } from '../../lib/td/builder';
-import { cardPool, settingsForFormat } from '../../lib/td/setup';
+import { cardPool, roundFormat, settingsForFormat } from '../../lib/td/setup';
+import { addToDraw, captainMap, drawTeams, generateDoubles, membersOf, moveTeam, pruneTeams, swapPlayers, type TeamPair } from '../../lib/cards/doubles';
 import { cardIssues } from '../../lib/cards/pairing';
 import { pairingFor, VIBE_MARK } from '../../lib/td/requests';
 import QrSheet from './QrSheet';
@@ -54,14 +55,18 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
   const [alert, setAlert] = useState<{ kind: RpcErrorKind | 'generate'; message: string } | null>(null);
   const [busy, setBusy] = useState<'' | 'publish'>('');
   const [view, setView] = useState<'builder' | 'qr'>('builder');
+  const [teams, setTeams] = useState<PerRound<TeamPair[]>>({ 1: [], 2: [] });
+  const [swapSel, setSwapSel] = useState<string | null>(null);
+  const [drawBusy, setDrawBusy] = useState(false);
 
   // ---- load once per mount (the workspace remounts this when Setup changes): R1 seeds, settings + published cards
   useEffect(() => {
     void (async () => {
-      const [seeds, s1, s2, p1, p2] = await Promise.all([
+      const [seeds, s1, s2, p1, p2, t1, t2] = await Promise.all([
         api.loadR1Strokes(ev.id), api.loadSettings(ev.id, 1), api.loadSettings(ev.id, 2), api.loadPublished(ev.id, 1), api.loadPublished(ev.id, 2),
+        api.loadTeams(ev.id, 1), api.loadTeams(ev.id, 2),
       ]);
-      const bad = [seeds, s1, s2, p1, p2].find((r) => r.error);
+      const bad = [seeds, s1, s2, p1, p2, t1, t2].find((r) => r.error);
       if (bad) return setFatal(rpcError(bad.error).message);
       setR1(seeds.data!);
       const fit = (s: BuilderSettings) => settingsForFormat(s, ev.waves);
@@ -70,6 +75,7 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
       setHoleText(holeTextOf(next[1]));
       setCards({ 1: p1.data!.cards, 2: p2.data!.cards });
       setPublished({ 1: p1.data!.published, 2: p2.data!.published });
+      setTeams({ 1: t1.data!, 2: t2.data! });
       setLoaded(true);
     })();
   }, [ev.id, ev.waves, holeCount, pmDefault]);
@@ -88,6 +94,9 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
   const byId = useMemo(() => new Map(allPlayers.map((p) => [p.id, p])), [allPlayers]);
   const names = useMemo(() => Object.fromEntries(allPlayers.map((p) => [p.id, p.name])), [allPlayers]);
   const roundCards = cards[round];
+  const dubs = roundFormat(ev, round) === 'doubles';
+  const roundTeams = teams[round];
+  const cap = useMemo(() => captainMap(roundTeams), [roundTeams]);
   const pubMatch = useMemo(() => matchPublished(roundCards, published[round]), [roundCards, published, round]);
 
   if (fatal) return <div className="td-main"><div className="td-warn" role="alert">Could not load cards. {fatal}</div></div>;
@@ -117,6 +126,11 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
     const shared = roundCards.filter((o) => o.wave === c.wave && o.startHole === c.startHole).length > 1;
     return `Hole ${c.startHole}${shared ? ` · group ${c.groupNo}` : ''}`;
   };
+  const teamNo = new Map(roundTeams.map((t, i) => [t[0], i + 1]));
+  const poolIds = new Set(players.map((p) => p.id));
+  const drawn = new Set(roundTeams.flatMap(membersOf));
+  const notDrawn = players.filter((p) => !drawn.has(p.id));
+  const goneFromDraw = [...drawn].filter((id) => !poolIds.has(id));
   const metric = (p: ExistingPlayer) =>
     S.sortBy === 'r1' ? (r1[p.id] ?? '–') : (p.rating ?? (p.reg_order != null ? `#${p.reg_order}` : ''));
 
@@ -124,13 +138,18 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
   const generate = () => {
     const base = S.sortBy === 'random' && roundCards.length ? { ...S, seed: S.seed + 1 } : S; // each regenerate bumps the seed
     const next = settingsForFormat(base, ev.waves);
+    if (dubs && (!roundTeams.length || notDrawn.length || goneFromDraw.length)) {
+      return setAlert({ kind: 'generate', message: !roundTeams.length ? 'Draw partners first (DRAW PARTNERS above the cards).'
+        : `The draw is out of date: ${notDrawn.length ? `${notDrawn.length} checked-in player(s) aren't drawn` : ''}${notDrawn.length && goneFromDraw.length ? ' and ' : ''}${goneFromDraw.length ? `${goneFromDraw.length} drawn player(s) aren't checked in` : ''}. Tap UPDATE DRAW first.` });
+    }
     try {
-      const res = generateCards({
+      const input = {
         players: api.toBuilderPlayers(players), settings: next, divOrder, holeCount,
         lockedCards: roundCards, // generate drops anyone no longer in the pool (e.g. un-checked-in) from locked cards
         r1Strokes: next.sortBy === 'r1' ? r1 : undefined,
         pairing: pairingFor(requests, priv, round),
-      });
+      };
+      const res = dubs ? generateDoubles({ ...input, teams: roundTeams }) : generateCards(input);
       setCardsFor(res.cards);
       setGenWarn((w) => ({ ...w, [round]: res.warnings }));
       setSettings((s) => (s ? { ...s, [round]: next } : s));
@@ -159,9 +178,9 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
   };
 
   const exportCsv = () => {
-    const lines = [['Round', 'Wave', 'Card', 'Start Hole', 'Player', 'Division', 'PDGA']];
+    const lines = [['Round', 'Wave', 'Card', 'Start Hole', 'Player', 'Division', 'PDGA', ...(dubs ? ['Team'] : [])]];
     roundCards.slice().sort((a, b) => a.wave.localeCompare(b.wave) || a.startHole - b.startHole || a.groupNo - b.groupNo)
-      .forEach((c) => c.playerIds.forEach((id) => { const p = byId.get(id); if (p) lines.push([String(round), c.wave, cardName(c).replace('Hole ', ''), String(c.startHole), p.name, p.div_code, p.pdga ?? '']); }));
+      .forEach((c) => c.playerIds.forEach((id) => { const p = byId.get(id); if (p) lines.push([String(round), c.wave, cardName(c).replace('Hole ', ''), String(c.startHole), p.name, p.div_code, p.pdga ?? '', ...(dubs ? [teamNo.has(cap.get(id) ?? id) ? `${teamNo.get(cap.get(id) ?? id)}` : ''] : [])]); }));
     const blob = new Blob([lines.map((l) => l.map((x) => `"${x.replace(/"/g, '""')}"`).join(',')).join('\n')], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = `${ev.slug}-cards-R${round}.csv`; a.click();
@@ -170,9 +189,40 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
 
   const drop = (c: Card) => {
     if (!sel) return;
-    setCardsFor(movePlayer(roundCards, sel, slotKey(c)));
-    flash(`Moved ${byId.get(sel)?.name ?? 'player'} to ${cardName(c)}. That card is now locked.`);
+    setCardsFor(dubs ? moveTeam(roundCards, sel, slotKey(c), slotKey, cap) : movePlayer(roundCards, sel, slotKey(c)));
+    flash(`Moved ${dubs ? teamName(sel) : byId.get(sel)?.name ?? 'player'} to ${cardName(c)}. That card is now locked.`);
     setSel(null);
+  };
+  const teamName = (id: string) => {
+    const t = roundTeams.find((x) => x[0] === (cap.get(id) ?? id));
+    return t ? membersOf(t).map((m) => byId.get(m)?.name ?? '?').join(' & ') + (t[1] ? '' : ' (Cali)') : byId.get(id)?.name ?? '?';
+  };
+
+  // ---- the draw (doubles rounds). Saving replaces the round's teams; the server clears its unscored cards.
+  const saveDraw = async (next: TeamPair[], what: string) => {
+    if (roundCards.length && !window.confirm(`Changing the draw clears Round ${round}'s cards${isPublished ? ' (published, but nothing scored yet)' : ''}. You'll regenerate and publish again. Continue?`)) return;
+    setDrawBusy(true); setAlert(null);
+    const r = await api.saveTeams(ev.id, round, next);
+    setDrawBusy(false);
+    if (r.error) {
+      const m = rpcError(r.error, round);
+      return setAlert(m.kind === 'has_scores' ? { kind: 'other', message: `Round ${round} already has scores, so the draw is locked. Teams play it out as drawn.` } : m);
+    }
+    setTeams((t) => ({ ...t, [round]: next }));
+    if (roundCards.length) { setCardsFor([]); setPublished((p) => ({ ...p, [round]: [] })); }
+    setSwapSel(null);
+    flash(`${what}: ${next.filter((t) => t[1]).length} teams${next.some((t) => !t[1]) ? ' + 1 Cali' : ''}. Now generate cards.`);
+  };
+  const apart = pairingFor(requests, priv, round).apart;
+  const seed = () => Math.floor(Math.random() * 1e9);
+  const draw = () => void saveDraw(drawTeams(players.map((p) => p.id), seed(), apart), roundTeams.length ? 'Re-drawn' : 'Drawn');
+  const updateDraw = () => void saveDraw(addToDraw(pruneTeams(roundTeams, poolIds), notDrawn.map((p) => p.id), seed(), apart), 'Draw updated');
+  const tapSwap = (id: string) => {
+    if (!swapSel) return setSwapSel(id);
+    if (swapSel === id) return setSwapSel(null);
+    const next = swapPlayers(roundTeams, swapSel, id);
+    if (next === roundTeams) return setSwapSel(id);
+    void saveDraw(next, `Swapped ${byId.get(swapSel)?.name} and ${byId.get(id)?.name}`);
   };
 
   if (view === 'qr') {
@@ -183,7 +233,9 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
   const warnings: string[] = [...genWarn[round], ...cardIssues(roundCards.map((c) => c.playerIds), pairingFor(requests, priv, round), (id) => byId.get(id)?.name ?? '?')];
   if (roundCards.length && unassigned.length) warnings.push(`${unassigned.length} ${twoWaves ? `${shownWave} ` : ''}player(s) are not on a card. Regenerate or move them.`);
   if (waveCards.length > holeCount * 2) warnings.push(`${waveCards.length} cards for ${holeCount} holes, more than 2 per hole. Consider card size 5${twoWaves ? ' or moving divisions to the other wave' : ''}.`);
-  if (waveCards.some((c) => c.playerIds.length > 5)) warnings.push('A card has more than 5 players.');
+  if (waveCards.some((c) => c.playerIds.length > (dubs ? 6 : 5))) warnings.push(`A card has more than ${dubs ? 6 : 5} players.`);
+  if (dubs && roundTeams.length && (notDrawn.length || goneFromDraw.length))
+    warnings.push(`The draw is out of date (${notDrawn.length} checked-in not drawn, ${goneFromDraw.length} drawn but not checked in). Tap UPDATE DRAW, then regenerate.`);
   const soft: string[] = [];
   if (S.sortBy === 'r1' && players.length && !Object.keys(r1).length) soft.push('No official R1 totals yet, so R1-score seeding falls back to rating, then name.');
   if (ev.use_checkin && notIn > 0) soft.push(`${notIn} registered player${notIn === 1 ? " isn't" : "s aren't"} checked in and won't be put on cards. Check them in on the Players tab, then regenerate.`);
@@ -228,6 +280,15 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
               <div className="td-hint">Filled = PM wave · outline = AM wave. Starts from the waves set in Setup.</div>
             </div>
           )}
+          {dubs ? (
+            <div className="td-group">
+              <div className="td-label">TEAMS PER CARD</div>
+              <div className="td-sizes">
+                {([2, 3] as const).map((n) => <button key={n} aria-pressed={(S.teamsPerCard ?? 2) === n} onClick={() => set({ teamsPerCard: n })}>{n}</button>)}
+              </div>
+              <div className="td-hint">Doubles cards are built from teams, so partners always share a card. Divisions are mixed. The Cali counts as a team; when a card has to take an extra team, the Cali goes there first so no card runs 6 deep.</div>
+            </div>
+          ) : (<>
           <div className="td-group">
             <div className="td-label">CARD SIZE</div>
             <div className="td-sizes">
@@ -247,6 +308,7 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
               </button>
             ))}
           </div>
+          </>)}
           <div className="td-group">
             <div className="td-label">DOUBLE-UP HOLES FIRST (B groups)</div>
             <input className="td-input" value={holeText.double} placeholder="e.g. 6, 15, 14"
@@ -258,10 +320,10 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
             <input className="td-input" value={holeText.skip} placeholder="e.g. 18"
               onChange={(e) => { setHoleText((h) => ({ ...h, skip: e.target.value })); set({ skip: parseHoleList(e.target.value, holeCount) }); }} />
           </div>
-          <button className={`td-generate${dirty[round] || !roundCards.length ? ' fresh' : ''}`} onClick={generate} disabled={!players.length}>
+          <button className={`td-generate${dirty[round] || !roundCards.length ? ' fresh' : ''}`} onClick={generate} disabled={!players.length || (dubs && !roundTeams.length)}>
             {dirty[round] || !roundCards.length ? `GENERATE CARDS · R${round}` : `REGENERATE · R${round}`}
           </button>
-          <div className="td-hint">Locked cards stay put when you regenerate. Click a player, then "Move here" on any card to swap them by hand. The card they land on locks.</div>
+          <div className="td-hint">Locked cards stay put when you regenerate. Click a {dubs ? 'team' : 'player'}, then "Move here" on any card to move {dubs ? 'the whole team' : 'them'} by hand. The card they land on locks.</div>
         </aside>
 
         <main className="td-main">
@@ -286,11 +348,15 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
             <div style={{ flex: 1 }} />
             <input className="td-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find player…" aria-label="Find player" />
           </div>
+          {dubs && (
+            <DrawPanel teams={roundTeams} name={(id) => byId.get(id)?.name ?? '?'} busy={drawBusy} poolSize={players.length}
+              notDrawn={notDrawn.length} gone={goneFromDraw.length} swapSel={swapSel} onDraw={draw} onUpdate={updateDraw} onTap={tapSwap} />
+          )}
           {warnings.map((w) => <div key={w} className="td-warn">⚠ {w}</div>)}
           {soft.map((w) => <div key={w} className="td-warn soft">{w}</div>)}
           {sel && (
             <div className="td-moving">
-              <span>Moving: {byId.get(sel)?.name} ({byId.get(sel)?.div_code})</span><span style={{ flex: 1 }} />
+              <span>Moving: {dubs ? teamName(sel) : `${byId.get(sel)?.name} (${byId.get(sel)?.div_code})`}</span><span style={{ flex: 1 }} />
               <button onClick={() => setSel(null)}>Cancel</button>
             </div>
           )}
@@ -301,7 +367,10 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
                   <div className="td-ring" style={{ borderColor: 'var(--error)' }}>?</div>
                   <div className="td-card-title"><b>Not on a card · {unassigned.length}</b><span>Tap a player, then Move here</span></div>
                 </div>
-                {unassigned.map((id) => byId.get(id)!).map((p) => (
+                {dubs ? [...new Set(unassigned.map((id) => cap.get(id) ?? id))].map((c) => (
+                  <PlayerRow key={c} name={teamName(c)} mark="" div={teamNo.has(c) ? `TEAM ${teamNo.get(c)}` : 'NOT DRAWN'} metric="" selected={sel === c} match={hit(c)}
+                    onClick={() => setSel(sel === c ? null : c)} />
+                )) : unassigned.map((id) => byId.get(id)!).map((p) => (
                   <PlayerRow key={p.id} name={p.name} mark={priv.vibe[p.id] ? VIBE_MARK[priv.vibe[p.id]] : ''} div={p.div_code} metric={metric(p)} selected={sel === p.id} match={hit(p.id)}
                     onClick={() => setSel(sel === p.id ? null : p.id)} />
                 ))}
@@ -311,16 +380,20 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
               const ps = c.playerIds.map((id) => byId.get(id)).filter((p): p is ExistingPlayer => !!p);
               const divs = [...new Set(ps.map((p) => p.div_code))];
               const k = slotKey(c);
-              const cls = c.playerIds.some(hit) ? 'hit' : c.locked ? 'locked' : ps.length < 3 || ps.length > 5 ? 'bad' : '';
+              const cls = c.playerIds.some(hit) ? 'hit' : c.locked ? 'locked' : dubs ? (ps.length < 3 || ps.length > 6 ? 'bad' : '') : ps.length < 3 || ps.length > 5 ? 'bad' : '';
+              const caps = [...new Set(c.playerIds.map((id) => cap.get(id) ?? id))];
               return (
                 <div key={k} className={`td-card ${cls}`}>
                   <div className="td-card-head">
                     <div className={`td-ring${divs.length > 1 ? ' mixed' : ''}`}>{c.startHole}</div>
-                    <div className="td-card-title"><b>{cardName(c)} · {ps.length} players</b><span>{divs.join(' · ')}</span></div>
+                    <div className="td-card-title"><b>{cardName(c)} · {dubs ? `${caps.length} teams · ` : ''}{ps.length} players</b><span>{dubs ? (roundFormat(ev, round) === 'doubles' ? ev.dubs_style : '') : divs.join(' · ')}</span></div>
                     <button className="td-lock" aria-pressed={c.locked} title={c.locked ? 'Unlock card' : 'Lock card'} aria-label={c.locked ? 'Unlock card' : 'Lock card'}
                       onClick={() => setCardsFor(toggleLock(roundCards, k))}>{c.locked ? '🔒' : '🔓'}</button>
                   </div>
-                  {ps.map((p) => (
+                  {dubs ? caps.map((cId) => (
+                    <PlayerRow key={cId} name={teamName(cId)} mark="" div={teamNo.has(cId) ? `TEAM ${teamNo.get(cId)}` : 'NOT DRAWN'} metric="" selected={sel === cId}
+                      match={roundTeams.some((t) => t[0] === cId && membersOf(t).some(hit))} onClick={() => setSel(sel === cId ? null : cId)} />
+                  )) : ps.map((p) => (
                     <PlayerRow key={p.id} name={p.name} mark={priv.vibe[p.id] ? VIBE_MARK[priv.vibe[p.id]] : ''} div={p.div_code} metric={metric(p)} selected={sel === p.id} match={hit(p.id)}
                       onClick={() => setSel(sel === p.id ? null : p.id)} />
                   ))}
@@ -347,5 +420,36 @@ function PlayerRow({ name, mark, div, metric, selected, match, onClick }: {
     <button className={`td-player${match ? ' match' : ''}`} aria-pressed={selected} onClick={onClick}>
       <span className="n">{name}{mark && <span className="td-mark"> {mark}</span>}</span><span className="d">{div}</span><span className="m">{metric}</span>
     </button>
+  );
+}
+
+/** Doubles: the partner draw. Tap two names to swap them between teams. */
+function DrawPanel({ teams, name, busy, poolSize, notDrawn, gone, swapSel, onDraw, onUpdate, onTap }: {
+  teams: TeamPair[]; name: (id: string) => string; busy: boolean; poolSize: number; notDrawn: number; gone: number;
+  swapSel: string | null; onDraw: () => void; onUpdate: () => void; onTap: (id: string) => void;
+}) {
+  return (
+    <section className="td-draw">
+      <div className="td-row">
+        <div className="td-card-title"><b>Partner draw · {teams.filter((t) => t[1]).length} teams{teams.some((t) => !t[1]) ? ' + Cali' : ''}</b>
+          <span>Random. An odd player out plays Cali (solo, two throws). Tap two names to swap them.</span></div>
+        <div style={{ flex: 1 }} />
+        {teams.length > 0 && (notDrawn > 0 || gone > 0) && <button className="td-btn gold" disabled={busy} onClick={onUpdate}>UPDATE DRAW ({notDrawn} in · {gone} out)</button>}
+        <button className={`td-btn ${teams.length ? '' : 'cta'}`} disabled={busy || poolSize < 2} onClick={onDraw}>{busy ? 'SAVING…' : teams.length ? 'RE-DRAW' : 'DRAW PARTNERS'}</button>
+      </div>
+      {teams.length > 0 && (
+        <ol className="td-teams">
+          {teams.map((t, i) => (
+            <li key={t[0]} className={t[1] ? '' : 'cali'}>
+              <span className="no">{i + 1}</span>
+              {membersOf(t).map((id) => (
+                <button key={id} className="td-chip" aria-pressed={swapSel === id} onClick={() => onTap(id)}>{name(id)}</button>
+              ))}
+              {!t[1] && <em>CALI</em>}
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }

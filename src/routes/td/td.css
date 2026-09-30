@@ -327,3 +327,11 @@
 .td-contact.is-lead { border-color: var(--gold); }
 .td-contact.is-yes, .td-contact.is-paid { border-color: var(--under); }
 .td-contact.is-no { opacity: .6; }
+
+/* ---------- doubles: partner draw ---------- */
+.td-draw { border: 2px solid var(--magenta); border-radius: var(--r-card); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.td-teams { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; }
+.td-teams li { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; }
+.td-teams li.cali { border-color: var(--gold); }
+.td-teams .no { font-family: var(--font-label); font-size: 12px; opacity: .6; min-width: 18px; }
+.td-teams em { font-style: normal; font-size: 10px; letter-spacing: 1px; color: var(--gold); }

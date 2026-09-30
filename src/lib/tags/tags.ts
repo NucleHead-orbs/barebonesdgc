@@ -96,3 +96,16 @@ export const TAG_ART: Record<string, TagArt> = {
     numColor: '#ffe12e', numStroke: '#22061f', numSize: 24, cx: 0.5, cy: 0.6, // medallion centre on the 1000x1000 back
   },
 };
+
+/**
+ * Which scores a tag round is recorded from (locked 2026-09-30): only singles rounds count. A 2-round all-singles event
+ * can use the event total (the Jewel way) or one round; a mixed event (e.g. Pop Up: R1 dubs + R2 tag round) uses its
+ * singles round. No singles round = nothing to record.
+ */
+export type TagSource = 'total' | 1 | 2;
+export function tagSources(ev: { rounds: number; r1_format?: string; r2_format?: string }): { options: Array<[TagSource, string]>; dflt: TagSource | null } {
+  const singles = ([1, 2] as const).filter((n) => n <= ev.rounds && ((n === 1 ? ev.r1_format : ev.r2_format) ?? 'singles') === 'singles');
+  if (!singles.length) return { options: [], dflt: null };
+  if (singles.length === 2) return { options: [['total', 'Both rounds (event total)'], [1, 'Round 1 only'], [2, 'Round 2 only']], dflt: 'total' };
+  return { options: singles.map((n) => [n, ev.rounds === 2 ? `Round ${n} (the singles round)` : `Round ${n}`] as [TagSource, string]), dflt: singles[singles.length - 1] };
+}
