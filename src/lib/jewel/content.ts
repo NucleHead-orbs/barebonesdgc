@@ -100,7 +100,8 @@ export const MUSIC = {
   logo: '/music/bhb-logo.webp',
   releases: [
     {
-      title: "Jewel XI: Freedom Don't Wear Stripes", kicker: 'EP · 2026',
+      // The full album, built in public: tracks land here as they're finished (newer mixes than the released EP).
+      title: "Jewel XI: Freedom Don't Wear Stripes Show", kicker: 'LP · in progress',
       tracks: [
         { slug: 'throw-it-like-andy-p', title: 'Throw It Like Andy P', length: '5:46' },
         { slug: 'whoa-shit', title: 'Whoa Shit!', length: '5:06' },
