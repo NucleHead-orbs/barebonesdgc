@@ -95,7 +95,7 @@ export const GALLERY: Array<{ name: string; alt: string }> = [
 export interface MusicTrack { slug: string; title: string; note?: string; length?: string; cover?: string }
 export interface MusicRelease { title: string; kicker: string; tracks: MusicTrack[] }
 export const MUSIC = {
-  artist: 'The Boneheaded Boy',
+  artist: 'YT the Boneheaded Boy',
   youtubeMusic: 'https://music.youtube.com/channel/UCiqbewAUHg4A_S3wVQMiAkg',
   logo: '/music/bhb-logo.webp',
   releases: [
@@ -105,7 +105,7 @@ export const MUSIC = {
         { slug: 'throw-it-like-andy-p', title: 'Throw It Like Andy P', length: '5:46' },
         { slug: 'whoa-shit', title: 'Whoa Shit!', length: '5:06' },
         { slug: 'corn-nuts', title: 'Corn Nuts!', length: '5:23' },
-        { slug: 'no-peace-here-man', title: 'No Peace Here Man' },
+        { slug: 'no-peace-here-man', title: 'No Peace Here Man', length: '5:09' },
         { slug: 'gator-gangbang', title: 'Gator Gangbang', length: '4:40' },
         { slug: 'lumen-limit-city', title: 'Lumen Limit City', length: '5:07' },
         { slug: 'get-rolley', title: 'Get Rolley' },
@@ -114,7 +114,6 @@ export const MUSIC = {
     {
       title: 'Singles', kicker: 'More from the Boners',
       tracks: [
-        { slug: 'wheres-dave', title: "Where's Dave?", length: '5:09', cover: '/music/bhb-logo.webp' },
         { slug: 'the-jewel-x', title: 'The Jewel X', length: '3:10' },
         { slug: 'boner-nation', title: 'Boner Nation', length: '2:14' },
         { slug: 'boners-rise', title: 'Boners Rise!', note: 'Cover', length: '2:40' },

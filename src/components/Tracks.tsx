@@ -1,35 +1,36 @@
-import type { SyntheticEvent } from 'react';
 import './tracks.css';
 
 /** No `length` = no audio yet (shows "coming soon"). `cover` overrides <base>/<slug>.webp. */
 export interface Track { slug: string; title: string; note?: string; length?: string; cover?: string }
 
-/** One song plays at a time: starting a track pauses every other player on the page. */
-const soloPlay = (e: SyntheticEvent<HTMLAudioElement>) => {
-  document.querySelectorAll('audio').forEach((a) => { if (a !== e.currentTarget) a.pause(); });
-};
-
-export function Tracks({ tracks, artist, base = '/music' }: { tracks: Track[]; artist: string; base?: string }) {
+/**
+ * A release's tracklist. Rows are tap-to-play into the page player (`onPick` with the track's slug);
+ * the current row shows dancing bars while it plays. Coming-soon rows can't be picked.
+ */
+export function Tracks({ tracks, artist, base = '/music', current, playing, onPick }: {
+  tracks: Track[]; artist: string; base?: string; current?: string; playing?: boolean; onPick: (slug: string) => void;
+}) {
   return (
     <ol className="trk">
-      {tracks.map((t, i) => (
-        <li key={t.slug} className={`trk-row${t.length ? '' : ' is-soon'}`}>
-          <img className="trk-cover" src={t.cover ?? `${base}/${t.slug}.webp`} alt={`${t.title} cover art`} loading="lazy" width={600} height={600} />
-          <div className="trk-main">
-            <div className="trk-head">
-              <span className="trk-n">{String(i + 1).padStart(2, '0')}</span>
-              <span className="trk-title">{t.title}{t.note && <span className="trk-note"> ({t.note})</span>}</span>
-              {t.length ? <span className="trk-len">{t.length}</span> : <span className="trk-soon">Coming soon</span>}
-            </div>
-            <div className="trk-artist">{artist}</div>
-            {t.length && (
-              <audio className="trk-audio" controls preload="none" src={`${base}/${t.slug}.mp3`} onPlay={soloPlay}>
-                <a href={`${base}/${t.slug}.mp3`}>Download {t.title}</a>
-              </audio>
-            )}
-          </div>
-        </li>
-      ))}
+      {tracks.map((t, i) => {
+        const on = t.slug === current;
+        return (
+          <li key={t.slug} className={`trk-row${t.length ? '' : ' is-soon'}${on ? ' is-current' : ''}`}>
+            <button type="button" className="trk-btn" disabled={!t.length} onClick={() => onPick(t.slug)}
+              aria-label={t.length ? `${on && playing ? 'Pause' : 'Play'} ${t.title}` : `${t.title}: coming soon`} aria-current={on || undefined}>
+              <img className="trk-cover" src={t.cover ?? `${base}/${t.slug}.webp`} alt="" loading="lazy" width={600} height={600} />
+              <span className="trk-main">
+                <span className="trk-head">
+                  <span className="trk-n">{on && playing ? <span className="trk-eq" aria-hidden="true"><i /><i /><i /></span> : String(i + 1).padStart(2, '0')}</span>
+                  <span className="trk-title">{t.title}{t.note && <span className="trk-note"> ({t.note})</span>}</span>
+                  {t.length ? <span className="trk-len">{t.length}</span> : <span className="trk-soon">Coming soon</span>}
+                </span>
+                <span className="trk-artist">{artist}</span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
     </ol>
   );
 }

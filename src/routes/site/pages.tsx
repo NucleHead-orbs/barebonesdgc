@@ -1,7 +1,9 @@
 /** Club website pages (design/club-website/README.md "Screens / Views"). */
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { CLUB, EVENT, GALLERY, JEWEL_OVERVIEW, JEWEL_TEASER, MUSIC, SCHEDULE, TOUR } from '../../lib/jewel/content';
 import { Tracks } from '../../components/Tracks';
+import { Deck, MiniBar } from '../../components/music/Player';
+import { usePlayer } from '../../components/music/usePlayer';
 import { Gallery } from '../../components/Gallery';
 import { loadDivisions } from '../../lib/jewel/api';
 import { Banner, Button, Card, Chip, InsetFrame, SectionHeading, TourList } from '../../components/ui';
@@ -156,20 +158,27 @@ export function Sponsors({ jewel }: { jewel?: boolean }) {
   );
 }
 
-/** 5. Music: songs by The Boneheaded Boy */
+/** 5. Music: songs by YT the Boneheaded Boy. One player for the page: EP straight into the singles. */
 export function Music() {
+  const queue = useMemo(() => MUSIC.releases.flatMap((r) => r.tracks.filter((t) => t.length).map((t) => ({
+    slug: t.slug, title: t.title, release: r.title, src: `/music/${t.slug}.mp3`, cover: t.cover ?? `/music/${t.slug}.webp`,
+  }))), []);
+  const p = usePlayer(queue, MUSIC.artist);
+  const deck = useRef<HTMLDivElement>(null);
+  const pickSlug = (slug: string) => { const i = queue.findIndex((t) => t.slug === slug); if (i >= 0) p.choose(i); };
   return (
     <section className="sec">
       <div className="sec-inner" style={{ maxWidth: 860 }}>
-        <SectionHeading kicker={MUSIC.artist} title="Music" size="l" as="h1" aside={`${MUSIC.releases.flatMap((r) => r.tracks).filter((t) => t.length).length} tracks`} />
+        <SectionHeading kicker={MUSIC.artist} title="Music" size="l" as="h1" aside={`${queue.length} tracks`} />
         <div className="bhb">
           <img src={MUSIC.logo} alt="Boneheaded Boy Productions" width={160} height={174} />
           <div>
             <h2>{MUSIC.artist}</h2>
-            <p>Songs for the Boners. Hit play, or catch the whole catalog on YouTube Music.</p>
+            <p>Songs for the Boners. Hit play and it rolls through the whole set, or catch the catalog on YouTube Music.</p>
             <Button href={MUSIC.youtubeMusic} external variant="cta">Listen on YouTube Music</Button>
           </div>
         </div>
+        <div ref={deck}><Deck p={p} artist={MUSIC.artist} total={queue.length} /></div>
         {MUSIC.releases.map((r) => {
           const out = r.tracks.filter((t) => t.length).length, soon = r.tracks.length - out;
           return (
@@ -179,11 +188,12 @@ export function Music() {
                 <h2>{r.title}</h2>
                 <p>{r.tracks.length} tracks{soon ? ` · ${out} out now, ${soon} coming soon` : ''}</p>
               </div>
-              <Tracks tracks={r.tracks} artist={MUSIC.artist} />
+              <Tracks tracks={r.tracks} artist={MUSIC.artist} current={p.started ? p.cur?.slug : undefined} playing={p.playing} onPick={pickSlug} />
             </div>
           );
         })}
       </div>
+      <MiniBar p={p} artist={MUSIC.artist} deck={deck} />
     </section>
   );
 }

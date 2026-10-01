@@ -1,0 +1,79 @@
+/* Music page player: hero deck + pinned mini bar. Palette pulled from the Jewel XI cover art. */
+.mp-deck { position: relative; overflow: hidden; isolation: isolate; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 28px; align-items: center;
+  margin: 20px 0 8px; padding: 26px; border: 3px solid var(--ink); border-radius: 18px; background: #0d0a14; box-shadow: 0 6px 0 #000, 0 0 0 2px rgba(166, 217, 59, .25) inset; color: #fff; }
+.mp-bg { position: absolute; inset: -40px; z-index: -1; background-size: cover; background-position: center; filter: blur(38px) saturate(1.5) brightness(.42); transform: scale(1.1); transition: background-image .4s; }
+.mp-deck::after { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(circle at 15% 50%, transparent 30%, rgba(8, 6, 14, .55) 80%), repeating-linear-gradient(0deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 3px); }
+
+/* The disc: a golf-disc rim + flight plate, cover art hot-stamped in the middle. */
+.mp-disc-wrap { position: relative; aspect-ratio: 1; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, .6)); }
+.mp-disc { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center;
+  background:
+    radial-gradient(circle, transparent 63%, rgba(0, 0, 0, .35) 64%, transparent 66%),
+    radial-gradient(circle, transparent 84%, rgba(255, 255, 255, .55) 85%, rgba(255, 255, 255, .1) 88%, rgba(0, 0, 0, .45) 97%, transparent 98.5%),
+    conic-gradient(from 20deg, #a6d93b, #f2c230, #ff3ad1, #7b5cff, #29e1ff, #a6d93b);
+  animation: mp-spin 7s linear infinite; animation-play-state: paused; }
+.mp-disc::before { content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: repeating-radial-gradient(circle, rgba(255, 255, 255, .06) 0 1px, transparent 1px 5px), linear-gradient(135deg, rgba(255, 255, 255, .35), transparent 40%, transparent 60%, rgba(0, 0, 0, .3)); }
+.is-playing .mp-disc { animation-play-state: running; }
+.mp-stamp { position: relative; width: 62%; height: 62%; border-radius: 50%; object-fit: cover; border: 3px solid rgba(0, 0, 0, .55); box-shadow: 0 0 0 2px rgba(255, 255, 255, .35); }
+@keyframes mp-spin { to { transform: rotate(360deg); } }
+
+.mp-info { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.mp-kicker { font-family: var(--font-label); font-weight: var(--label-weight); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #f2c230; }
+.mp-title { margin: 0; font-family: var(--font-display); font-weight: 400; text-transform: var(--display-case); font-size: clamp(30px, 5vw, 48px); line-height: .98; color: #fff;
+  text-shadow: 0 3px 0 #000, 0 0 22px rgba(255, 58, 209, .55); overflow-wrap: anywhere; }
+.mp-artist { font-weight: 700; color: #a6d93b; }
+.mp-viz { width: 100%; height: 64px; display: block; margin: 6px 0 2px; }
+
+.mp-seek { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; font-family: var(--font-label); font-weight: var(--label-weight); font-size: 12px; color: rgba(255, 255, 255, .75); font-variant-numeric: tabular-nums; }
+.mp-seek input { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; cursor: pointer; margin: 0; }
+.mp-seek input::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, #a6d93b, #f2c230 var(--p), rgba(255, 255, 255, .18) var(--p)); }
+.mp-seek input::-moz-range-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, #a6d93b, #f2c230 var(--p), rgba(255, 255, 255, .18) var(--p)); }
+.mp-seek input::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -5px; border-radius: 50%; background: #fff; border: 3px solid #17201c; box-shadow: 0 0 10px rgba(242, 194, 48, .8); }
+.mp-seek input::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid #17201c; }
+.mp-seek input:focus-visible { outline: 2px solid #a6d93b; outline-offset: 2px; border-radius: 4px; }
+
+.mp-ctrls { display: flex; align-items: center; gap: 10px; }
+.mp-ctrls.is-big { gap: 14px; margin-top: 4px; }
+.mp-ic, .mp-play { all: unset; box-sizing: border-box; display: grid; place-items: center; cursor: pointer; position: relative; border-radius: 50%; }
+.mp-ic { width: var(--hit); height: var(--hit); color: rgba(255, 255, 255, .85); transition: color .15s, background .15s; }
+.mp-ic:hover { color: #fff; background: rgba(255, 255, 255, .1); }
+.mp-ic[aria-pressed='true'] { color: #a6d93b; }
+.mp-ic[aria-pressed='true']::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+.mp-one { position: absolute; top: 6px; right: 6px; font: 800 9px/1 var(--font-label); background: #a6d93b; color: #17201c; border-radius: 6px; padding: 2px 3px; }
+.mp-play { width: 56px; height: 56px; background: #a6d93b; color: #17201c; border: 3px solid #17201c; box-shadow: 0 4px 0 #000, 0 0 24px rgba(166, 217, 59, .45); transition: transform .12s var(--ease); }
+.is-big .mp-play { width: 68px; height: 68px; }
+.is-big .mp-play svg { width: 30px; height: 30px; }
+.mp-play:hover { transform: translateY(-1px) scale(1.04); }
+.mp-play:active { transform: translateY(2px); box-shadow: 0 2px 0 #000; }
+.mp-ic:focus-visible, .mp-play:focus-visible { outline: 3px solid #f2c230; outline-offset: 3px; }
+.mp-count { font-size: 12px; color: rgba(255, 255, 255, .6); }
+.mp-err { font-size: 13px; font-weight: 700; color: #ff8a7a; }
+
+/* Pinned mini bar */
+.mp-mini { position: fixed; z-index: 50; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(720px, calc(100% - 24px)); overflow: hidden;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 10px 8px 8px;
+  border: 3px solid var(--ink); border-radius: 16px; background: rgba(13, 10, 20, .92); backdrop-filter: blur(12px); box-shadow: 0 6px 0 #000, 0 10px 30px rgba(0, 0, 0, .5); color: #fff;
+  animation: mp-up .25s var(--ease); }
+@keyframes mp-up { from { transform: translate(-50%, 120%); } }
+.mp-mini-bar { position: absolute; left: 0; top: 0; height: 3px; width: 100%; transform-origin: left; background: linear-gradient(90deg, #a6d93b, #f2c230, #ff3ad1); }
+.mp-mini-art { all: unset; cursor: pointer; border-radius: 50%; }
+.mp-mini-art img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; display: block; border: 2px solid #a6d93b; animation: mp-spin 7s linear infinite; animation-play-state: paused; }
+.mp-mini-art img.is-spin { animation-play-state: running; }
+.mp-mini-art:focus-visible { outline: 3px solid #f2c230; outline-offset: 2px; }
+.mp-mini-txt { min-width: 0; display: flex; flex-direction: column; }
+.mp-mini-txt b { font-family: var(--font-display); font-weight: 400; text-transform: var(--display-case); font-size: 18px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-mini-txt span { font-size: 12px; color: #a6d93b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-mini .mp-play { width: 46px; height: 46px; box-shadow: 0 3px 0 #000; }
+.mp-mini .mp-ic { width: 40px; height: 40px; }
+body.has-minibar { padding-bottom: 96px; }
+
+@media (max-width: 640px) {
+  .mp-deck { grid-template-columns: 1fr; padding: 18px; gap: 16px; text-align: center; }
+  .mp-disc-wrap { width: min(250px, 72%); margin: 0 auto; }
+  .mp-ctrls.is-big { justify-content: center; gap: 6px; }
+  .mp-mini { bottom: 8px; gap: 8px; }
+  .mp-mini .mp-ic { width: 36px; height: 36px; }
+}
+@media (prefers-reduced-motion: reduce) { .mp-disc, .mp-mini-art img { animation: none; } }
