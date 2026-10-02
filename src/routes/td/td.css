@@ -381,3 +381,11 @@ button.td-vote-opt:disabled { cursor: default; }
 .td-poll.is-closed > h2, .td-poll.is-closed .td-row h2 { opacity: .85; }
 @media (max-width: 480px) { .td-vote-pick, .td-vote-grid { grid-template-columns: 1fr 1fr; } }
 @media (prefers-reduced-motion: reduce) { .td-bar span { transition: none; } }
+
+/* Tab-style segments (PREP views, order steps): never clip a tab on a phone. Wrap onto a second row instead. */
+.td-seg[role='tablist'] { max-width: 100%; }
+.td-seg[role='tablist'] button { white-space: nowrap; padding: 0 12px; }
+@media (max-width: 720px) {
+  .td-seg[role='tablist'] { flex-wrap: wrap; width: 100%; }
+  .td-seg[role='tablist'] button { flex: 1 1 auto; min-height: 40px; }
+}
