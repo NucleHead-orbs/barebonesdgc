@@ -163,7 +163,6 @@ function News({ posts }: { posts: NewsPost[] }) {
           </a>
         )}
         <div className="news-text">
-          <h3>{latest.title}</h3>
           <NewsBody post={latest} />
         </div>
       </article>
