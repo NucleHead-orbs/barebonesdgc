@@ -526,7 +526,7 @@ export const assignSlot = (eventId: string, stationId: string, day: number, half
 export const removeSlot = (id: string) => wrap(async () => { must(await supabase.from('station_slots').delete().eq('id', id)); });
 
 // ---------- design votes (TD-only tables; votes are read-only here, cast through td_vote) ----------
-const POLL_COLS = 'id, event_id, title, question, closes_at, closed_at, winner_option_id, created_by, created_at, design_poll_options(id, poll_id, asset_id, sort), design_poll_votes(id, poll_id, option_id, crew_id, td_email, comment, updated_at)';
+const POLL_COLS = 'id, event_id, title, question, closes_at, closed_at, winner_option_id, created_by, created_at, design_poll_options!design_poll_options_poll_id_fkey(id, poll_id, asset_id, sort), design_poll_votes!design_poll_votes_poll_id_fkey(id, poll_id, option_id, crew_id, td_email, comment, updated_at)';
 type PollRow = Omit<Poll, 'options' | 'votes'> & { design_poll_options: PollOption[]; design_poll_votes: PollVote[] };
 const toPoll = ({ design_poll_options, design_poll_votes, ...p }: PollRow): Poll =>
   ({ ...p, options: (design_poll_options ?? []).slice().sort((a, b) => a.sort - b.sort), votes: design_poll_votes ?? [] });
