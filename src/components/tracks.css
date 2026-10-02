@@ -34,3 +34,4 @@
 .bhb h2 { margin: 0 0 6px; font-family: var(--font-display); font-weight: 400; text-transform: var(--display-case); font-size: 30px; }
 .bhb p { margin: 0 0 12px; font-weight: 500; }
 @media (max-width: 520px) { .bhb { grid-template-columns: 96px minmax(0, 1fr); } .bhb img { width: 96px; } .bhb h2 { font-size: 24px; } }
+.trk-plays { color: var(--accent-c); font-weight: 600; }

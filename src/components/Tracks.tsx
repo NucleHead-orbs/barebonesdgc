@@ -1,3 +1,4 @@
+import { fmtPlays } from '../lib/music/listens';
 import './tracks.css';
 
 /** No `length` = no audio yet (shows "coming soon"). `cover` overrides <base>/<slug>.webp. */
@@ -7,8 +8,8 @@ export interface Track { slug: string; title: string; note?: string; length?: st
  * A release's tracklist. Rows are tap-to-play into the page player (`onPick` with the track's slug);
  * the current row shows dancing bars while it plays. Coming-soon rows can't be picked.
  */
-export function Tracks({ tracks, artist, base = '/music', current, playing, onPick }: {
-  tracks: Track[]; artist: string; base?: string; current?: string; playing?: boolean; onPick: (slug: string) => void;
+export function Tracks({ tracks, artist, base = '/music', current, playing, onPick, plays = {} }: {
+  tracks: Track[]; artist: string; base?: string; current?: string; playing?: boolean; onPick: (slug: string) => void; plays?: Record<string, number>;
 }) {
   return (
     <ol className="trk">
@@ -25,7 +26,7 @@ export function Tracks({ tracks, artist, base = '/music', current, playing, onPi
                   <span className="trk-title">{t.title}{t.note && <span className="trk-note"> ({t.note})</span>}</span>
                   {t.length ? <span className="trk-len">{t.length}</span> : <span className="trk-soon">Coming soon</span>}
                 </span>
-                <span className="trk-artist">{artist}</span>
+                <span className="trk-artist">{artist}{t.length && plays[t.slug] ? <span className="trk-plays"> · {fmtPlays(plays[t.slug])}</span> : null}</span>
               </span>
             </button>
           </li>

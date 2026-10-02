@@ -7,6 +7,7 @@ import { Tracks } from '../../components/Tracks';
 import { Deck, MiniBar } from '../../components/music/Player';
 import { usePlayer } from '../../components/music/usePlayer';
 import { useLyrics } from '../../components/music/useLyrics';
+import { useListens } from '../../components/music/useListens';
 import { Gallery } from '../../components/Gallery';
 import { loadDivisions } from '../../lib/jewel/api';
 import { Banner, Button, Card, Chip, InsetFrame, SectionHeading, TourList } from '../../components/ui';
@@ -216,6 +217,7 @@ export function Music() {
   const p = usePlayer(queue, MUSIC.artist);
   const deck = useRef<HTMLDivElement>(null);
   const lyrics = useLyrics(p.cur?.lyrics);
+  const stats = useListens(p);
   const [showLyrics, setShowLyrics] = useState(() => { try { return localStorage.getItem('bb-lyrics') !== 'off'; } catch { return true; } });
   const toggleLyrics = () => setShowLyrics((v) => { try { localStorage.setItem('bb-lyrics', v ? 'off' : 'on'); } catch { /* private mode */ } return !v; });
   const pickSlug = (slug: string) => { const i = queue.findIndex((t) => t.slug === slug); if (i >= 0) p.choose(i); };
@@ -231,7 +233,7 @@ export function Music() {
             <Button href={MUSIC.youtubeMusic} external variant="cta">Listen on YouTube Music</Button>
           </div>
         </div>
-        <div ref={deck}><Deck p={p} artist={MUSIC.artist} total={queue.length} lyrics={lyrics} showLyrics={showLyrics} onLyrics={toggleLyrics} /></div>
+        <div ref={deck}><Deck p={p} artist={MUSIC.artist} total={queue.length} lyrics={lyrics} showLyrics={showLyrics} onLyrics={toggleLyrics} live={stats.live} /></div>
         {MUSIC.releases.map((r) => {
           const out = r.tracks.filter((t) => t.length).length, soon = r.tracks.length - out;
           return (
@@ -241,7 +243,7 @@ export function Music() {
                 <h2>{r.title}</h2>
                 <p>{r.tracks.length} tracks{soon ? ` · ${out} out now, ${soon} coming soon` : ''}</p>
               </div>
-              <Tracks tracks={r.tracks} artist={MUSIC.artist} current={p.started ? p.cur?.slug : undefined} playing={p.playing} onPick={pickSlug} />
+              <Tracks tracks={r.tracks} artist={MUSIC.artist} current={p.started ? p.cur?.slug : undefined} playing={p.playing} onPick={pickSlug} plays={stats.plays} />
             </div>
           );
         })}

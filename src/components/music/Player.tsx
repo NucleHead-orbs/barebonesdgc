@@ -81,8 +81,8 @@ function Controls({ p, big }: { p: Player; big?: boolean }) {
 }
 
 /** The hero deck: cover art hot-stamped on a spinning disc, visualizer, scrubber, controls. */
-export function Deck({ p, artist, total, lyrics, showLyrics, onLyrics }: {
-  p: Player; artist: string; total: number; lyrics: Lyrics | null; showLyrics: boolean; onLyrics: () => void;
+export function Deck({ p, artist, total, lyrics, showLyrics, onLyrics, live }: {
+  p: Player; artist: string; total: number; lyrics: Lyrics | null; showLyrics: boolean; onLyrics: () => void; live: number;
 }) {
   const cur = p.cur;
   const pct = p.dur ? (p.time / p.dur) * 100 : 0;
@@ -102,6 +102,7 @@ export function Deck({ p, artist, total, lyrics, showLyrics, onLyrics }: {
         </div>
         <h2 className="mp-title">{cur.title}</h2>
         <div className="mp-artist">{artist}</div>
+        {live > 0 && <div className="mp-live"><i aria-hidden="true" />{live} {live === 1 ? 'Boner' : 'Boners'} listening now</div>}
         {showLyrics && lyrics ? <Karaoke lyrics={lyrics} audio={p.audioEl} onSeek={p.seek} /> : <Viz p={p} />}
         <div className="mp-seek">
           <span>{fmtTime(p.time)}</span>
