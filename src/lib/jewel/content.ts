@@ -4,6 +4,7 @@
  * House rules are intentionally absent until the TD supplies them (the handoff points at a
  * prototype file that isn't in this repo); the Info tab hides the section while this is empty.
  */
+import type { NewsPost } from './news';
 export const EVENT = {
   title: 'Jewel XI World Tour',
   subtitle: 'NOV 21–22 · STRIPE SHOW GC · MESA',
@@ -69,8 +70,38 @@ export const JEWEL_OVERVIEW = {
   titleLines: ['The Jewel XI', 'World Tour'] as const,
   when: 'Nov 21–22, 2026 · Mesa, AZ',
   venueAka: [] as string[], // TODO: the four venue names (middle ones struck through). Line hidden until set.
-  regBanner: 'Sponsor sign-ups opened Sep 26, 3:00 PM MDT. Open registration opens Oct 2. Registration and payment happen on Disc Golf Scene.',
+  /** Open registration goes live (Arizona is UTC-7 all year). The banner flips by itself at this moment. */
+  regOpensAt: '2026-10-02T17:00:00-07:00',
+  regBannerBefore: 'Sponsor sign-ups opened Sep 26, 3:00 PM. Open registration opens Oct 2 at 5:00 PM Arizona time. Registration and payment happen on Disc Golf Scene.',
+  regBannerOpen: 'Registration is open. Sign up and pay on Disc Golf Scene. Sponsor sign-ups are open there too.',
 };
+
+/**
+ * Updates on the Jewel XI page (newest shows first). One entry per announcement, same words that went out.
+ * Artwork: public/assets/jewel-xi/news/<id>.webp + <id>-thumb.webp (360px square).
+ */
+export const JEWEL_NEWS: NewsPost[] = [
+  {
+    id: 'jewel-xi-registration-opens',
+    date: '2026-10-02',
+    title: 'Registration opens today at 5 PM',
+    art: { alt: 'The Jewel XI poster: registration opens today at 5:00 PM, Nov 21–22, 2026, Stripe Show GC, Mesa AZ. New single Lazy Boners out now.' },
+    body: [
+      'JEWEL XI REGISTRATION OPENS TODAY AT 5 PM.',
+      'Nov 21–22. Stripe Show GC, Mesa, AZ.\nTwo days // Good people // Great golf.',
+      'Eleven years of Boners. One extremely questionable rock-and-roll history. If you\'re coming, be ready when registration goes live at 5.',
+      'And while you get mentally prepared for whatever the hell we\'ve turned this event into, we\'ve got something else for you.',
+      'NEW SINGLE: "LAZY BONERS"',
+      'The official anthem of Safety Sunday. Weaponized leisure, long rounds, good green, better people, and the sacred Bare Bones philosophy:',
+      'HAVE FUN. HELP OUT. GROW THE SHORTS.',
+      'Give it a spin: barebonesdiscgolf.club/music',
+      'YT the Boneheaded Boy has apparently been sitting on this lost classic for decades. Nobody knows how, and nobody\'s asking.',
+      'All the classics. Some for the first time.',
+      'Registration opens at 5 PM today. Don\'t be late.',
+      'There ain\'t no late card on a Sunday when the whole damn league is lazy.',
+    ],
+  },
+];
 
 export const TOUR = [
   { date: 'Oct 2', title: 'Open registration' },

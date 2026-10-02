@@ -1,6 +1,8 @@
 /** Club website pages (design/club-website/README.md "Screens / Views"). */
 import { useMemo, useRef, useState } from 'react';
-import { CLUB, EVENT, GALLERY, JEWEL_OVERVIEW, JEWEL_TEASER, MUSIC, SCHEDULE, TOUR } from '../../lib/jewel/content';
+import { Link } from 'react-router-dom';
+import { CLUB, EVENT, GALLERY, JEWEL_NEWS, JEWEL_OVERVIEW, JEWEL_TEASER, MUSIC, SCHEDULE, TOUR } from '../../lib/jewel/content';
+import { fmtNewsDate, linkParts, registrationBanner, sortNews, type NewsPost } from '../../lib/jewel/news';
 import { Tracks } from '../../components/Tracks';
 import { Deck, MiniBar } from '../../components/music/Player';
 import { usePlayer } from '../../components/music/usePlayer';
@@ -93,7 +95,9 @@ export function JewelOverview() {
 
       <section className="sec">
         <div className="sec-inner">
-          <Banner tone="warn">{JEWEL_OVERVIEW.regBanner}</Banner>
+          <Banner tone="warn">{registrationBanner(JEWEL_OVERVIEW)}</Banner>
+
+          <News posts={JEWEL_NEWS} />
 
           <SectionHeading title="Schedule" />
           <div className="cards">
@@ -124,6 +128,52 @@ export function JewelOverview() {
           </div>
         </div>
       </section>
+    </>
+  );
+}
+
+const NEWS_ART = '/assets/jewel-xi/news';
+const isShout = (t: string) => /[A-Z]/.test(t) && t === t.toUpperCase();
+
+function NewsBody({ post }: { post: NewsPost }) {
+  return (
+    <div className="news-body">
+      {post.body.map((para, i) => (
+        <p key={i} className={isShout(para) ? 'news-shout' : undefined}>
+          {para.split('\n').map((line, j) => (
+            <span key={j}>{j > 0 && <br />}{linkParts(line).map((x, k) => ('to' in x ? <Link key={k} to={x.to}>{x.text}</Link> : <span key={k}>{x.text}</span>))}</span>
+          ))}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+/** Updates: the latest announcement in full (with its artwork), older ones folded. Source: JEWEL_NEWS in content.ts. */
+function News({ posts }: { posts: NewsPost[] }) {
+  const [latest, ...older] = sortNews(posts);
+  if (!latest) return null;
+  return (
+    <>
+      <SectionHeading title="Updates" aside={fmtNewsDate(latest.date)} />
+      <article className="news two-col">
+        {latest.art && (
+          <a className="news-art" href={`${NEWS_ART}/${latest.id}.webp`} target="_blank" rel="noreferrer" aria-label="Open the full-size artwork">
+            <img src={`${NEWS_ART}/${latest.id}.webp`} alt={latest.art.alt} loading="lazy" width={1254} height={1254} />
+          </a>
+        )}
+        <div className="news-text">
+          <h3>{latest.title}</h3>
+          <NewsBody post={latest} />
+        </div>
+      </article>
+      {older.map((p) => (
+        <details key={p.id} className="news-old">
+          <summary><b>{p.title}</b> <span>{fmtNewsDate(p.date)}</span></summary>
+          {p.art && <a href={`${NEWS_ART}/${p.id}.webp`} target="_blank" rel="noreferrer"><img src={`${NEWS_ART}/${p.id}-thumb.webp`} alt={p.art.alt} loading="lazy" width={180} height={180} /></a>}
+          <NewsBody post={p} />
+        </details>
+      ))}
     </>
   );
 }
