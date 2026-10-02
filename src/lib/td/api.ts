@@ -11,6 +11,7 @@ import type { DivisionRow, EventConfig, HoleRow } from './setup';
 import type { DivisionConfig, FinishStatus, PrizeSettings } from '../prizes/payout';
 import type { TeamPayoutConfig } from '../prizes/winners';
 import type { Announcement, Contact, CrewMember, RaffleSale, Role } from '../crew/crew';
+import type { Half, Slot, Station } from '../crew/stations';
 import { summarize, toLayoutPayload, type LayoutHole, type LibCourse, type LibLayout } from '../courses/courses';
 import { filePath, nextVersion, type DesignAsset, type DesignFile, type DesignStatus, type NewTask, type PrepTask } from '../prep/prep';
 
@@ -490,3 +491,32 @@ export const loadTeams = (eventId: string, round: 1 | 2) => wrap(async (): Promi
 /** Replace the draw. The server clears this round's (unscored) cards; refuses once scoring started. */
 export const saveTeams = (eventId: string, round: 1 | 2, teams: Array<[string, string | null]>) => wrap(async (): Promise<number> =>
   must(await supabase.rpc('td_set_teams', { p_event_id: eventId, p_round: round, p_teams: teams.map(([a, b]) => (b ? [a, b] : [a])) })) as number);
+
+// ---------- volunteer stations (TD) ----------
+export interface StationsData { stations: Station[]; slots: Slot[] }
+export const loadStations = (eventId: string) => wrap(async (): Promise<StationsData> => {
+  const [st, sl] = await Promise.all([
+    supabase.from('stations').select('id, name, need, notes, sort, station_needs(day, half, need)').eq('event_id', eventId).order('sort').order('name'),
+    supabase.from('station_slots').select('id, station_id, day, half, crew_id, claimed').eq('event_id', eventId),
+  ]);
+  const stations = (list(st) as Array<Omit<Station, 'needs'> & { station_needs: Station['needs'] }>)
+    .map(({ station_needs, ...s }) => ({ ...s, needs: station_needs ?? [] }));
+  return { stations, slots: list(sl) as Slot[] };
+});
+export const addStations = (eventId: string, rows: Array<{ name: string; need: number; sort: number }>) => wrap(async (): Promise<Station[]> =>
+  (list(await supabase.from('stations').insert(rows.map((r) => ({ ...r, event_id: eventId }))).select('id, name, need, notes, sort')) as Omit<Station, 'needs'>[])
+    .map((s) => ({ ...s, needs: [] })));
+export const updateStation = (id: string, patch: { name?: string; need?: number; notes?: string | null; sort?: number }) => wrap(async () => {
+  must(await supabase.from('stations').update(patch).eq('id', id));
+});
+export const deleteStation = (id: string) => wrap(async () => { must(await supabase.from('stations').delete().eq('id', id)); });
+/** null = back to the station default for that shift. */
+export const setShiftNeed = (stationId: string, day: number, half: Half, need: number | null) => wrap(async () => {
+  must(need == null
+    ? await supabase.from('station_needs').delete().eq('station_id', stationId).eq('day', day).eq('half', half)
+    : await supabase.from('station_needs').upsert({ station_id: stationId, day, half, need }));
+});
+export const assignSlot = (eventId: string, stationId: string, day: number, half: Half, crewId: string) => wrap(async (): Promise<Slot> =>
+  must(await supabase.from('station_slots').insert({ event_id: eventId, station_id: stationId, day, half, crew_id: crewId })
+    .select('id, station_id, day, half, crew_id, claimed').single()) as Slot);
+export const removeSlot = (id: string) => wrap(async () => { must(await supabase.from('station_slots').delete().eq('id', id)); });

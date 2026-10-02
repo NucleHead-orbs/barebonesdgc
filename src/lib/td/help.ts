@@ -48,6 +48,8 @@ export const HELP: HelpSection[] = [
       '**ROSTER:** add each helper by name and tap their jobs (Check-in, Raffle, Card requests, Contacts & sponsors). Everyone gets announcements and tasks.',
       'Tap **COPY LINK** or **TEXT IT** and send each person their own link. No password. **Cut off link** stops it instantly, and **New link** replaces a lost one.',
       '**ANNOUNCEMENTS:** post directives to everyone or just some jobs. Each helper taps **Got it**, and you see who hasn\'t yet ("Waiting on…").',
+      '**STATIONS:** the volunteer grid. Tap **LOAD STARTER STATIONS** (Spotters, Check In, Player Packs, Tee Signs, Water & Ice) or add your own. Every event day gets an AM and a PM shift. Use **+** in a cell to place someone; **EDIT HEADCOUNTS** to change how many each station needs, for all shifts or just one.',
+      'Crew see their shifts on their link and can **CLAIM** open spots (✋). ⚠ marks someone booked in two stations the same shift. **CSV** / **PRINT** for the clipboard at the tent.',
       'Assign prep tasks to crew in **PREP → TASKS → Edit**. They tick them off and post updates you both see.',
       '**RAFFLE:** crew log sales on their phones. The total shows here and in **WINNERS**, where you tap **USE** to put it in the prize pool.',
       'Designs you mark **Show crew** in **PREP → DESIGNS** show up on their links under **DESIGNS**.',

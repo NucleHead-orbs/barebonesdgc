@@ -335,3 +335,31 @@
 .td-teams li.cali { border-color: var(--gold); }
 .td-teams .no { font-family: var(--font-label); font-size: 12px; opacity: .6; min-width: 18px; }
 .td-teams em { font-style: normal; font-size: 10px; letter-spacing: 1px; color: var(--gold); }
+
+/* ---------- volunteer stations ---------- */
+.td-gridwrap { overflow-x: auto; max-width: 100%; border-radius: var(--r-card); border: 2px solid var(--border); }
+.td-stations { border-collapse: collapse; min-width: 100%; font-size: 13px; }
+.td-stations th, .td-stations td { border: 1px solid var(--raised); padding: 6px; vertical-align: top; min-width: 120px; }
+.td-stations thead th { position: sticky; top: 0; background: var(--raised); font-family: var(--font-label); font-weight: 400; letter-spacing: 1px; font-size: 12px; }
+.td-st-name { position: sticky; left: 0; z-index: 1; background: var(--surface); text-align: left; min-width: 140px; }
+.td-st-name b { display: block; font-size: 14px; }
+.td-st-edit { display: flex; flex-direction: column; gap: 4px; }
+.td-st-cell { background: var(--surface); }
+.td-st-cell.is-short { background: rgba(255, 210, 63, .08); }
+.td-st-cell.is-full { background: rgba(198, 255, 61, .07); }
+.td-st-cell.is-over { background: rgba(0, 200, 255, .07); }
+.td-st-cell.is-none { opacity: .5; }
+.td-st-count { font-family: var(--font-label); font-size: 11px; opacity: .7; margin-bottom: 4px; }
+.td-st-cell.is-short .td-st-count { color: var(--gold); opacity: 1; }
+.td-st-person { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 2px 6px; margin-bottom: 3px; border-radius: 6px; background: var(--raised); }
+.td-st-person.is-double { outline: 2px solid var(--error); }
+.td-st-x { border: 0; background: none; color: var(--text-muted); font-size: 16px; line-height: 1; padding: 0 2px; cursor: pointer; }
+.td-st-add { width: 100%; min-height: 30px; font-size: 13px; }
+.td-st-need { width: 100%; min-height: 28px; margin-top: 4px; font-size: 12px; }
+.td-checklist li.is-short { border-color: var(--gold); }
+@media print {
+  .td-top, .td-tabs, .td-seg, .td-counts, .td-row, .td-hint, .td-st-add, .td-st-x, .td-warn, .td-ok { display: none !important; }
+  .td-gridwrap { overflow: visible; border: 0; }
+  .td-stations, .td-stations th, .td-stations td { color: #000 !important; background: #fff !important; }
+  .td-st-name, .td-stations thead th { position: static; }
+}

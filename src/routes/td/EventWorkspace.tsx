@@ -97,7 +97,7 @@ export default function EventWorkspace({ eventId, email, admin, onSignOut, onBac
       </nav>
       {current === 'setup' && <SetupPanel setup={setup} admin={admin} players={players} onSaved={loadSetup} onDeleted={onBack} />}
       {current === 'prep' && <PrepPanel setup={setup} players={players} onPlayers={setPlayers} email={email} />}
-      {current === 'crew' && <CrewPanel eventId={ev.id} eventName={ev.name} email={email} />}
+      {current === 'crew' && <CrewPanel eventId={ev.id} eventName={ev.name} email={email} startsOn={ev.starts_on} endsOn={ev.ends_on} />}
       {current === 'players' && <PlayersPanel setup={setup} players={players} sponsors={sponsors} priv={priv}
         onPlayers={setPlayers} onReload={async () => { await Promise.all([loadPlayers(), loadRequests(), loadPrivate()]); }} onSponsors={setSponsors} onPrivate={loadPrivate} />}
       {current === 'requests' && <RequestsPanel setup={setup} players={players} requests={requests} onReload={loadRequests} />}

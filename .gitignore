@@ -27,3 +27,6 @@ dist-ssr
 # wrangler
 .wrangler
 .dev.vars*
+
+# Supabase CLI link (local only)
+supabase/.temp/

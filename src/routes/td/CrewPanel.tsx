@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import * as api from '../../lib/td/api';
 import { rpcError } from '../../lib/td/builder';
+import StationsGrid from './StationsGrid';
 import {
   ROLES, ROLE_LABEL, audienceLabel, crewLink, raffleTotals, readiness, receipts,
   type Announcement, type CrewMember, type RaffleSale, type Role,
 } from '../../lib/crew/crew';
 
-type View = 'roster' | 'news' | 'raffle';
+type View = 'roster' | 'stations' | 'news' | 'raffle';
 const ago = (iso: string | null | undefined) => {
   if (!iso) return 'never opened';
   const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -18,7 +19,7 @@ const ago = (iso: string | null | undefined) => {
  * CREW tab: roster + private links, announcements with read receipts, raffle log.
  * Crew act only through their link (/crew/<token>); nothing here is visible to them except what the crew_* RPCs return.
  */
-export default function CrewPanel({ eventId, eventName, email }: { eventId: string; eventName: string; email: string }) {
+export default function CrewPanel({ eventId, eventName, email, startsOn, endsOn }: { eventId: string; eventName: string; email: string; startsOn: string; endsOn: string }) {
   const [data, setData] = useState<api.CrewData | null>(null);
   const [sales, setSales] = useState<RaffleSale[]>([]);
   const [view, setView] = useState<View>('roster');
@@ -47,12 +48,14 @@ export default function CrewPanel({ eventId, eventName, email }: { eventId: stri
         <h2 className="td-h2">Crew</h2>
         <div className="td-seg">
           <button aria-pressed={view === 'roster'} onClick={() => setView('roster')}>ROSTER {live.length}</button>
+          <button aria-pressed={view === 'stations'} onClick={() => setView('stations')}>STATIONS</button>
           <button aria-pressed={view === 'news'} onClick={() => setView('news')}>ANNOUNCEMENTS{unread ? ` · ${unread} UNREAD` : ''}</button>
           <button aria-pressed={view === 'raffle'} onClick={() => setView('raffle')}>RAFFLE</button>
         </div>
       </div>
       {view === 'roster' && <Roster eventId={eventId} eventName={eventName} data={data} setData={setData} fail={fail} toast={setToast} />}
       {view === 'news' && <News eventId={eventId} email={email} data={data} setData={setData} fail={fail} toast={setToast} />}
+      {view === 'stations' && <StationsGrid eventId={eventId} eventName={eventName} startsOn={startsOn} endsOn={endsOn} crew={data.crew} />}
       {view === 'raffle' && <Raffle eventId={eventId} email={email} sales={sales} reload={load} fail={fail} />}
     </main>
   );

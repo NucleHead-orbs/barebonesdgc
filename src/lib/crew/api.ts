@@ -30,6 +30,8 @@ export interface CrewHome {
   my_requests?: Array<{ id: string; status: 'new' | 'approved' | 'declined'; note: string | null; created_at: string; players: string[] }>;
   raffle?: { total: number; tickets: number; mine: RaffleSale[] };
   contacts?: Array<Contact & { mine: boolean; owner: string | null }>;
+  stations?: Array<{ id: string; name: string; need: number; notes: string | null; sort: number; needs: Array<{ day: number; half: 'AM' | 'PM'; need: number }> }>;
+  slots?: Array<{ id: string; station_id: string; day: number; half: 'AM' | 'PM'; crew_id: string; name: string; claimed: boolean }>;
 }
 
 export const home = (t: string) => call<CrewHome>('crew_home', { p_token: t });
@@ -63,3 +65,6 @@ export async function designFileUrl(t: string, fileId: string): Promise<Result<s
     return d?.url ? { data: d.url } : { error: new Error(d?.error ?? 'not_found') };
   } catch (error) { return { error }; }
 }
+export const claimSlot = (t: string, station: string, day: number, half: 'AM' | 'PM') =>
+  call<string>('crew_claim_slot', { p_token: t, p_station: station, p_day: day, p_half: half });
+export const dropSlot = (t: string, slot: string) => call<null>('crew_drop_slot', { p_token: t, p_slot: slot });

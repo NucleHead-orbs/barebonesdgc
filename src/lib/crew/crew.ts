@@ -17,6 +17,7 @@ export const ROLE_GUIDE: Record<Role | 'general', { title: string; steps: string
     title: 'Everyone',
     steps: [
       'Read every announcement and tap **Got it**, so the TD knows you saw it.',
+      '**Stations** shows where you\'re working each shift (AM and PM, every day). See an open spot you can cover? Tap **CLAIM**. You can **DROP** a spot you claimed; spots the TD gave you, ask the TD to change.',
       '**Tasks** shows the whole checklist. Tick the ones with your name on them when they\'re done.',
       'Anything to report on a task (a problem, a pickup time, a receipt)? Tap it and post an update.',
       'This link is yours. Don\'t forward it. If you lose it, the TD can send you a new one.',
