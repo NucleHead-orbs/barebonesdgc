@@ -183,7 +183,7 @@ function News({ posts }: { posts: NewsPost[] }) {
 export function JewelCourse() {
   return (
     <div className="narrow">
-      <SectionHeading kicker="The Course Formally Known as Fiesta Lakes" title="The Setlist" aside="Par 62" as="h1" />
+      <SectionHeading kicker="The Course Formerly Known as Fiesta Lakes" title="The Setlist" aside="Par 62" as="h1" />
       <img className="map" src="/assets/coursemap-thumb.png" alt="Course map, Stripe Show Golf Course" />
       <CourseGuide />
     </div>

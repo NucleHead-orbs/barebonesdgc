@@ -26,3 +26,18 @@ describe('tee signs', () => {
     expect(knobAngle(11)).toBe(150);
   });
 });
+
+describe('tee sign bubble quotes', () => {
+  it('keeps the TD\'s per-hole text, cleaned and capped', () => {
+    const o = cleanOpts('tee_signs', { palette: 'Electric', q3: '  Stay off\n the green  ', q7: 'x'.repeat(300), q21: 'nope', q5: 42, q9: '   ' });
+    expect(o.q3).toBe('Stay off the green');
+    expect(o.q7).toHaveLength(140);
+    expect(o.q21).toBeUndefined(); expect(o.q5).toBeUndefined(); expect(o.q9).toBeUndefined();
+    expect(cleanOpts('disc', { q3: 'hi' }).q3).toBeUndefined();
+  });
+  it('uses the edit on the sign and the default everywhere else', () => {
+    const s = signs(PALETTES.Electric, { q2: 'Hit the gap, hero.' });
+    expect(s[1].quote).toBe('Hit the gap, hero.');
+    expect(s[0].quote).toBe('The Green, parking lot & sidewalk are all OB!');
+  });
+});

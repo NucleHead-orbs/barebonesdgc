@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { supabase } from '../../lib/supabase';
 import {
   DISC_COMBOS, FOILS, INKS, KNOBS, MAP_H, MAP_W, PALETTES, PLASTICS, SHIRTS, SIGN_BGS, art, cleanOpts, knobAngle,
-  optsLabel, sameOpts, signs, type Opts, type Pal, type ProofKind,
+  optsLabel, QUOTE_MAX, sameOpts, signs, type Opts, type Pal, type ProofKind,
 } from '../../lib/proofs/proofs';
 import './proofs.css';
 
@@ -30,14 +30,14 @@ export function ProofView({ kind, eventId, saved, onSave }: {
       <div className="pf-selected">
         <span className="pf-label">{onSave ? 'SELECTED' : 'TD PICKED'}</span>
         <b>{optsLabel(kind, savedOpts)}</b>
-        {dirty && <span className="pf-preview">previewing {optsLabel(kind, o)}</span>}
+        {dirty && <span className="pf-preview">{optsLabel(kind, o) === optsLabel(kind, savedOpts) ? 'unsaved edits' : `previewing ${optsLabel(kind, o)}`}</span>}
         {dirty && onSave && <button type="button" className="pf-save" disabled={busy} onClick={() => void save()}>{busy ? 'SAVING…' : 'SAVE AS SELECTED'}</button>}
         {dirty && <button type="button" className="pf-reset" onClick={() => setO(savedOpts)}>RESET</button>}
       </div>
       {kind === 'disc' && <Disc o={o} pick={pick} setO={setO} />}
       {kind === 'shirt' && <Shirt o={o} pick={pick} />}
       {kind === 'screen_print' && <ScreenPrint o={o} pick={pick} />}
-      {kind === 'tee_signs' && <TeeSigns o={o} pick={pick} eventId={eventId} />}
+      {kind === 'tee_signs' && <TeeSigns o={o} pick={pick} eventId={eventId} editable={!!onSave} />}
     </div>
   );
 }
@@ -200,7 +200,7 @@ function ShirtBack({ bg, pal, spot }: { bg: string; pal: Pal; spot: boolean }) {
       <div className="pf-b-body">
         <div className="pf-b-tour">THE JEWEL XI WORLD TOUR</div>
         <div className="pf-b-dates">
-          {[['NOV 21', 'The Course Formally Known As…'], ['NOV 22', "Freedom's Final Jewel"]].map(([d, note]) => (
+          {[['NOV 21', 'The Course Formerly Known As…'], ['NOV 22', "Freedom's Final Jewel"]].map(([d, note]) => (
             <div key={d} className="pf-b-date" style={{ borderTopColor: pal.b }}>
               <div style={{ color: pal.a }} className="pf-b-d">{d}</div>
               <div><div className="pf-b-venue">MESA, AZ · FIESTA LAKES</div><div className="pf-b-note" style={{ color: pal.c }}>{note}</div></div>
@@ -276,7 +276,7 @@ function ScreenPrint({ o, pick }: { o: Opts; pick: (k: string, v: string) => voi
 // ---------- tee signs ----------
 interface HoleRow { n: number; par: number; dist_ft: number | null }
 interface HoleSponsor { hole: number | null; name: string; logo_url: string | null }
-function TeeSigns({ o, pick, eventId }: { o: Opts; pick: (k: string, v: string) => void; eventId: string }) {
+function TeeSigns({ o, pick, eventId, editable }: { o: Opts; pick: (k: string, v: string) => void; eventId: string; editable: boolean }) {
   const pal = PALETTES[o.palette];
   const bg = SIGN_BGS[o.bg];
   const [holes, setHoles] = useState<HoleRow[]>([]);
@@ -295,8 +295,11 @@ function TeeSigns({ o, pick, eventId }: { o: Opts; pick: (k: string, v: string) 
     })();
     return () => { live = false; };
   }, [eventId]);
-  const all = signs(pal);
+  const all = signs(pal, o);
   const sign = all[n - 1];
+  const defaultQuote = signs(pal)[n - 1].quote;
+  const qKey = `q${n}`;
+  const draft = o[qKey] ?? sign.quote;
   const hole = holes.find((h) => h.n === n);
   const sp = spons.find((s) => s.hole === n) ?? null;
   const claimed = new Set(spons.filter((s) => s.hole).map((s) => s.hole)).size;
@@ -311,7 +314,7 @@ function TeeSigns({ o, pick, eventId }: { o: Opts; pick: (k: string, v: string) 
           <img className="pf-s-wm" src={art('wordmark-bare-bones-cut.webp')} alt="Bare Bones" />
           <div className="pf-s-tr">
             <div className="pf-s-tour">THE JEWEL XI WORLD TOUR</div>
-            <div className="pf-s-course" style={{ color: pal.a }}>The Course Formally Known as Fiesta Lakes</div>
+            <div className="pf-s-course" style={{ color: pal.a }}>The Course Formerly Known as Fiesta Lakes</div>
             <div className="pf-s-when" style={{ color: pal.c }}>NOV 21–22, 2026</div>
           </div>
           <div className="pf-s-top">
@@ -329,7 +332,10 @@ function TeeSigns({ o, pick, eventId }: { o: Opts; pick: (k: string, v: string) 
             <div className="pf-s-tee" style={{ left: sign.tee.x, top: sign.tee.y, transform: `translate(-50%,-50%) rotate(${sign.tee.rot}deg)`, background: pal.a }}>TEE</div>
           </div>
           <div className="pf-s-narr">
-            <div className="pf-s-head"><div className="pf-s-face">FACE</div><img src={art('narrator-hair.webp')} alt="" /></div>
+            <div className="pf-s-baron">
+              <img src={art('baron-von-goose.webp')} alt="Baron Von Goose" />
+              <div className="pf-s-bname"><b>Baron<br />Von Goose</b><i style={{ background: pal.c }} /><span>The Rule Rocker</span></div>
+            </div>
             <div className="pf-s-bubble" style={{ fontSize: sign.qfs }}><i />{sign.quote}</div>
           </div>
           <div className="pf-s-rules">{sign.rules.map((r) => <div key={r}><span style={{ color: pal.c }}>▸</span> {r}</div>)}</div>
@@ -354,6 +360,17 @@ function TeeSigns({ o, pick, eventId }: { o: Opts; pick: (k: string, v: string) 
             })}
           </div>
         </div>
+        {editable && (
+          <div className="pf-group">
+            <div className="pf-label">BARON SAYS · HOLE {n}</div>
+            <textarea className="pf-quote" rows={3} maxLength={QUOTE_MAX} value={draft} aria-label={`Hole ${n} speech bubble`}
+              onChange={(e) => pick(qKey, e.target.value.replace(/\n/g, ' '))} />
+            <div className="pf-quote-meta">
+              <span>{draft.length}/{QUOTE_MAX}{o[qKey] && o[qKey] !== defaultQuote ? ' · edited' : ''}</span>
+              {o[qKey] !== undefined && o[qKey] !== defaultQuote && <button type="button" onClick={() => pick(qKey, defaultQuote)}>Back to original</button>}
+            </div>
+          </div>
+        )}
         <div className="pf-chiprow">
           <Chips label="PALETTE" items={Object.keys(PALETTES)} cur={o.palette} onPick={(v) => pick('palette', v)} swatch={(v) => tri(PALETTES[v])} />
           <Chips label="BACKGROUND" items={Object.keys(SIGN_BGS)} cur={o.bg} onPick={(v) => pick('bg', v)} swatch={(v) => <span className="pf-sw" style={{ background: SIGN_BGS[v] }} />} />
@@ -362,7 +379,7 @@ function TeeSigns({ o, pick, eventId }: { o: Opts; pick: (k: string, v: string) 
           <li className="pf-label pf-hot">BEFORE PRINT</li>
           <li>Course: par {totalPar || '–'} · {totalFt ? totalFt.toLocaleString() : '–'} ft, straight from this event's holes.</li>
           <li>Sponsors on signs: {claimed} of 20 holes. Visible sponsors with a hole and logo drop in automatically.</li>
-          <li>Drop a caricature and a rocker name on each hole; narrator face goes in the head slot.</li>
+          <li>Drop a caricature and a rocker name on each hole. Baron's bubble text is editable per hole (save to lock it in).</li>
           <li>Print 11×17 at 300 dpi, 1/8 in bleed. Coroplast holds up outside.</li>
         </ol>
       </div>

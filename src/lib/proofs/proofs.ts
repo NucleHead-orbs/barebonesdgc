@@ -70,8 +70,17 @@ export function cleanOpts(kind: ProofKind, raw: unknown): Opts {
     const v = src[k];
     if (typeof v === 'string' && Object.prototype.hasOwnProperty.call(allowed, v)) out[k] = v;
   }
+  // Tee signs: the TD's own words for a hole's speech bubble (q1..q20). Missing = the default quote.
+  if (kind === 'tee_signs') for (let n = 1; n <= SIGN_COUNT; n++) {
+    const q = cleanQuote(src[`q${n}`]);
+    if (q) out[`q${n}`] = q;
+  }
   return out;
 }
+export const SIGN_COUNT = 20;
+export const QUOTE_MAX = 140;
+/** One line of bubble text: trimmed, single spaces, capped. '' = use the default. */
+export const cleanQuote = (v: unknown) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, QUOTE_MAX) : '');
 export const sameOpts = (a: Opts, b: Opts) => Object.keys({ ...a, ...b }).every((k) => a[k] === b[k]);
 export function optsLabel(kind: ProofKind, o: Opts): string {
   if (kind === 'disc') return `${o.foil} foil on ${o.plastic}`;
@@ -90,7 +99,8 @@ interface RawSign { n: number; basket: [number, number]; tee: [number, number, n
 export interface Sign { n: number; basket: { x: number; y: number }; tee: { x: number; y: number; rot: number }; line: { x: number; y: number; len: number; ang: number }; els: MapEl[]; quote: string; rules: string[]; qfs: number }
 export const MAP_W = 532, MAP_H = 620;
 
-export function signs(pal: Pal): Sign[] {
+/** The 20 signs. `o` (saved picks) may carry q1..q20 to replace the default bubble text. */
+export function signs(pal: Pal, o: Opts = {}): Sign[] {
   const W = MAP_W, H = MAP_H, px = (x: number, y: number) => ({ x: x / 100 * W, y: y / 100 * H });
   const hz = 'horizontal-tb' as const;
   const ob = (x: number, y: number, w: number, h: number, label: string): MapEl => ({ ...px(x, y), w: w / 100 * W, h: h / 100 * H, r: '50%', bg: 'rgba(255,58,209,0.22)', border: '4px solid ' + pal.c, color: '#fff', label, fs: 30, ls: 2, rot: 0, wm: hz });
@@ -102,7 +112,7 @@ export function signs(pal: Pal): Sign[] {
   const raw: RawSign[] = [
     { n: 1, basket: [80, 8], tee: [62, 86, 0],
       els: [ob(44, 40, 40, 34, 'THE GREEN · OB'), strip(44, 80, 88, 5, 'SIDEWALK · OB'), strip(94, 50, 12, 100, 'PARKING LOT · OB', true)],
-      quote: 'The Boner, parking lot & sidewalk are all OB!', rules: [] },
+      quote: 'The Green, parking lot & sidewalk are all OB!', rules: [] },
     { n: 2, basket: [64, 7], tee: [52, 90, 0],
       els: [pond(20, 40, 28, 13), tree(44, 54), tree(76, 50), tag(34, 66, 'MANDO ➜', pal.c), tag(55, 60, 'DZ', '#ffd23f', 24), tag(80, 62, '⟵ MANDO', pal.c), tag(78, 88, 'MISS THE MANDO? HEAD TO THE DZ', '#fff', 14)],
       quote: 'Gotta make it through them there trees, and the pond is OB!', rules: ['Mando: pass between the trees', 'Missed mando → head to the DZ'] },
@@ -160,7 +170,8 @@ export function signs(pal: Pal): Sign[] {
       els: [water(50, 24, 54, 32, 'ISLAND · OB', 0, '50%'), tag(70, 70, 'DROP ZONE', '#ff4b3e', 18)],
       quote: "Island hole 'mon. Advance to drop zone if missed. Shoot until made. You will miss this putt. Jackass.", rules: ['Island hole: miss → advance to DZ', 'Shoot from the DZ until made'] }
   ];
-  return raw.map((h) => {
+  return raw.map((h0) => {
+    const h = { ...h0, quote: o[`q${h0.n}`] || h0.quote };
     const b = px(h.basket[0], h.basket[1]), t = { ...px(h.tee[0], h.tee[1]), rot: h.tee[2] };
     const dx = b.x - t.x, dy = b.y - t.y;
     return { n: h.n, basket: b, tee: t, els: h.els, quote: h.quote, rules: h.rules,

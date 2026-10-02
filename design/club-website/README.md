@@ -163,7 +163,7 @@ All pages share a sticky header, the page body, and a footer.
 
 **3. Course guide ("The Setlist")**
 - Layout: max width 720, padding 24 16.
-- SectionHeading: kicker "The Course Formally Known as Fiesta Lakes", aside "Par 62".
+- SectionHeading: kicker "The Course Formerly Known as Fiesta Lakes", aside "Par 62".
 - Map image with radius 10.
 - Accordion inside a 2px-bordered surface (radius 12), 20 rows.
   - Row: 60px minimum height, padding 10 12.

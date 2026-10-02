@@ -116,13 +116,10 @@
 .pf-s-basket { position: absolute; transform: translate(-50%, -50%); width: 54px; height: 54px; border-radius: 50%; background: #000; border: 5px solid #fff; box-sizing: border-box; display: grid; place-items: center; }
 .pf-s-basket i { width: 14px; height: 14px; border-radius: 50%; }
 .pf-s-tee { position: absolute; width: 46px; height: 64px; border: 4px solid #000; box-sizing: border-box; display: grid; place-items: center; font-family: 'Archivo Black'; font-size: 14px; color: #000; }
-.pf-s-narr { position: absolute; left: 510px; top: 1132px; width: 552px; height: 350px; display: flex; gap: 14px; align-items: center; }
-.pf-s-head { position: relative; width: 258px; height: 348px; flex: none; }
-.pf-s-face { position: absolute; left: 108px; top: 131px; width: 100px; height: 116px; border-radius: 50%; background: #222; display: grid; place-items: center; font-family: 'Archivo Black'; font-size: 13px; color: #888; }
-.pf-s-head img { position: absolute; inset: 0; width: 258px; height: 348px; }
+.pf-s-narr { position: absolute; left: 470px; top: 1100px; width: 600px; height: 390px; display: flex; gap: 6px; align-items: center; }
 .pf-s-bubble { position: relative; flex: 1; min-width: 0; background: #fff; color: #111; border: 4px solid #111; border-radius: 22px; padding: 18px 20px; box-sizing: border-box; font-family: 'Permanent Marker', cursive; line-height: 1.15; }
 .pf-s-bubble i { position: absolute; left: -26px; top: 50%; border-top: 16px solid transparent; border-bottom: 16px solid transparent; border-right: 26px solid #111; transform: translateY(-50%); }
-.pf-s-rules { position: absolute; left: 48px; top: 1210px; width: 440px; display: flex; flex-direction: column; gap: 6px; font-family: 'Archivo Black'; font-size: 17px; letter-spacing: 1px; }
+.pf-s-rules { position: absolute; left: 48px; top: 1210px; width: 410px; display: flex; flex-direction: column; gap: 6px; font-family: 'Archivo Black'; font-size: 17px; letter-spacing: 1px; }
 .pf-s-foot { position: absolute; left: 14px; right: 14px; bottom: 14px; height: 200px; border-top: 3px solid; display: flex; align-items: center; justify-content: space-between; gap: 30px; padding: 0 34px; box-sizing: border-box; background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .08)); }
 .pf-s-by { font-family: 'Metal Mania', cursive; font-size: 52px; line-height: 1; }
 .pf-s-dick { font-family: 'Permanent Marker', cursive; font-size: 22px; }
@@ -143,3 +140,16 @@
   background: radial-gradient(ellipse at 50% 0%, #1d1830 0%, #0b0b0f 70%); color: #f2f0f7; font-family: Anton, sans-serif; }
 .td-proof-thumb b { font-weight: 400; font-size: 26px; letter-spacing: .06em; background: linear-gradient(90deg, #29e1ff, #7b5cff, #ff3ad1); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .td-proof-thumb span { font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .2em; opacity: .8; }
+
+/* Baron Von Goose, the Rule Rocker (narrator) */
+.pf-s-baron { position: relative; width: 330px; height: 390px; flex: none; }
+.pf-s-baron img { position: absolute; right: 0; bottom: 0; height: 380px; width: auto; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, .55)); }
+.pf-s-bname { position: absolute; left: 0; bottom: 18px; transform: rotate(-8deg); transform-origin: left bottom; display: flex; flex-direction: column; align-items: flex-start; }
+.pf-s-bname b { font-family: 'Permanent Marker', cursive; font-weight: 400; font-size: 38px; line-height: .92; color: #fff; text-transform: uppercase;
+  -webkit-text-stroke: 2px #111; paint-order: stroke fill; text-shadow: 0 3px 0 #111, 0 0 14px rgba(0, 0, 0, .8); }
+.pf-s-bname i { display: block; width: 190px; height: 5px; margin: 6px 0 4px; border-radius: 3px; transform: skewX(-20deg); }
+.pf-s-bname span { font-family: 'Permanent Marker', cursive; font-size: 19px; color: #fff; text-transform: uppercase; -webkit-text-stroke: 1px #111; paint-order: stroke fill; text-shadow: 0 2px 0 #111; }
+.pf-quote { width: 100%; box-sizing: border-box; resize: vertical; min-height: 72px; padding: 10px 12px; border-radius: 8px; border: 2px solid #2a3558; background: #0b1020; color: #fff; font: 600 14px/1.35 'Archivo', sans-serif; }
+.pf-quote:focus { outline: 2px solid #29e1ff; outline-offset: 1px; }
+.pf-quote-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px; font-size: 12px; color: #8a93b0; }
+.pf-quote-meta button { all: unset; cursor: pointer; color: #29e1ff; font-weight: 700; }
