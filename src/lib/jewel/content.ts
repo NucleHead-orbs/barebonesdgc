@@ -110,6 +110,9 @@ export const MUSIC = {
         { slug: 'gator-gangbang', title: 'Gator Gangbang', length: '4:40' },
         { slug: 'lumen-limit-city', title: 'Lumen Limit City', length: '5:07' },
         { slug: 'get-rolley', title: 'Get Rolley' },
+        { slug: 'lazy-boners', title: 'Lazy Boners', length: '4:56' },
+        { slug: 'legends-of-root-beer', title: 'Legends of Root Beer', cover: '/music/bhb-logo.webp' },
+        { slug: 'gone-but-still-hard', title: 'Gone But Still Hard', cover: '/music/bhb-logo.webp' },
       ],
     },
     {
