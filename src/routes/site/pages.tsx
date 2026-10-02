@@ -6,6 +6,7 @@ import { fmtNewsDate, linkParts, registrationBanner, sortNews, type NewsPost } f
 import { Tracks } from '../../components/Tracks';
 import { Deck, MiniBar } from '../../components/music/Player';
 import { usePlayer } from '../../components/music/usePlayer';
+import { useLyrics } from '../../components/music/useLyrics';
 import { Gallery } from '../../components/Gallery';
 import { loadDivisions } from '../../lib/jewel/api';
 import { Banner, Button, Card, Chip, InsetFrame, SectionHeading, TourList } from '../../components/ui';
@@ -210,10 +211,13 @@ export function Sponsors({ jewel }: { jewel?: boolean }) {
 /** 5. Music: songs by YT the Boneheaded Boy. One player for the page: EP straight into the singles. */
 export function Music() {
   const queue = useMemo(() => MUSIC.releases.flatMap((r) => r.tracks.filter((t) => t.length).map((t) => ({
-    slug: t.slug, title: t.title, release: r.title, src: `/music/${t.slug}.mp3`, cover: t.cover ?? `/music/${t.slug}.webp`,
+    slug: t.slug, title: t.title, release: r.title, src: `/music/${t.slug}.mp3`, cover: t.cover ?? `/music/${t.slug}.webp`, lyrics: t.lyrics ? `/music/${t.slug}.lyrics.json` : undefined,
   }))), []);
   const p = usePlayer(queue, MUSIC.artist);
   const deck = useRef<HTMLDivElement>(null);
+  const lyrics = useLyrics(p.cur?.lyrics);
+  const [showLyrics, setShowLyrics] = useState(() => { try { return localStorage.getItem('bb-lyrics') !== 'off'; } catch { return true; } });
+  const toggleLyrics = () => setShowLyrics((v) => { try { localStorage.setItem('bb-lyrics', v ? 'off' : 'on'); } catch { /* private mode */ } return !v; });
   const pickSlug = (slug: string) => { const i = queue.findIndex((t) => t.slug === slug); if (i >= 0) p.choose(i); };
   return (
     <section className="sec">
@@ -227,7 +231,7 @@ export function Music() {
             <Button href={MUSIC.youtubeMusic} external variant="cta">Listen on YouTube Music</Button>
           </div>
         </div>
-        <div ref={deck}><Deck p={p} artist={MUSIC.artist} total={queue.length} /></div>
+        <div ref={deck}><Deck p={p} artist={MUSIC.artist} total={queue.length} lyrics={lyrics} showLyrics={showLyrics} onLyrics={toggleLyrics} /></div>
         {MUSIC.releases.map((r) => {
           const out = r.tracks.filter((t) => t.length).length, soon = r.tracks.length - out;
           return (
@@ -242,7 +246,7 @@ export function Music() {
           );
         })}
       </div>
-      <MiniBar p={p} artist={MUSIC.artist} deck={deck} />
+      <MiniBar p={p} artist={MUSIC.artist} deck={deck} lyrics={showLyrics ? lyrics : null} />
     </section>
   );
 }

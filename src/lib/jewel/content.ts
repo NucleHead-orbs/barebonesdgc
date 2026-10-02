@@ -123,7 +123,8 @@ export const GALLERY: Array<{ name: string; alt: string }> = [
  * Music page. Files in public/music: <slug>.mp3 + <slug>.webp (600px square cover).
  * A track without `length` has no audio yet and shows as "coming soon". `cover` overrides <slug>.webp.
  */
-export interface MusicTrack { slug: string; title: string; note?: string; length?: string; cover?: string }
+/** `lyrics: true` = public/music/<slug>.lyrics.json exists (timed karaoke lyrics). */
+export interface MusicTrack { slug: string; title: string; note?: string; length?: string; cover?: string; lyrics?: boolean }
 export interface MusicRelease { title: string; kicker: string; tracks: MusicTrack[] }
 export const MUSIC = {
   artist: 'YT the Boneheaded Boy',
@@ -134,14 +135,14 @@ export const MUSIC = {
       // The full album, built in public: tracks land here as they're finished (newer mixes than the released EP).
       title: "Jewel XI: Freedom Don't Wear Stripes Show", kicker: 'LP · in progress',
       tracks: [
-        { slug: 'throw-it-like-andy-p', title: 'Throw It Like Andy P', length: '5:46' },
-        { slug: 'whoa-shit', title: 'Whoa Shit!', length: '5:06' },
-        { slug: 'corn-nuts', title: 'Corn Nuts!', length: '5:23' },
-        { slug: 'no-peace-here-man', title: 'No Peace Here Man', length: '5:09' },
+        { slug: 'throw-it-like-andy-p', title: 'Throw It Like Andy P', length: '5:46', lyrics: true },
+        { slug: 'whoa-shit', title: 'Whoa Shit!', length: '5:06', lyrics: true },
+        { slug: 'corn-nuts', title: 'Corn Nuts!', length: '5:23', lyrics: true },
+        { slug: 'no-peace-here-man', title: 'No Peace Here Man', length: '5:09', lyrics: true },
         { slug: 'gator-gangbang', title: 'Gator Gangbang', length: '4:40' },
-        { slug: 'lumen-limit-city', title: 'Lumen Limit City', length: '5:07' },
+        { slug: 'lumen-limit-city', title: 'Lumen Limit City', length: '5:07', lyrics: true },
         { slug: 'get-rolley', title: 'Get Rolley' },
-        { slug: 'lazy-boners', title: 'Lazy Boners', length: '4:56' },
+        { slug: 'lazy-boners', title: 'Lazy Boners', length: '4:56', lyrics: true },
         { slug: 'legends-of-root-beer', title: 'Legends of Root Beer', cover: '/music/bhb-logo.webp' },
         { slug: 'gone-but-still-hard', title: 'Gone But Still Hard', cover: '/music/bhb-logo.webp' },
       ],

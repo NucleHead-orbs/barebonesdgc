@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { advance, currentIndex, initQueue, pick, PREV_RESTART_S, REPEAT_NEXT, toggleShuffle, type QueueState } from '../../lib/music/queue';
 
-export interface PlayerTrack { slug: string; title: string; release: string; src: string; cover: string }
+export interface PlayerTrack { slug: string; title: string; release: string; src: string; cover: string; lyrics?: string }
 
 /**
  * Real frequency data only on desktop. On phones the audio is NOT routed through Web Audio:
@@ -101,7 +101,7 @@ export function usePlayer(queue: PlayerTrack[], artist: string) {
     onError: () => { if (audio.current?.getAttribute('src')) { want.current = false; setPlaying(false); setError('That track didn\'t load. Try again or skip ahead.'); } },
   };
 
-  return { cur, index, q, playing, started, time, dur, error, analyser: () => ctx.current?.an ?? null,
+  return { audioEl: () => audio.current, cur, index, q, playing, started, time, dur, error, analyser: () => ctx.current?.an ?? null,
     start, pause, toggle, next: () => go('next'), prev: () => go('prev'), choose, seek, shuffle, repeat, audioProps };
 }
 export type Player = ReturnType<typeof usePlayer>;

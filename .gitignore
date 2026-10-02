@@ -30,3 +30,6 @@ dist-ssr
 
 # Supabase CLI link (local only)
 supabase/.temp/
+
+# Claude working files (harnesses, tooling, exports): never committed
+Claude outputs/

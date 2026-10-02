@@ -77,3 +77,29 @@ body.has-minibar { padding-bottom: 96px; }
   .mp-mini .mp-ic { width: 36px; height: 36px; }
 }
 @media (prefers-reduced-motion: reduce) { .mp-disc, .mp-mini-art img { animation: none; } }
+
+/* Lyrics toggle + karaoke panel */
+.mp-top { display: flex; align-items: flex-start; gap: 10px; justify-content: space-between; }
+.mp-lyr { all: unset; cursor: pointer; flex: none; font-family: var(--font-label); font-weight: var(--label-weight); font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  padding: 5px 11px; border-radius: var(--r-pill); border: 2px solid rgba(255, 255, 255, .35); color: rgba(255, 255, 255, .85); }
+.mp-lyr:hover { border-color: #f2c230; color: #fff; }
+.mp-lyr[aria-pressed='true'] { background: #f2c230; border-color: #f2c230; color: #17201c; }
+.mp-lyr:focus-visible { outline: 3px solid #a6d93b; outline-offset: 2px; }
+.kar { position: relative; min-height: 168px; display: flex; flex-direction: column; justify-content: center; gap: 2px; margin: 6px 0 2px; }
+.kar-line { all: unset; cursor: pointer; display: block; font-family: var(--font-display); text-transform: var(--display-case); line-height: 1.12; overflow-wrap: anywhere;
+  transition: opacity .2s var(--ease); }
+.kar-line.is-past { font-size: 16px; opacity: .35; }
+.kar-line.is-next { font-size: 18px; opacity: .55; }
+.kar-line.is-next + .kar-line.is-next { opacity: .3; }
+.kar-line.is-now { font-size: clamp(26px, 4.2vw, 38px); opacity: 1; padding: 4px 0; animation: kar-in .25s var(--ease); }
+.kar-line:hover { opacity: .9; }
+.kar-line:focus-visible { outline: 2px solid #a6d93b; outline-offset: 2px; border-radius: 4px; }
+.kar-w { color: transparent; -webkit-background-clip: text; background-clip: text;
+  background-image: linear-gradient(90deg, #f2c230 0, #ff3ad1 calc(var(--k) * 100%), rgba(255, 255, 255, .42) calc(var(--k) * 100%));
+  text-shadow: none; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .7)); white-space: pre-wrap; }
+.kar-break { display: flex; gap: 18px; font-size: 28px; color: #a6d93b; padding: 6px 0; }
+.kar-break span { animation: kar-bob 1.2s ease-in-out infinite; } .kar-break span:nth-child(2) { animation-delay: .2s; } .kar-break span:nth-child(3) { animation-delay: .4s; }
+@keyframes kar-in { from { opacity: .4; transform: translateY(8px); } }
+@keyframes kar-bob { 50% { transform: translateY(-6px); } }
+.mp-mini-txt span.is-lyric { color: #f2c230; font-weight: 700; }
+@media (max-width: 640px) { .mp-top { justify-content: center; flex-wrap: wrap; } .kar { min-height: 150px; } .kar-break { justify-content: center; } }

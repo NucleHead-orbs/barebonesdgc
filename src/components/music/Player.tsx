@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { fmtTime } from '../../lib/music/queue';
+import { currentLine, type Lyrics } from '../../lib/music/lyrics';
+import { Karaoke } from './Karaoke';
 import type { Player } from './usePlayer';
 import './player.css';
 
@@ -79,7 +81,9 @@ function Controls({ p, big }: { p: Player; big?: boolean }) {
 }
 
 /** The hero deck: cover art hot-stamped on a spinning disc, visualizer, scrubber, controls. */
-export function Deck({ p, artist, total }: { p: Player; artist: string; total: number }) {
+export function Deck({ p, artist, total, lyrics, showLyrics, onLyrics }: {
+  p: Player; artist: string; total: number; lyrics: Lyrics | null; showLyrics: boolean; onLyrics: () => void;
+}) {
   const cur = p.cur;
   const pct = p.dur ? (p.time / p.dur) * 100 : 0;
   if (!cur) return null;
@@ -92,10 +96,13 @@ export function Deck({ p, artist, total }: { p: Player; artist: string; total: n
         </div>
       </div>
       <div className="mp-info">
-        <div className="mp-kicker">{p.playing ? 'Now playing' : p.started ? 'Paused' : 'Hit play'} · {cur.release}</div>
+        <div className="mp-top">
+          <div className="mp-kicker">{p.playing ? 'Now playing' : p.started ? 'Paused' : 'Hit play'} · {cur.release}</div>
+          {cur.lyrics && <button type="button" className="mp-lyr" aria-pressed={showLyrics} onClick={onLyrics}>Lyrics</button>}
+        </div>
         <h2 className="mp-title">{cur.title}</h2>
         <div className="mp-artist">{artist}</div>
-        <Viz p={p} />
+        {showLyrics && lyrics ? <Karaoke lyrics={lyrics} audio={p.audioEl} onSeek={p.seek} /> : <Viz p={p} />}
         <div className="mp-seek">
           <span>{fmtTime(p.time)}</span>
           <input type="range" min={0} max={p.dur || 0} step={0.1} value={Math.min(p.time, p.dur || 0)} aria-label="Seek"
@@ -112,7 +119,7 @@ export function Deck({ p, artist, total }: { p: Player; artist: string; total: n
 }
 
 /** Slim now-playing bar pinned to the bottom once the deck scrolls out of view. */
-export function MiniBar({ p, artist, deck }: { p: Player; artist: string; deck: React.RefObject<HTMLDivElement | null> }) {
+export function MiniBar({ p, artist, deck, lyrics }: { p: Player; artist: string; deck: React.RefObject<HTMLDivElement | null>; lyrics: Lyrics | null }) {
   const [away, setAway] = useState(false);
   useEffect(() => {
     const el = deck.current; if (!el) return;
@@ -122,13 +129,14 @@ export function MiniBar({ p, artist, deck }: { p: Player; artist: string; deck: 
   const show = away && p.started && !!p.cur;
   useEffect(() => { document.body.classList.toggle('has-minibar', show); return () => document.body.classList.remove('has-minibar'); }, [show]);
   if (!show || !p.cur) return null;
+  const line = currentLine(lyrics, p.time);
   return (
     <div className="mp-mini" role="region" aria-label="Now playing">
       <div className="mp-mini-bar" style={{ transform: `scaleX(${p.dur ? p.time / p.dur : 0})` }} />
       <button type="button" className="mp-mini-art" aria-label="Back to the player" onClick={() => deck.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
         <img src={p.cur.cover} alt="" width={48} height={48} className={p.playing ? 'is-spin' : ''} />
       </button>
-      <div className="mp-mini-txt"><b>{p.cur.title}</b><span>{artist}</span></div>
+      <div className="mp-mini-txt"><b>{p.cur.title}</b><span className={line ? 'is-lyric' : ''}>{line || artist}</span></div>
       <Controls p={p} />
     </div>
   );
