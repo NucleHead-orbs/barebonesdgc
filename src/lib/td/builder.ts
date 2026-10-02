@@ -3,6 +3,7 @@
  * No assignment or import logic lives here — those stay in generate.ts / dgs.ts / the database.
  * Labels ('7', '7B') are never computed here; they only ever come back from td_publish_round.
  */
+import { voteMessage } from '../votes/votes';
 import { DEFAULT_SETTINGS, type BuilderSettings, type Card, type SortBy, type Wave } from '../cards/generate';
 import { nameKey, type ImportRow } from '../import/dgs';
 import { setupMessage } from './setup';
@@ -147,6 +148,8 @@ export function rpcError(err: unknown, round?: number): { kind: RpcErrorKind; me
   const r = round ? `Round ${round}` : 'This round';
   const setup = setupMessage(msg);
   if (setup) return { kind: 'other', message: setup };
+  const vote = voteMessage(msg);
+  if (vote) return { kind: 'other', message: vote };
   if (/team_split/.test(msg)) return { kind: 'other', message: 'A card splits a team. Partners must share a card: regenerate, or move the whole team.' };
   if (/player_without_team/.test(msg)) return { kind: 'other', message: 'Someone on a card isn\'t in the draw. Add latecomers to the draw, then regenerate.' };
   if (/not_doubles/.test(msg)) return { kind: 'other', message: `${r} is set to singles. Switch it to doubles in Setup to draw partners.` };

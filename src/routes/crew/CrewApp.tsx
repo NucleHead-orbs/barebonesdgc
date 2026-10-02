@@ -4,6 +4,8 @@ import * as crewApi from '../../lib/crew/api';
 import type { CrewDesign, CrewHome, CrewTask } from '../../lib/crew/api';
 import { CrewDesigns } from './CrewDesigns';
 import CrewStations from './CrewStations';
+import CrewVotes from './CrewVotes';
+import { waiting, type Ballot } from '../../lib/votes/votes';
 import {
   CONTACT_KINDS, KIND_LABEL, ROLE_GUIDE, ROLE_LABEL, STATUS_LABEL, crewMessage, crewNextStatuses, raffleTotals, saleProblem,
   type ContactKind, type ContactStatus, type RaffleSale, type Role,
@@ -14,8 +16,8 @@ import { useTheme } from '../../lib/theme';
 import { dateRange } from '../../lib/td/setup';
 import '../td/td.css';
 
-type Tab = 'brief' | 'stations' | 'tasks' | 'designs' | Role;
-const TAB_LABEL: Record<Tab, string> = { brief: 'BRIEFING', stations: 'STATIONS', tasks: 'TASKS', designs: 'DESIGNS', checkin: 'CHECK-IN', raffle: 'RAFFLE', requests: 'REQUESTS', contacts: 'CONTACTS' };
+type Tab = 'brief' | 'vote' | 'stations' | 'tasks' | 'designs' | Role;
+const TAB_LABEL: Record<Tab, string> = { brief: 'BRIEFING', vote: 'VOTE', stations: 'STATIONS', tasks: 'TASKS', designs: 'DESIGNS', checkin: 'CHECK-IN', raffle: 'RAFFLE', requests: 'REQUESTS', contacts: 'CONTACTS' };
 const POLL_MS = 30_000;
 const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
@@ -28,6 +30,7 @@ export default function CrewApp() {
   const [toast, setToast] = useState('');
   const [tab, setTab] = useState<Tab>('brief');
   const [designs, setDesigns] = useState<CrewDesign[]>([]);
+  const [ballots, setBallots] = useState<Ballot[]>([]);
 
   useTheme(home?.event.skin === 'jewel-xi' ? 'jewel-xi' : 'event', home?.event.palette ?? null);
 
@@ -39,8 +42,9 @@ export default function CrewApp() {
       return;
     }
     setHome(r.data); setFatal('');
-    const d = await crewApi.designs(token);
+    const [d, v] = await Promise.all([crewApi.designs(token), crewApi.polls(token)]);
     if (d.data) setDesigns(d.data);
+    if (v.data) setBallots(v.data);
   }, [token]);
   useEffect(() => {
     void (async () => { await load(); })();
@@ -62,7 +66,7 @@ export default function CrewApp() {
   if (!home) return <div className="td"><main className="td-main td-crewapp"><p className="td-empty">{err || 'Loading your crew page…'}</p></main></div>;
 
   const roles = home.me.roles;
-  const tabs: Tab[] = ['brief', ...((home.stations ?? []).length ? ['stations' as const] : []), 'tasks', ...(designs.length ? ['designs' as const] : []), ...(['checkin', 'raffle', 'requests', 'contacts'] as Role[]).filter((r) => roles.includes(r))];
+  const tabs: Tab[] = ['brief', ...(ballots.length ? ['vote' as const] : []), ...((home.stations ?? []).length ? ['stations' as const] : []), 'tasks', ...(designs.length ? ['designs' as const] : []), ...(['checkin', 'raffle', 'requests', 'contacts'] as Role[]).filter((r) => roles.includes(r))];
   const cur = tabs.includes(tab) ? tab : 'brief';
   const unread = home.announcements.filter((a) => !a.read).length;
   const ctx = { token, home, act };
@@ -78,7 +82,7 @@ export default function CrewApp() {
       <nav className="td-tabs" aria-label="Crew sections">
         {tabs.map((t) => (
           <button key={t} aria-current={cur === t ? 'page' : undefined} onClick={() => setTab(t)}>
-            {TAB_LABEL[t]}{t === 'brief' && unread > 0 && <span className="td-badge">{unread}</span>}
+            {TAB_LABEL[t]}{t === 'brief' && unread > 0 && <span className="td-badge">{unread}</span>}{t === 'vote' && waiting(ballots) > 0 && <span className="td-badge">{waiting(ballots)}</span>}
           </button>
         ))}
       </nav>
@@ -93,6 +97,7 @@ export default function CrewApp() {
         {cur === 'requests' && <Requests {...ctx} />}
         {cur === 'contacts' && <Contacts {...ctx} />}
         {cur === 'stations' && <CrewStations {...ctx} />}
+        {cur === 'vote' && <CrewVotes token={token} ballots={ballots} act={act} />}
       </main>
     </div>
   );

@@ -3,6 +3,8 @@
  * Source of truth: crew / announcements / announcement_reads / raffle_sales / contacts (see migration crew).
  * Crew act only through token RPCs (crew_*); these helpers never decide permissions, they mirror them for display.
  */
+import { voteMessage } from '../votes/votes';
+
 
 export const ROLES = ['checkin', 'raffle', 'requests', 'contacts'] as const;
 export type Role = (typeof ROLES)[number];
@@ -154,6 +156,11 @@ export function crewMessage(err: unknown): string {
   if (/invalid_division/.test(m)) return 'Pick a division.';
   if (/invalid_request/.test(m)) return 'Pick 2 to 5 players (note: 140 characters max).';
   if (/unknown_player/.test(m)) return 'That player isn\'t in this event. Refresh and try again.';
+  if (/station_full/.test(m)) return 'That spot just filled up. Pick another open one.';
+  if (/already_there/.test(m)) return 'You\'re already on that station for that shift.';
+  if (/not_your_claim/.test(m)) return 'You can only drop spots you claimed. Ask the TD to move a spot they assigned.';
+  const vm = voteMessage(m);
+  if (vm) return vm;
   if (/invalid_note/.test(m)) return 'Write something first (1,000 characters max).';
   if (/check constraint|invalid input/.test(m)) return 'Something in that form isn\'t valid. Check the numbers and try again.';
   if (/Failed to fetch|NetworkError|network/i.test(m)) return 'No signal. Nothing was saved. Try again in a moment.';

@@ -154,11 +154,11 @@ export function orderCsv(t: Tally): string {
 }
 
 // ---------- designs ----------
-export const DESIGN_CATEGORIES = ['disc', 'shirts', 'tee_signs', 'flyer', 'logos', 'prize_bucks', 'signage', 'merch', 'other'] as const;
+export const DESIGN_CATEGORIES = ['disc', 'shirts', 'tee_signs', 'trophies', 'flyer', 'logos', 'prize_bucks', 'signage', 'merch', 'other'] as const;
 export type DesignCategory = (typeof DESIGN_CATEGORIES)[number];
 export function designCategoryLabel(c: string, creditLabel?: string | null): string {
   const L: Record<DesignCategory, string> = {
-    disc: 'Disc', shirts: 'Shirts', tee_signs: 'Tee signs', flyer: 'Flyer', logos: 'Logos',
+    disc: 'Disc', shirts: 'Shirts', tee_signs: 'Tee signs', trophies: 'Trophies', flyer: 'Flyer', logos: 'Logos',
     prize_bucks: creditLabel && creditLabel !== 'prize credit' ? creditLabel : 'Prize bucks',
     signage: 'Event signage', merch: 'Other merch', other: 'Other',
   };

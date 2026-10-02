@@ -4,6 +4,7 @@
  */
 import { supabase } from '../supabase';
 import type { Announcement, Contact, ContactKind, ContactStatus, RaffleSale, Role } from './crew';
+import type { Ballot } from '../votes/votes';
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
 const call = async <T>(fn: string, args: Record<string, unknown>): Promise<Result<T>> => {
@@ -68,3 +69,8 @@ export async function designFileUrl(t: string, fileId: string): Promise<Result<s
 export const claimSlot = (t: string, station: string, day: number, half: 'AM' | 'PM') =>
   call<string>('crew_claim_slot', { p_token: t, p_station: station, p_day: day, p_half: half });
 export const dropSlot = (t: string, slot: string) => call<null>('crew_drop_slot', { p_token: t, p_slot: slot });
+
+// ---------- design votes ----------
+export const polls = (t: string) => call<Ballot[]>('crew_polls', { p_token: t });
+export const vote = (t: string, poll: string, option: string, comment: string) =>
+  call<Ballot>('crew_vote', { p_token: t, p_poll: poll, p_option: option, p_comment: comment || null });

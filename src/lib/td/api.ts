@@ -12,6 +12,7 @@ import type { DivisionConfig, FinishStatus, PrizeSettings } from '../prizes/payo
 import type { TeamPayoutConfig } from '../prizes/winners';
 import type { Announcement, Contact, CrewMember, RaffleSale, Role } from '../crew/crew';
 import type { Half, Slot, Station } from '../crew/stations';
+import type { Poll, PollOption, PollVote } from '../votes/votes';
 import { summarize, toLayoutPayload, type LayoutHole, type LibCourse, type LibLayout } from '../courses/courses';
 import { filePath, nextVersion, type DesignAsset, type DesignFile, type DesignStatus, type NewTask, type PrepTask } from '../prep/prep';
 
@@ -360,6 +361,9 @@ export const updateAsset = (id: string, patch: { title?: string; status?: Design
     toAsset(must(await supabase.from('design_assets').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select(ASSET_COLS).single()) as AssetRow));
 /** Files first, then the row, so nothing is left orphaned in storage. */
 export const deleteAsset = (a: DesignAsset) => wrap(async () => {
+  // a design with votes on a ballot can't go (votes would block the row after the files were already gone)
+  const opts = list(await supabase.from('design_poll_options').select('id').eq('asset_id', a.id)) as Array<{ id: string }>;
+  if (opts.length && list(await supabase.from('design_poll_votes').select('id').in('option_id', opts.map((o) => o.id)).limit(1)).length) throw new Error('has_votes');
   if (a.files.length) must(await supabase.storage.from(PREP_BUCKET).remove(a.files.map((f) => f.path)));
   must(await supabase.from('design_assets').delete().eq('id', a.id));
 });
@@ -520,3 +524,29 @@ export const assignSlot = (eventId: string, stationId: string, day: number, half
   must(await supabase.from('station_slots').insert({ event_id: eventId, station_id: stationId, day, half, crew_id: crewId })
     .select('id, station_id, day, half, crew_id, claimed').single()) as Slot);
 export const removeSlot = (id: string) => wrap(async () => { must(await supabase.from('station_slots').delete().eq('id', id)); });
+
+// ---------- design votes (TD-only tables; votes are read-only here, cast through td_vote) ----------
+const POLL_COLS = 'id, event_id, title, question, closes_at, closed_at, winner_option_id, created_by, created_at, design_poll_options(id, poll_id, asset_id, sort), design_poll_votes(id, poll_id, option_id, crew_id, td_email, comment, updated_at)';
+type PollRow = Omit<Poll, 'options' | 'votes'> & { design_poll_options: PollOption[]; design_poll_votes: PollVote[] };
+const toPoll = ({ design_poll_options, design_poll_votes, ...p }: PollRow): Poll =>
+  ({ ...p, options: (design_poll_options ?? []).slice().sort((a, b) => a.sort - b.sort), votes: design_poll_votes ?? [] });
+export const loadPolls = (eventId: string) => wrap(async (): Promise<Poll[]> =>
+  (list(await supabase.from('design_polls').select(POLL_COLS).eq('event_id', eventId).order('created_at', { ascending: false })) as PollRow[]).map(toPoll));
+const reloadPoll = async (id: string) => toPoll(must(await supabase.from('design_polls').select(POLL_COLS).eq('id', id).single()) as PollRow);
+/** Poll + its ballot in one go. If the ballot can't be written, the empty poll is removed again. */
+export const createPoll = (eventId: string, p: { title: string; question: string | null; closes_at: string | null }, assetIds: string[], email: string) =>
+  wrap(async (): Promise<Poll> => {
+    const row = must(await supabase.from('design_polls').insert({ event_id: eventId, ...p, created_by: email }).select('id').single()) as { id: string };
+    const opts = await supabase.from('design_poll_options').insert(assetIds.map((asset_id, sort) => ({ poll_id: row.id, asset_id, sort })));
+    if (opts.error) { await supabase.from('design_polls').delete().eq('id', row.id); throw opts.error; }
+    return reloadPoll(row.id);
+  });
+export const updatePoll = (id: string, patch: { title?: string; question?: string | null; closes_at?: string | null; closed_at?: string | null; winner_option_id?: string | null }) =>
+  wrap(async (): Promise<Poll> => { must(await supabase.from('design_polls').update(patch).eq('id', id)); return reloadPoll(id); });
+export const deletePoll = (id: string) => wrap(async () => { must(await supabase.from('design_polls').delete().eq('id', id)); });
+export const addPollOption = (pollId: string, assetId: string, sort: number) =>
+  wrap(async (): Promise<Poll> => { must(await supabase.from('design_poll_options').insert({ poll_id: pollId, asset_id: assetId, sort })); return reloadPoll(pollId); });
+export const removePollOption = (pollId: string, optionId: string) =>
+  wrap(async (): Promise<Poll> => { must(await supabase.from('design_poll_options').delete().eq('id', optionId)); return reloadPoll(pollId); });
+export const tdVote = (pollId: string, optionId: string, comment: string) =>
+  wrap(async (): Promise<Poll> => { must(await supabase.rpc('td_vote', { p_poll: pollId, p_option: optionId, p_comment: comment || null })); return reloadPoll(pollId); });
