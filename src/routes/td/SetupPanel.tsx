@@ -9,6 +9,7 @@ import {
 import { DivisionPicker, Field } from './EventHub';
 import { LibraryBar } from './CourseLibrary';
 import { sortLibrary, type LibCourse } from '../../lib/courses/courses';
+import type { HoleTee } from '../../lib/proofs/teeSigns';
 
 /**
  * The build menu. Each section saves on its own through the matching RPC, so a refusal in one
@@ -28,6 +29,7 @@ export default function SetupPanel({ setup, admin, players, onSaved, onDeleted }
     <main className="td-main td-setup">
       <EventSection ev={ev} onSaved={onSaved} />
       <CourseSection eventId={ev.id} holes={setup.holes} onSaved={onSaved} admin={admin} lib={lib} onLib={loadLib} linkedId={ev.course_layout_id ?? null} />
+      <TeePadSection eventId={ev.id} holes={setup.holes} />
       <DivisionSection eventId={ev.id} waves={ev.waves} divisions={setup.divisions} players={players} onSaved={onSaved} />
       <TdSection eventId={ev.id} tds={setup.tds} admin={admin} onSaved={onSaved} />
       {admin && ev.slug !== 'jewel-xi-2026' && <DangerSection ev={ev} onDeleted={onDeleted} />}
@@ -184,6 +186,66 @@ function CourseSection({ eventId, holes, onSaved, admin, lib, onLib, linkedId }:
       <div className="td-actions">
         <button className="td-btn cta" onClick={save} disabled={busy || !dirty}>{busy ? 'SAVING…' : 'SAVE COURSE'}</button>
         {dirty && <button className="td-btn quiet" onClick={() => { setRows(holes); setMsg(null); }}>UNDO</button>}
+      </div>
+    </Section>
+  );
+}
+
+/**
+ * Extra tee pads (hole_tees). Each pad is its own tee sign and can be sponsored like a full hole.
+ * Scoring is unchanged: everyone scores by hole. Saves as you go.
+ */
+function TeePadSection({ eventId, holes }: { eventId: string; holes: HoleRow[] }) {
+  const [tees, setTees] = useState<HoleTee[] | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [n, setN] = useState<number>(holes[0]?.n ?? 1);
+  const [label, setLabel] = useState('AM pad');
+  const reload = useCallback(async () => {
+    const r = await api.loadTees(eventId);
+    if (r.error) setMsg({ ok: false, text: rpcError(r.error).message }); else setTees(r.data ?? []);
+  }, [eventId]);
+  useEffect(() => { void (async () => { await reload(); })(); }, [reload]);
+  const act = async (fn: () => Promise<{ error?: unknown }>, ok: string) => {
+    const r = await fn();
+    const dup = (r.error as { code?: string } | undefined)?.code === '23505';
+    setMsg(r.error ? { ok: false, text: dup ? 'That hole already has a pad with that name.' : rpcError(r.error).message } : { ok: true, text: ok });
+    await reload();
+  };
+  const list = tees ?? [];
+  return (
+    <Section title="Extra tee pads" msg={msg}
+      hint="Holes with a second tee (Rec / Ladies pad, AM pad…). Each pad gets its own tee sign and can be sponsored like a full hole. Scoring doesn't change: everyone scores by hole.">
+      {tees === null ? <p className="td-empty">Loading…</p> : !list.length ? <p className="td-empty">No extra pads. Every hole has one tee sign.</p> : (
+        <div className="td-holes td-pads">
+          <div className="td-hole hdr"><span>HOLE</span><span>PAD NAME</span><span>FEET</span><span>PAR</span><span /></div>
+          {list.map((t) => (
+            <div key={t.id} className="td-hole">
+              <span className="td-ring sm">{t.n}</span>
+              <input className="td-input" aria-label={`Hole ${t.n} pad name`} defaultValue={t.label} key={`l${t.label}`} maxLength={30}
+                onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== t.label) void act(() => api.updateTee(t.id, { label: v }), 'Pad renamed.'); }} />
+              <input className="td-input" inputMode="numeric" aria-label={`Hole ${t.n} ${t.label} feet`} placeholder="—" defaultValue={t.dist_ft ?? ''} key={`d${t.dist_ft}`}
+                onBlur={(e) => { const v = e.target.value.replace(/\D/g, ''); const d = v ? Math.min(2000, Number(v)) : null; if (d !== t.dist_ft) void act(() => api.updateTee(t.id, { dist_ft: d }), 'Feet saved.'); }} />
+              <select className="td-select" aria-label={`Hole ${t.n} ${t.label} par`} value={t.par ?? ''}
+                onChange={(e) => void act(() => api.updateTee(t.id, { par: e.target.value ? Number(e.target.value) : null }), 'Par saved.')}>
+                <option value="">Same</option>
+                {[2, 3, 4, 5, 6].map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <button className="td-btn quiet" onClick={() => { if (window.confirm(`Remove the ${t.label} on hole ${t.n}? Its sponsors go back on the hole's main tee sign.`)) void act(() => api.deleteTee(t.id), 'Pad removed.'); }}>REMOVE</button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="td-row">
+        <Field label="HOLE">
+          <select className="td-select" value={n} onChange={(e) => setN(Number(e.target.value))}>
+            {holes.map((h) => <option key={h.n} value={h.n}>Hole {h.n}</option>)}
+          </select>
+        </Field>
+        <Field label="PAD NAME">
+          <input className="td-input" value={label} maxLength={30} onChange={(e) => setLabel(e.target.value)} placeholder="AM pad" />
+        </Field>
+        <button className="td-btn" disabled={!label.trim()}
+          onClick={() => void act(() => api.addTee(eventId, n, label, list.filter((t) => t.n === n).length + 1), `Added ${label.trim()} on hole ${n}.`)}>+ ADD PAD</button>
       </div>
     </Section>
   );

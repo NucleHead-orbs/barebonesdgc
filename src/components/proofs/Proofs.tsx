@@ -8,6 +8,7 @@ import {
   DISC_COMBOS, FOILS, INKS, KNOBS, MAP_H, MAP_W, PALETTES, PLASTICS, SHIRTS, SIGN_BGS, art, cleanOpts, knobAngle,
   optsLabel, QUOTE_MAX, sameOpts, signs, type Opts, type Pal, type ProofKind,
 } from '../../lib/proofs/proofs';
+import { MAX_PER_SIGN, signList, signShort, sponsorsOn, tierLabel, type HoleTee } from '../../lib/proofs/teeSigns';
 import './proofs.css';
 
 export function ProofView({ kind, eventId, saved, onSave }: {
@@ -42,7 +43,7 @@ export function ProofView({ kind, eventId, saved, onSave }: {
   );
 }
 
-const TITLE: Record<ProofKind, string> = { disc: 'TOUR DISC — STAMP PROOF', shirt: 'TOUR SHIRT — PRINT PROOF', screen_print: 'TOUR SHIRT — SCREEN PRINT', tee_signs: 'TEE SIGNS — 20 HOLES' };
+const TITLE: Record<ProofKind, string> = { disc: 'TOUR DISC — STAMP PROOF', shirt: 'TOUR SHIRT — PRINT PROOF', screen_print: 'TOUR SHIRT — SCREEN PRINT', tee_signs: 'TEE SIGNS — 20 HOLES + PADS' };
 const SUB: Record<ProofKind, string> = {
   disc: 'INNOVA · 1-COLOR HOT STAMP · TAP A FOIL OR PLASTIC TO PREVIEW',
   shirt: 'BLACK SHIRT · FULL COLOR · FRONT 12×14 IN · BACK 12×16 IN',
@@ -274,35 +275,50 @@ function ScreenPrint({ o, pick }: { o: Opts; pick: (k: string, v: string) => voi
 }
 
 // ---------- tee signs ----------
+/** Plate text shrinks for long names so it stays on one or two lines. */
+const plateSize = (name: string, max: number) => (name.length > 26 ? Math.round(max * 0.62) : name.length > 18 ? Math.round(max * 0.78) : max);
 interface HoleRow { n: number; par: number; dist_ft: number | null }
-interface HoleSponsor { hole: number | null; name: string; logo_url: string | null }
+interface HoleSponsor { hole: number | null; tee_id: string | null; name: string; logo_url: string | null; sort: number }
 function TeeSigns({ o, pick, eventId, editable }: { o: Opts; pick: (k: string, v: string) => void; eventId: string; editable: boolean }) {
   const pal = PALETTES[o.palette];
   const bg = SIGN_BGS[o.bg];
   const [holes, setHoles] = useState<HoleRow[]>([]);
   const [spons, setSpons] = useState<HoleSponsor[]>([]);
-  const [n, setN] = useState(1);
+  const [tees, setTees] = useState<HoleTee[]>([]);
+  const [key, setKey] = useState('1');
   useEffect(() => {
     let live = true;
     void (async () => {
-      const [h, s] = await Promise.all([
+      const [h, s, t] = await Promise.all([
         supabase.from('holes').select('n, par, dist_ft').eq('event_id', eventId).order('n'),
-        supabase.from('sponsors').select('hole, name, logo_url').eq('event_id', eventId).eq('hidden', false),
+        supabase.from('sponsors').select('hole, tee_id, name, logo_url, sort').eq('event_id', eventId).eq('hidden', false),
+        supabase.from('hole_tees').select('id, n, label, dist_ft, par, sort').eq('event_id', eventId),
       ]);
       if (!live) return;
       setHoles((h.data ?? []) as HoleRow[]);
       setSpons((s.data ?? []) as HoleSponsor[]);
+      setTees((t.data ?? []) as HoleTee[]);
     })();
     return () => { live = false; };
   }, [eventId]);
   const all = signs(pal, o);
+  // Every physical sign: each hole's main tee + each extra pad (Setup → Extra tee pads).
+  const list = signList(all.map((x) => x.n), tees);
+  const cur = list.find((x) => x.key === key) ?? list[0];
+  const n = cur.n;
+  const pad = cur.tee;
   const sign = all[n - 1];
   const defaultQuote = signs(pal)[n - 1].quote;
   const qKey = `q${n}`;
   const draft = o[qKey] ?? sign.quote;
   const hole = holes.find((h) => h.n === n);
-  const sp = spons.find((s) => s.hole === n) ?? null;
-  const claimed = new Set(spons.filter((s) => s.hole).map((s) => s.hole)).size;
+  const par = pad?.par ?? hole?.par;
+  const feet = pad ? pad.dist_ft : hole?.dist_ft;
+  // This sign's sponsors (visible, in sponsor order): one = full sign, two = half sign (stacked).
+  const holeSp = sponsorsOn(spons, cur, tees);
+  const sp = holeSp[0] ?? null;
+  const crowded = list.filter((x) => sponsorsOn(spons, x, tees).length > MAX_PER_SIGN).map(signShort);
+  const claimed = list.filter((x) => sponsorsOn(spons, x, tees).length > 0).length;
   const totalFt = holes.reduce((a, h) => a + (h.dist_ft ?? 0), 0);
   const totalPar = holes.reduce((a, h) => a + h.par, 0);
 
@@ -318,11 +334,27 @@ function TeeSigns({ o, pick, eventId, editable }: { o: Opts; pick: (k: string, v
             <div className="pf-s-when" style={{ color: pal.c }}>NOV 21–22, 2026</div>
           </div>
           <div className="pf-s-top">
-            <div><div className="pf-s-stop" style={{ color: pal.c }}>TOUR STOP {String(n).padStart(2, '0')} / 20</div><div className="pf-s-hole">Hole {n}</div></div>
-            <div className="pf-s-pd"><div style={{ color: pal.a }}>PAR {hole?.par ?? '–'}</div><div>{hole?.dist_ft ?? '–'} FT</div></div>
+            <div><div className="pf-s-stop" style={{ color: pal.c }}>TOUR STOP {String(n).padStart(2, '0')} / 20</div><div className="pf-s-hole">Hole {n}</div>
+              {pad && <div className="pf-s-pad" style={{ background: pal.c }}>{pad.label}</div>}</div>
+            <div className="pf-s-pd"><div style={{ color: pal.a }}>PAR {par ?? '–'}</div><div>{feet ?? '–'} FT</div></div>
           </div>
-          <div className="pf-s-cari" style={{ borderColor: pal.a, color: pal.a }}>HOLE {n}<br />CARICATURE</div>
-          <div className="pf-s-rocker">[ROCKER NAME]</div>
+          {holeSp.length < 2 ? (<>
+            <div className={`pf-s-cari${sp?.logo_url ? ' has-pic' : ''}`} style={{ borderColor: pal.a, color: pal.a }}>
+              {sp?.logo_url ? <img src={sp.logo_url} alt={sp.name} /> : <>{pad ? pad.label.toUpperCase() : `HOLE ${n}`}<br />SPONSOR PIC</>}
+            </div>
+            <div className="pf-s-rocker" style={{ fontSize: plateSize(sp?.name ?? '[SPONSOR NAME]', 44) }}>{sp?.name ?? '[SPONSOR NAME]'}</div>
+          </>) : (
+            <div className="pf-s-halves">
+              {holeSp.slice(0, 2).map((h) => (
+                <div key={h.name} className="pf-s-half">
+                  <div className={`pf-s-cari half${h.logo_url ? ' has-pic' : ''}`} style={{ borderColor: pal.a, color: pal.a }}>
+                    {h.logo_url ? <img src={h.logo_url} alt={h.name} /> : <>½ HOLE<br />SPONSOR PIC</>}
+                  </div>
+                  <div className="pf-s-rocker half" style={{ fontSize: plateSize(h.name, 34) }}>{h.name}</div>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="pf-s-map" style={{ borderColor: pal.b, width: MAP_W, height: MAP_H }}>
             <div className="pf-s-line" style={{ left: sign.line.x, top: sign.line.y, width: sign.line.len, transform: `rotate(${sign.line.ang}deg)` }} />
             {sign.els.map((e, i) => (
@@ -341,20 +373,22 @@ function TeeSigns({ o, pick, eventId, editable }: { o: Opts; pick: (k: string, v
           <div className="pf-s-rules">{sign.rules.map((r) => <div key={r}><span style={{ color: pal.c }}>▸</span> {r}</div>)}</div>
           <div className="pf-s-foot" style={{ borderTopColor: pal.b }}>
             <div><div className="pf-s-by">Sponsored By</div><div className="pf-s-dick" style={{ color: pal.a }}>Don't be a Dick, Be a Boner</div></div>
-            <div className="pf-s-logo">{sp?.logo_url ? <img src={sp.logo_url} alt={sp.name} /> : sp ? <b>{sp.name}</b> : <span>HOLE {n} SPONSOR</span>}</div>
+            <div className={`pf-s-logo pf-s-tier${holeSp.length ? '' : ' open'}`}>{holeSp.length ? <b>{tierLabel(cur, holeSp.length)}</b> : <span>{tierLabel(cur, 1)} · OPEN</span>}</div>
           </div>
         </div>
       </Scaled>
 
       <div className="pf-side">
         <div className="pf-group">
-          <div className="pf-label">PICK A HOLE</div>
+          <div className="pf-label">PICK A SIGN · {list.length}</div>
           <div className="pf-holes">
-            {all.map((s) => {
-              const h = holes.find((x) => x.n === s.n);
+            {list.map((x) => {
+              const h = holes.find((y) => y.n === x.n);
+              const on = x.key === cur.key;
               return (
-                <button key={s.n} type="button" className="pf-hole" aria-pressed={s.n === n} aria-label={`Hole ${s.n}`} onClick={() => setN(s.n)} style={s.n === n ? { borderColor: pal.a } : undefined}>
-                  <b>{s.n}</b><span>{h ? `P${h.par} · ${h.dist_ft ?? '–'}'` : ''}</span>
+                <button key={x.key} type="button" className={`pf-hole${x.tee ? ' is-pad' : ''}`} aria-pressed={on} aria-label={x.tee ? `Hole ${x.n} ${x.tee.label}` : `Hole ${x.n}`}
+                  onClick={() => setKey(x.key)} style={on ? { borderColor: pal.a } : undefined}>
+                  <b>{x.n}</b><span>{x.tee ? x.tee.label : h ? `P${h.par} · ${h.dist_ft ?? '–'}'` : ''}</span>
                 </button>
               );
             })}
@@ -378,8 +412,9 @@ function TeeSigns({ o, pick, eventId, editable }: { o: Opts; pick: (k: string, v
         <ol className="pf-list">
           <li className="pf-label pf-hot">BEFORE PRINT</li>
           <li>Course: par {totalPar || '–'} · {totalFt ? totalFt.toLocaleString() : '–'} ft, straight from this event's holes.</li>
-          <li>Sponsors on signs: {claimed} of 20 holes. Visible sponsors with a hole and logo drop in automatically.</li>
-          <li>Drop a caricature and a rocker name on each hole. Baron's bubble text is editable per hole (save to lock it in).</li>
+          <li>Sponsored: {claimed} of {list.length} signs ({list.length - all.length} extra tee pads). A visible sponsor drops onto its hole's sign (or the pad picked in Sponsors): pic in the big frame, name on the plate. Two on one sign = a ½ sign.</li>
+          {crowded.length > 0 && <li className="pf-hot">Too many sponsors on {crowded.join(', ')}: a sign fits two. Move the extras to another sign.</li>}
+          <li>Baron's bubble text is editable per hole (pads share their hole's line). Save to lock it in.</li>
           <li>Print 11×17 at 300 dpi, 1/8 in bleed. Coroplast holds up outside.</li>
         </ol>
       </div>

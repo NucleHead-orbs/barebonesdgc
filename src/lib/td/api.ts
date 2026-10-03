@@ -5,6 +5,7 @@
  */
 import { supabase } from '../supabase';
 import { shrink } from '../gallery/api';
+import type { HoleTee } from '../proofs/teeSigns';
 import type { BuilderPlayer, BuilderSettings, Card, Wave } from '../cards/generate';
 import type { ImportRow } from '../import/dgs';
 import type { ExistingPlayer, PublishCard, PublishedCard } from './builder';
@@ -156,8 +157,9 @@ export const publishRound = (eventId: string, round: 1 | 2, cards: PublishCard[]
 export interface Sponsor {
   id: string; name: string; tier: string | null; hole: number | null; logo_url: string | null;
   sort: number; source_name: string | null; hidden: boolean;
+  tee_id: string | null; // null = the hole's main tee sign; else an extra tee pad's sign (hole_tees)
 }
-const SPONSOR_COLS = 'id, name, tier, hole, logo_url, sort, source_name, hidden';
+const SPONSOR_COLS = 'id, name, tier, hole, logo_url, sort, source_name, hidden, tee_id';
 
 /** As the TD, RLS returns hidden (unapproved) sponsors too. */
 export const loadSponsors = (eventId: string) => wrap(async (): Promise<Sponsor[]> =>
@@ -167,7 +169,7 @@ export const loadSponsors = (eventId: string) => wrap(async (): Promise<Sponsor[
 export const importSponsors = (eventId: string, names: string[]) => wrap(async (): Promise<{ inserted: number; existing: number }> =>
   must(await supabase.rpc('td_import_sponsors', { p_event_id: eventId, p_names: names })) as { inserted: number; existing: number });
 
-export type SponsorPatch = Partial<Pick<Sponsor, 'name' | 'tier' | 'hole' | 'logo_url' | 'sort' | 'hidden'>>;
+export type SponsorPatch = Partial<Pick<Sponsor, 'name' | 'tier' | 'hole' | 'logo_url' | 'sort' | 'hidden' | 'tee_id'>>;
 export const updateSponsor = (id: string, patch: SponsorPatch) => wrap(async (): Promise<Sponsor> =>
   must(await supabase.from('sponsors').update(patch).eq('id', id).select(SPONSOR_COLS).single()) as Sponsor);
 
@@ -176,6 +178,16 @@ export const addSponsor = (eventId: string, name: string, sort: number) => wrap(
   must(await supabase.from('sponsors').insert({ event_id: eventId, name, sort, hidden: true }).select(SPONSOR_COLS).single()) as Sponsor);
 
 export const deleteSponsor = (id: string) => wrap(async () => { must(await supabase.from('sponsors').delete().eq('id', id)); });
+
+// ---------- extra tee pads (hole_tees): each one is its own tee sign ----------
+const TEE_COLS = 'id, n, label, dist_ft, par, sort';
+export const loadTees = (eventId: string) => wrap(async (): Promise<HoleTee[]> =>
+  list(await supabase.from('hole_tees').select(TEE_COLS).eq('event_id', eventId).order('n').order('sort')) as HoleTee[]);
+export const addTee = (eventId: string, n: number, label: string, sort: number) => wrap(async (): Promise<HoleTee> =>
+  must(await supabase.from('hole_tees').insert({ event_id: eventId, n, label: label.trim(), sort }).select(TEE_COLS).single()) as HoleTee);
+export type TeePatch = Partial<Pick<HoleTee, 'n' | 'label' | 'dist_ft' | 'par' | 'sort'>>;
+export const updateTee = (id: string, patch: TeePatch) => wrap(async (): Promise<void> => { must(await supabase.from('hole_tees').update(patch).eq('id', id)); });
+export const deleteTee = (id: string) => wrap(async (): Promise<void> => { must(await supabase.from('hole_tees').delete().eq('id', id)); });
 
 export const LOGO_BUCKET = 'sponsor-logos';
 /** Upload to the public logo bucket; returns the public URL to store on the sponsor. */

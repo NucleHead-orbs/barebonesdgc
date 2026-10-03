@@ -1,6 +1,7 @@
-import { useState, type ChangeEvent } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import * as api from '../../lib/td/api';
 import { rpcError } from '../../lib/td/builder';
+import type { HoleTee } from '../../lib/proofs/teeSigns';
 
 /**
  * Curate sponsors. DGS hole sponsors arrive here hidden; the TD sets the public name,
@@ -13,6 +14,8 @@ export default function SponsorsPanel({ eventId, holeCount, sponsors, onChange, 
   const [busy, setBusy] = useState<string>('');
   const [error, setError] = useState('');
   const [newName, setNewName] = useState('');
+  const [tees, setTees] = useState<HoleTee[]>([]);
+  useEffect(() => { let live = true; void api.loadTees(eventId).then((r) => { if (live && r.data) setTees(r.data); }); return () => { live = false; }; }, [eventId]);
 
   const replace = (s: api.Sponsor) => onChange(sponsors.map((o) => (o.id === s.id ? s : o)));
   const save = async (s: api.Sponsor, patch: api.SponsorPatch) => {
@@ -84,10 +87,16 @@ export default function SponsorsPanel({ eventId, holeCount, sponsors, onChange, 
                 onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== s.name) void save(s, { name: v }); }} />
               <div className="td-row" style={{ gap: 8 }}>
                 <select className="td-select" aria-label="Hole" value={s.hole ?? ''}
-                  onChange={(e) => void save(s, { hole: e.target.value ? Number(e.target.value) : null })}>
+                  onChange={(e) => void save(s, { hole: e.target.value ? Number(e.target.value) : null, tee_id: null })}>
                   <option value="">No hole</option>
                   {Array.from({ length: holeCount }, (_, i) => i + 1).map((n) => <option key={n} value={n}>Hole {n}</option>)}
                 </select>
+                {s.hole != null && tees.some((t) => t.n === s.hole) && (
+                  <select className="td-select" aria-label="Which tee sign" value={s.tee_id ?? ''} onChange={(e) => void save(s, { tee_id: e.target.value || null })}>
+                    <option value="">Main tee</option>
+                    {tees.filter((t) => t.n === s.hole).map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                  </select>
+                )}
                 <input className="td-input" style={{ flex: 1, minWidth: 100 }} aria-label="Tier" placeholder="Tier (e.g. Full hole)" defaultValue={s.tier ?? ''} key={`t${s.id}${s.tier}`}
                   onBlur={(e) => { const v = e.target.value.trim() || null; if (v !== s.tier) void save(s, { tier: v }); }} />
                 <input className="td-input" style={{ width: 70 }} type="number" aria-label="Order" title="Display order" defaultValue={s.sort} key={`s${s.id}${s.sort}`}
