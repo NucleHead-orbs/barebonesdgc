@@ -148,7 +148,7 @@ export function RoundDetail() {
           <div className="br-tablewrap">
             <table className="sc-table">
               <tbody>
-                <tr><th>Hole</th>{r.pars.map((_, i) => <th key={i}>{i + 1}</th>)}<th>Tot</th></tr>
+                <tr><th>Hole</th>{r.pars.map((_, i) => <th key={i}>{r.hole_labels?.[i] ?? i + 1}</th>)}<th>Tot</th></tr>
                 <tr><th>Par</th>{r.pars.map((p, i) => <td key={i}>{p}</td>)}<td>{r.pars.reduce((a, b) => a + b, 0)}</td></tr>
                 {r.players.map((p) => (
                   <tr key={p.seq}><th>{p.name}</th>{r.pars.map((pp, i) => { const s = p.scores?.[i]; return <td key={i} className={s == null ? '' : toParClass(s - pp)}>{s ?? ''}</td>; })}<td><b>{p.strokes}</b></td></tr>

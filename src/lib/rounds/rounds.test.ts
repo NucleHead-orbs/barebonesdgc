@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { confirmState, exchangeOptions, fmtToPar, holeDone, leaders, newDraft, parseTagLink, running, saveProblems, setHoles, toPayload } from './rounds';
+import { holeName, confirmState, exchangeOptions, fmtToPar, holeDone, leaders, newDraft, parseTagLink, running, saveProblems, setHoles, toPayload } from './rounds';
 
 const me = { id: 'm1', name: 'YT' };
 
@@ -47,6 +47,15 @@ describe('saving', () => {
     expect(parseTagLink('https://barebonesdiscgolf.club/tag/0123456789abcdef0123456789abcdef')).toBe('0123456789abcdef0123456789abcdef');
     expect(parseTagLink('  0123456789abcdef0123456789abcdef ')).toBe('0123456789abcdef0123456789abcdef');
     expect(parseTagLink('hello')).toBeNull();
+  });
+});
+
+describe('hole names', () => {
+  it('uses the course labels when the layout has them', () => {
+    const d = { ...newDraft('2026-10-03', me), course: 'Buffalo Ridge', pars: [3, 4], labels: ['5', 'A'], scores: [[3, 4]] };
+    expect([holeName(d, 0), holeName(d, 1), holeName({}, 6)]).toEqual(['5', 'A', '7']);
+    expect(toPayload(d).labels).toEqual(['5', 'A']);
+    expect(setHoles(d, 3).labels).toBeNull();
   });
 });
 

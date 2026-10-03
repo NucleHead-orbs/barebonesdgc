@@ -11,7 +11,7 @@ const wrap = async <T>(fn: () => Promise<T>): Promise<Result<T>> => {
 };
 const must = <T>(r: { data: T; error: unknown }): T => { if (r.error) throw r.error; return r.data; };
 
-export interface CourseOption { id: string; name: string; city: string | null; layouts: Array<{ id: string; name: string; pars: number[] }> }
+export interface CourseOption { id: string; name: string; city: string | null; layouts: Array<{ id: string; name: string; pars: number[]; labels: string[] | null; ft: Array<number | null> }> }
 export interface RoundMe { me: TagMember; pools: Array<{ pool_id: string; number: number }>; to_confirm: Array<{ id: string; course: string; played_on: string }> }
 export interface RoundPlayer {
   seq: number; member_id: string | null; guest_name: string | null; name: string; nickname: string | null;
@@ -22,7 +22,7 @@ export interface Exchange {
   waiting_on: number | null; moves: Array<{ member_id: string; tag_before: number | null; tag_after: number | null }> | null;
 }
 export interface Round {
-  id: string; course: string; course_id: string | null; played_on: string; pars: number[]; totals_only: boolean; note: string | null;
+  id: string; course: string; course_id: string | null; played_on: string; pars: number[]; hole_labels: string[] | null; totals_only: boolean; note: string | null;
   created_by: string; created_at: string; players: RoundPlayer[]; exchanges: Exchange[];
 }
 
@@ -31,12 +31,14 @@ export const loadMembers = () => wrap(async (): Promise<TagMember[]> =>
 
 /** Courses A–Z with each layout's pars (hole order). */
 export const loadCourses = () => wrap(async (): Promise<CourseOption[]> => {
-  const rows = (must(await supabase.from('courses').select('id, name, city, course_layouts(id, name, course_holes(n, par))').order('name')) ?? []) as Array<{
-    id: string; name: string; city: string | null; course_layouts: Array<{ id: string; name: string; course_holes: Array<{ n: number; par: number }> }> }>;
+  const rows = (must(await supabase.from('courses').select('id, name, city, course_layouts(id, name, course_holes(n, par, label, dist_ft))').order('name')) ?? []) as Array<{
+    id: string; name: string; city: string | null; course_layouts: Array<{ id: string; name: string; course_holes: Array<{ n: number; par: number; label: string | null; dist_ft: number | null }> }> }>;
   return rows.map((c) => ({
     id: c.id, name: c.name, city: c.city,
-    layouts: (c.course_layouts ?? []).filter((l) => l.course_holes?.length).map((l) => ({
-      id: l.id, name: l.name, pars: l.course_holes.slice().sort((a, b) => a.n - b.n).map((h) => h.par) })),
+    layouts: (c.course_layouts ?? []).filter((l) => l.course_holes?.length).map((l) => {
+      const hs = l.course_holes.slice().sort((a, b) => a.n - b.n);
+      return { id: l.id, name: l.name, pars: hs.map((h) => h.par), labels: hs.some((h) => h.label) ? hs.map((h) => h.label ?? String(h.n)) : null, ft: hs.map((h) => h.dist_ft) };
+    }),
   }));
 });
 
@@ -50,7 +52,7 @@ export const startExchange = (token: string, id: string, poolId: string) =>
 export const voidRound = (token: string, id: string) =>
   wrap(async () => { must(await supabase.rpc('round_void', { p_token: token, p_round: id })); });
 
-const ROUND_COLS = 'id, course, course_id, played_on, pars, totals_only, note, created_by, created_at, club_round_players(seq, member_id, guest_name, scores, strokes, to_par, confirmed_at, disputed_at)';
+const ROUND_COLS = 'id, course, course_id, played_on, pars, hole_labels, totals_only, note, created_by, created_at, club_round_players(seq, member_id, guest_name, scores, strokes, to_par, confirmed_at, disputed_at)';
 type RoundRow = Omit<Round, 'players' | 'exchanges'> & { club_round_players: Array<Omit<RoundPlayer, 'name' | 'nickname' | 'confirmed' | 'disputed'> & { confirmed_at: string | null; disputed_at: string | null }> };
 
 async function hydrate(rows: RoundRow[]): Promise<Round[]> {

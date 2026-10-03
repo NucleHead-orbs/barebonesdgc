@@ -7,7 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import * as api from '../../lib/rounds/api';
 import type { CourseOption, RoundMe } from '../../lib/rounds/api';
 import {
-  DRAFT_KEY, HOLE_CHOICES, MAX_PLAYERS, ME_KEY, fmtToPar, holeDone, leaders, newDraft, parseTagLink, roundMessage, running,
+  DRAFT_KEY, HOLE_CHOICES, holeName, MAX_PLAYERS, ME_KEY, fmtToPar, holeDone, leaders, newDraft, parseTagLink, roundMessage, running,
   saveProblems, setHoles, toPayload, toParClass, type Draft,
 } from '../../lib/rounds/rounds';
 import { display, type TagMember } from '../../lib/tags/tags';
@@ -106,11 +106,11 @@ function Setup({ d, setD, me, members, courses, onStart }: {
     const c = courses.find((x) => x.id === id);
     if (!c) return;
     const l = c.layouts[0];
-    setD((x) => ({ ...(l ? { ...x, pars: l.pars.slice(), scores: x.scores.map((s) => s.slice(0, l.pars.length)), cur: 0 } : x), course: c.name, courseId: c.id, layoutId: l?.id ?? null }));
+    setD((x) => ({ ...(l ? { ...x, pars: l.pars.slice(), labels: l.labels, ft: l.ft, scores: x.scores.map((s) => s.slice(0, l.pars.length)), cur: 0 } : { ...x, labels: null, ft: null }), course: c.name, courseId: c.id, layoutId: l?.id ?? null }));
   };
   const pickLayout = (id: string) => {
     const l = course?.layouts.find((x) => x.id === id);
-    if (l) setD((x) => ({ ...x, layoutId: l.id, pars: l.pars.slice(), scores: x.scores.map((s) => s.slice(0, l.pars.length)), cur: 0 }));
+    if (l) setD((x) => ({ ...x, layoutId: l.id, pars: l.pars.slice(), labels: l.labels, ft: l.ft, scores: x.scores.map((s) => s.slice(0, l.pars.length)), cur: 0 }));
     else setD((x) => ({ ...x, layoutId: null }));
   };
   const ready = d.course.trim() && d.players.length > 0 && d.players.every((p) => p.name.trim());
@@ -210,7 +210,7 @@ function Card({ d, setD, onSetup, me, busy, onSave, onConnect, onNew }: {
 
       <section className="sc-hole" aria-label={`Hole ${h + 1}`}>
         <div className="sc-hhead">
-          <div><div className="sc-label">Hole</div><div className="sc-hnum">{h + 1}<small> / {d.pars.length}</small></div></div>
+          <div><div className="sc-label">Hole{d.ft?.[h] ? ` · ${d.ft[h]} ft` : ''}</div><div className="sc-hnum">{holeName(d, h)}<small> · {h + 1} of {d.pars.length}</small></div></div>
           <div className="sc-par">
             <button className="sc-round" aria-label="Par down" onClick={() => setD((x) => ({ ...x, pars: x.pars.map((v, i) => (i === h ? Math.max(2, v - 1) : v)), layoutId: null }))}>−</button>
             <span>PAR {par}</span>
@@ -232,12 +232,12 @@ function Card({ d, setD, onSetup, me, busy, onSave, onConnect, onNew }: {
           );
         })}
         <div className="sc-nav">
-          <button className="sc-btn" disabled={h === 0} onClick={() => go(h - 1)}>{h === 0 ? '‹ Back' : `‹ Hole ${h}`}</button>
-          {h < d.pars.length - 1 ? <button className="sc-btn cta" onClick={() => go(h + 1)}>Hole {h + 2} ›</button>
+          <button className="sc-btn" disabled={h === 0} onClick={() => go(h - 1)}>{h === 0 ? '‹ Back' : `‹ Hole ${holeName(d, h - 1)}`}</button>
+          {h < d.pars.length - 1 ? <button className="sc-btn cta" onClick={() => go(h + 1)}>Hole {holeName(d, h + 1)} ›</button>
             : <a className="sc-btn cta" href="#sc-finish">Finish ›</a>}
         </div>
         <div className="sc-strip" role="group" aria-label="Jump to hole">
-          {d.pars.map((_, i) => <button key={i} className={holeDone(d, i) ? 'done' : ''} aria-current={i === h} onClick={() => go(i)}>{i + 1}</button>)}
+          {d.pars.map((_, i) => <button key={i} className={holeDone(d, i) ? 'done' : ''} aria-current={i === h} onClick={() => go(i)}>{holeName(d, i)}</button>)}
         </div>
       </section>
 
@@ -246,7 +246,7 @@ function Card({ d, setD, onSetup, me, busy, onSave, onConnect, onNew }: {
         <div className="sc-tablewrap">
           <table className="sc-table">
             <tbody>
-              <tr><th>Hole</th>{d.pars.map((_, i) => <th key={i}>{i + 1}</th>)}<th>Tot</th><th>±</th></tr>
+              <tr><th>Hole</th>{d.pars.map((_, i) => <th key={i}>{holeName(d, i)}</th>)}<th>Tot</th><th>±</th></tr>
               <tr><th>Par</th>{d.pars.map((p, i) => <td key={i}>{p}</td>)}<td>{d.pars.reduce((a, b) => a + b, 0)}</td><td /></tr>
               {d.players.map((p, i) => (
                 <tr key={p.key}><th>{p.name}</th>

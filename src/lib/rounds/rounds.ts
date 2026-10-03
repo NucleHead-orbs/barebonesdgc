@@ -8,7 +8,12 @@ export interface CardPlayer { key: string; memberId: string | null; name: string
 export interface Draft {
   course: string; courseId: string | null; layoutId: string | null; playedOn: string;
   pars: number[]; players: CardPlayer[]; scores: Array<Array<number | null>>; cur: number;
+  /** The course's own hole names (Buffalo Ridge: 1 2 3 4 5 A B …) and feet, from the library layout. Absent = 1..n, no feet. */
+  labels?: string[] | null; ft?: Array<number | null> | null;
 }
+
+/** What hole i (0-based) is called on the course. */
+export const holeName = (d: { labels?: string[] | null }, i: number) => d.labels?.[i] ?? String(i + 1);
 export const MAX_PLAYERS = 8;
 export const HOLE_CHOICES = [9, 18, 19, 20, 21, 24, 27];
 
@@ -22,7 +27,7 @@ export function newDraft(today: string, me?: { id: string; name: string } | null
 /** Change the hole count, keeping what's already entered. New holes are par 3. */
 export function setHoles(d: Draft, n: number): Draft {
   const pars = Array.from({ length: n }, (_, i) => d.pars[i] ?? 3);
-  return { ...d, pars, scores: d.scores.map((r) => r.slice(0, n)), cur: Math.min(d.cur, n - 1), layoutId: null };
+  return { ...d, pars, scores: d.scores.map((r) => r.slice(0, n)), cur: Math.min(d.cur, n - 1), layoutId: null, labels: null, ft: null };
 }
 
 export const fmtToPar = (n: number) => (n === 0 ? 'E' : n > 0 ? `+${n}` : `${n}`);
@@ -65,6 +70,7 @@ export function saveProblems(d: Draft, meId: string | null): string[] {
 export function toPayload(d: Draft) {
   return {
     course: d.course.trim(), course_id: d.courseId, layout_id: d.layoutId, played_on: d.playedOn, pars: d.pars,
+    ...(d.labels && d.labels.length === d.pars.length ? { labels: d.labels } : {}),
     players: d.players.map((p, i) => ({ ...(p.memberId ? { member_id: p.memberId } : { guest_name: p.name.trim() }), scores: d.scores[i].slice(0, d.pars.length) })),
   };
 }
@@ -107,6 +113,7 @@ export function roundMessage(err: unknown): string {
   if (/every_hole_scored/.test(m)) return 'Every player needs a score on every hole.';
   if (/invalid_score/.test(m)) return 'Hole scores run 1 to 20.';
   if (/invalid_pars/.test(m)) return 'Pars run 2 to 6.';
+  if (/invalid_labels/.test(m)) return 'The hole names don\'t match the card. Pick the layout again.';
   if (/invalid_date/.test(m)) return 'Rounds have to be from the last two weeks.';
   if (/course_required/.test(m)) return 'Pick or type the course.';
   if (/players_1_to_8/.test(m)) return 'A round has 1 to 8 players.';
