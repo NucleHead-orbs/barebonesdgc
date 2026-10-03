@@ -7,6 +7,7 @@ import { DIVISION_PRESETS, addDays, dateRange, daysBetween, divisionsProblem, is
 import { useTheme } from '../../lib/theme';
 import EventWorkspace from './EventWorkspace';
 import { HelpButton } from './Help';
+import TdHome from './TdHome';
 import { LayoutSelect } from './CourseLibrary';
 import { findLayout, sortLibrary, type LibCourse } from '../../lib/courses/courses';
 
@@ -72,6 +73,7 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
     <HubShell email={email} onSignOut={onSignOut} admin={admin}>
       <main className="td-hub">
         {error && <div className="td-warn" role="alert">{error}</div>}
+        <TdHome admin={admin} tagAdmin={tagAdmin} />
         <div className="td-row">
           <h2 className="td-h2">Your events</h2>
           <div style={{ flex: 1 }} />

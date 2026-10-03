@@ -389,3 +389,23 @@ button.td-vote-opt:disabled { cursor: default; }
   .td-seg[role='tablist'] { flex-wrap: wrap; width: 100%; }
   .td-seg[role='tablist'] button { flex: 1 1 auto; min-height: 40px; }
 }
+
+/* ---------- TD home: run an event, what's new, help topics (TdHome.tsx) ---------- */
+.td-home { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+@media (min-width: 900px) { .td-home { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .td-home > :last-child { grid-column: 1 / -1; } }
+.td-home h2 { margin: 0; }
+.td-home-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; counter-reset: step; }
+.td-home-step { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 10px 12px; border-radius: 10px;
+  border: 2px solid var(--border); background: var(--raised); color: #fff; cursor: pointer; counter-increment: step; font-family: inherit; }
+.td-home-step::before { content: counter(step); font-family: var(--font-label); font-size: 11px; color: var(--cyan); }
+.td-home-step b { font-family: var(--font-label); letter-spacing: 1px; font-size: 13px; }
+.td-home-step span { color: var(--text-muted); font-size: 13px; }
+.td-home-step:hover, .td-home-step:focus-visible { border-color: var(--cyan); }
+.td-home a { color: var(--cyan); }
+.td-home-updates { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.td-home-updates li { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-left: 3px solid var(--border); background: var(--raised); border-radius: 0 8px 8px 0; }
+.td-home-updates li.is-new { border-left-color: var(--gold); }
+.td-home-updates p { margin: 0; color: var(--text-muted); line-height: 1.45; }
+.td-home-updates p b { color: #fff; }
+.td-home-uhead { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.td-home .td-link { align-self: flex-start; }

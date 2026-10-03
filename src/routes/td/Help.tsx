@@ -18,7 +18,7 @@ export function HelpButton({ start }: { start?: string }) {
   );
 }
 
-function HelpPanel({ start, onClose }: { start?: string; onClose: () => void }) {
+export function HelpPanel({ start, onClose }: { start?: string; onClose: () => void }) {
   useEffect(() => { if (start) document.getElementById(`help-${start}`)?.scrollIntoView(); }, [start]);
   return (
     <div className="td-help" role="dialog" aria-modal="true" aria-label="TD help">
