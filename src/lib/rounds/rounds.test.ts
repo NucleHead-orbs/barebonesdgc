@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { holeName, confirmState, exchangeOptions, fmtToPar, holeDone, leaders, newDraft, parseTagLink, running, saveProblems, setHoles, toPayload } from './rounds';
+import { started, holeName, confirmState, exchangeOptions, fmtToPar, holeDone, leaders, newDraft, parseTagLink, running, saveProblems, setHoles, toPayload } from './rounds';
 
 const me = { id: 'm1', name: 'YT' };
 
@@ -47,6 +47,13 @@ describe('saving', () => {
     expect(parseTagLink('https://barebonesdiscgolf.club/tag/0123456789abcdef0123456789abcdef')).toBe('0123456789abcdef0123456789abcdef');
     expect(parseTagLink('  0123456789abcdef0123456789abcdef ')).toBe('0123456789abcdef0123456789abcdef');
     expect(parseTagLink('hello')).toBeNull();
+  });
+});
+
+describe('declaring tags', () => {
+  it('locks once any score is in', () => {
+    expect(started({ scores: [[], [null]] })).toBe(false);
+    expect(started({ scores: [[], [null, 3]] })).toBe(true);
   });
 });
 

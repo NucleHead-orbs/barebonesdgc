@@ -24,3 +24,5 @@ details.td-panel summary { cursor: pointer; }
   .tp-link .td-crew-qr { max-width: 200px; }
   .tp-person { grid-template-columns: 1fr 1fr; }
 }
+
+.tp-others { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 2px dashed var(--gold); border-radius: 10px; }

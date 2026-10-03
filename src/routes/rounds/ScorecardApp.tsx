@@ -8,7 +8,7 @@ import * as api from '../../lib/rounds/api';
 import type { CourseOption, RoundMe } from '../../lib/rounds/api';
 import {
   DRAFT_KEY, HOLE_CHOICES, holeName, MAX_PLAYERS, ME_KEY, fmtToPar, holeDone, leaders, newDraft, parseTagLink, roundMessage, running,
-  exchangeOptions, saveProblems, setHoles, toPayload, toParClass, type Draft,
+  exchangeOptions, saveProblems, setHoles, started, toPayload, toParClass, type Draft,
 } from '../../lib/rounds/rounds';
 import { display, swap, type TagMember, type TagPool } from '../../lib/tags/tags';
 import { localDate } from '../../lib/leagues/leagues';
@@ -30,6 +30,21 @@ export default function ScorecardApp() {
   const [view, setView] = useState<'setup' | 'card'>(() => (loadDraft()?.players.length ? 'card' : 'setup'));
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [pools, setPools] = useState<TagPool[]>([]);
+  const [tags, setTags] = useState<Array<{ pool_id: string; number: number; holder_id: string | null }>>([]);
+  const memberIds = useMemo(() => d.players.map((p) => p.memberId).filter(Boolean) as string[], [d.players]);
+  const memberKey = memberIds.join(',');
+  useEffect(() => {
+    if (!memberKey) return;
+    void (async () => {
+      const r = await api.tagsFor(memberKey.split(','));
+      if (r.data) { setPools(r.data.pools); setTags(r.data.tags); }
+    })();
+  }, [memberKey]);
+  const meId = me?.me.id ?? null;
+  /** Tag sets this card can put on the line: you + at least one other member on the card hold a tag in it. */
+  const swapSets = useMemo(() => (memberKey ? exchangeOptions(memberIds, tags, pools).filter((o) => meId && o.holders.some((h) => h.member_id === meId)) : []),
+    [memberKey, memberIds, tags, pools, meId]);
 
   useEffect(() => { write(DRAFT_KEY, JSON.stringify(d)); }, [d]);
   useEffect(() => {
@@ -63,10 +78,11 @@ export default function ScorecardApp() {
   }, [known]);
   const forget = () => { write(ME_KEY, null); setToken(null); setMe(null); };
 
-  const save = async (pools: string[]) => {
+  const save = async () => {
     if (!token) return;
+    const declared = (d.onLine ?? []).filter((id) => swapSets.some((o) => o.pool.id === id));
     setBusy(true);
-    const r = pools.length ? await api.saveRoundSwap(token, toPayload(d), pools) : await api.saveRound(token, toPayload(d));
+    const r = declared.length ? await api.saveRoundSwap(token, toPayload(d), declared) : await api.saveRound(token, toPayload(d));
     setBusy(false);
     if (r.error || !r.data) return setErr(roundMessage(r.error));
     write(DRAFT_KEY, null);
@@ -85,17 +101,21 @@ export default function ScorecardApp() {
           <span key={x.id}>{i > 0 && ', '}<Link to={`/rounds/${x.id}`}>{x.course}</Link></span>))}</div>
       )}
       {view === 'setup'
-        ? <Setup d={d} setD={setD} me={me} members={members} courses={courses} onStart={() => setView('card')} />
-        : <Card d={d} setD={setD} onSetup={() => setView('setup')} me={me} busy={busy} onSave={(pools) => void save(pools)} onConnect={connect}
+        ? <Setup d={d} setD={setD} me={me} members={members} courses={courses} swapSets={swapSets} onStart={() => setView('card')} />
+        : <Card d={d} setD={setD} onSetup={() => setView('setup')} me={me} busy={busy} swapSets={swapSets} onSave={() => void save()} onConnect={connect}
             onNew={() => { setD(newDraft(localDate(), me ? { id: me.me.id, name: me.me.nickname || me.me.name } : null)); setView('setup'); }} />}
     </div>
   );
 }
 
 // ---------- setup ----------
-function Setup({ d, setD, me, members, courses, onStart }: {
-  d: Draft; setD: (f: (d: Draft) => Draft) => void; me: RoundMe | null; members: TagMember[]; courses: CourseOption[]; onStart: () => void;
+type SwapSet = ReturnType<typeof exchangeOptions>[number];
+
+function Setup({ d, setD, me, members, courses, swapSets, onStart }: {
+  d: Draft; setD: (f: (d: Draft) => Draft) => void; me: RoundMe | null; members: TagMember[]; courses: CourseOption[]; swapSets: SwapSet[]; onStart: () => void;
 }) {
+  const locked = started(d);
+  const nameOf = (mid: string) => d.players.find((p) => p.memberId === mid)?.name ?? '?';
   const [guest, setGuest] = useState('');
   const course = courses.find((c) => c.id === d.courseId) ?? null;
   const onCard = new Set(d.players.map((p) => p.memberId).filter(Boolean));
@@ -168,33 +188,39 @@ function Setup({ d, setD, me, members, courses, onStart }: {
             </form>
           </div>
         )}
-        <p className="sc-hint">Members can put tags on the line after the round. Guests just get a score.</p>
+        <p className="sc-hint">Guests just get a score. Members can put tags on the line below, before you tee off.</p>
       </section>
+
+      {me && swapSets.length > 0 && (
+        <section className="sc-panel">
+          <h2>Tags on the line?</h2>
+          <div className="sc-swaps">
+            {swapSets.map((o) => {
+              const on = (d.onLine ?? []).includes(o.pool.id);
+              return (
+                <label key={o.pool.id} className={`sc-swap${on ? ' is-on' : ''}`}>
+                  <input type="checkbox" id={`sc-swap-${o.pool.slug}`} checked={on} disabled={locked}
+                    onChange={(e) => { const c = e.target.checked; setD((x) => ({ ...x, onLine: c ? [...(x.onLine ?? []), o.pool.id] : (x.onLine ?? []).filter((y) => y !== o.pool.id) })); }} />
+                  <span><b>{o.pool.name}</b><small>{o.holders.map((h) => `${nameOf(h.member_id)} #${h.number}`).join(' · ')}</small></span>
+                </label>
+              );
+            })}
+          </div>
+          <p className="sc-hint">{locked ? 'Locked: the round has started.' : 'Decide now. Once the first score is in, this locks. Checked sets swap when you save and everyone else on the card confirms from their My Tag link.'}</p>
+        </section>
+      )}
       <button className="sc-btn cta big" disabled={!ready} onClick={onStart}>{d.scores.some((s) => s.some((x) => x != null)) ? 'Back to the card' : 'Tee off'}</button>
     </main>
   );
 }
 
 // ---------- the card ----------
-function Card({ d, setD, onSetup, me, busy, onSave, onConnect, onNew }: {
-  d: Draft; setD: (f: (d: Draft) => Draft) => void; onSetup: () => void; me: RoundMe | null; busy: boolean;
-  onSave: (pools: string[]) => void; onConnect: (s: string) => void; onNew: () => void;
+function Card({ d, setD, onSetup, me, busy, swapSets, onSave, onConnect, onNew }: {
+  d: Draft; setD: (f: (d: Draft) => Draft) => void; onSetup: () => void; me: RoundMe | null; busy: boolean; swapSets: SwapSet[];
+  onSave: () => void; onConnect: (s: string) => void; onNew: () => void;
 }) {
   const [link, setLink] = useState('');
-  const [pools, setPools] = useState<TagPool[]>([]);
-  const [tags, setTags] = useState<Array<{ pool_id: string; number: number; holder_id: string | null }>>([]);
-  const [onLine, setOnLine] = useState<string[]>([]);
-  const memberIds = useMemo(() => d.players.map((p) => p.memberId).filter(Boolean) as string[], [d.players]);
-  const memberKey = memberIds.join(',');
-  useEffect(() => {
-    if (!memberKey) return;
-    void (async () => {
-      const r = await api.tagsFor(memberKey.split(','));
-      if (r.data) { setPools(r.data.pools); setTags(r.data.tags); }
-    })();
-  }, [memberKey]);
-  const meId = me?.me.id ?? null;
-  const swapSets = exchangeOptions(memberIds, tags, pools).filter((o) => meId && o.holders.some((h) => h.member_id === meId));
+  const declared = swapSets.filter((o) => (d.onLine ?? []).includes(o.pool.id));
   const [confirmNew, setConfirmNew] = useState(false);
   const h = d.cur, par = d.pars[h];
   const tots = useMemo(() => d.players.map((_, p) => running(d.pars, d.scores[p] ?? [])), [d]);
@@ -212,6 +238,7 @@ function Card({ d, setD, onSetup, me, busy, onSave, onConnect, onNew }: {
   return (
     <main className="sc-main">
       <div className="sc-course"><b>{d.course}</b><span>{d.pars.length} holes · par {d.pars.reduce((a, b) => a + b, 0)}</span><button className="sc-link" onClick={onSetup}>Edit round</button></div>
+      {declared.length > 0 && <div className="sc-online">On the line: {declared.map((o) => o.pool.name).join(' + ')}</div>}
       <div className="sc-stand">
         {d.players.map((p, i) => (
           <div key={p.key} className={`sc-st${lead.includes(i) ? ' is-lead' : ''}`}>
@@ -285,28 +312,26 @@ function Card({ d, setD, onSetup, me, busy, onSave, onConnect, onNew }: {
         ) : (
           <p className="sc-hint">All {d.pars.length} holes in. It shows on Boner Rounds right away; the other members on it confirm from their My Tag link. You can put tags on the line next.</p>
         )}
-        {me && swapSets.length > 0 && (
+        {declared.length > 0 && (
           <div className="sc-swaps">
-            <div className="sc-label">Tags on the line?</div>
-            {swapSets.map((o) => {
-              const on = onLine.includes(o.pool.id);
+            <div className="sc-label">On the line (declared at tee-off)</div>
+            {declared.map((o) => {
               const strokesOf = (mid: string) => tots[d.players.findIndex((p) => p.memberId === mid)]?.strokes ?? 0;
               const prev = swap(o.holders.map((h) => ({ id: h.member_id, score: strokesOf(h.member_id), tag: h.number })));
               const nameOf = (mid: string) => d.players.find((p) => p.memberId === mid)?.name ?? '?';
               return (
-                <label key={o.pool.id} className={`sc-swap${on ? ' is-on' : ''}`}>
-                  <input type="checkbox" id={`sc-swap-${o.pool.slug}`} checked={on} onChange={(e) => { const c = e.target.checked; setOnLine((x) => (c ? [...x, o.pool.id] : x.filter((y) => y !== o.pool.id))); }} />
+                <div key={o.pool.id} className="sc-swap is-on">
                   <span><b>{o.pool.name}</b>
-                    <small>{allIn ? prev.slice().sort((a, b) => (a.after ?? 0) - (b.after ?? 0)).map((p) => `${nameOf(p.id)} ${p.before === p.after ? `keeps #${p.after}` : `#${p.before} → #${p.after}`}`).join(' · ')
+                    <small>{allIn ? prev.slice().sort((x, y) => (x.after ?? 0) - (y.after ?? 0)).map((p) => `${nameOf(p.id)} ${p.before === p.after ? `keeps #${p.after}` : `#${p.before} → #${p.after}`}`).join(' · ')
                       : o.holders.map((h) => `${nameOf(h.member_id)} #${h.number}`).join(' · ')}</small></span>
-                </label>
+                </div>
               );
             })}
-            <p className="sc-hint">Checked sets go on the line when you save. The tag boards show it as pending, and it swaps once everyone else on the card confirms from their My Tag link.</p>
+            <p className="sc-hint">Saving puts these up as pending on the tag boards. They swap once everyone else on the card confirms.</p>
           </div>
         )}
-        <button className="sc-btn cta big" disabled={!me || problems.length > 0 || busy || !allIn} onClick={() => onSave(onLine.filter((id) => swapSets.some((o) => o.pool.id === id)))}>
-          {busy ? 'Saving…' : onLine.length ? 'Save round + put tags on the line' : 'Save round'}</button>
+        <button className="sc-btn cta big" disabled={!me || problems.length > 0 || busy || !allIn} onClick={onSave}>
+          {busy ? 'Saving…' : declared.length ? 'Save round + tag swap' : 'Save round'}</button>
         <div className="sc-row">
           {confirmNew
             ? <><span className="sc-danger">Throw this card away?</span><button className="sc-btn danger" onClick={() => { setConfirmNew(false); onNew(); }}>Yes, new card</button><button className="sc-btn" onClick={() => setConfirmNew(false)}>Keep it</button></>

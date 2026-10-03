@@ -148,6 +148,7 @@ export const HELP: HelpSection[] = [
       '**Issue a tag:** take the buy-in, type the player\'s name, tap **ISSUE TAG**. They get the next number at the bottom. Type a number only to hand back a freed tag or load someone\'s existing physical tag.',
       'Right after issuing, have them scan the **My Tag** QR and save the page. That page is how they log casual rounds and confirm the ones they\'re on.',
       '**League night:** after cards are signed and submitted, go to **Record a round → From the scorecard**, pick the event, check the name matches, tap **RECORD**. Tag holders trade tags by total. Each event counts once.',
+      'Other tag sets on the card (like **Golden Boners**) show under **OTHER TAG SETS ON THIS CARD**. Check one to put it on the line from the same scores: it goes up pending, every holder confirms from their **My Tag** link, and it swaps on the last confirmation. Your own league\'s tags still move right away.',
       'Pop Up with a dubs round? Tags only record from a **singles** round: pick it under **Round**. Dubs rounds never move tags.',
       '**Golden Boners** is the invite-only set: admins and core members only. It works like a league (issue, My Tag, rounds, undo) but only the super admin, or someone they add as its admin, can issue one.',
       '**Rounds waiting:** a disputed or stuck round shows here. **APPLY** swaps the tags they hold now; **VOID** drops it.',

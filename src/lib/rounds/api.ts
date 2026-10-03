@@ -50,8 +50,6 @@ export const saveRoundSwap = (token: string, payload: unknown, poolIds: string[]
   wrap(async (): Promise<string> => (must(await supabase.rpc('round_save_swap', { p_token: token, p_round: payload, p_pools: poolIds })) as { round_id: string }).round_id);
 export const confirmRound = (token: string, id: string, ok: boolean) =>
   wrap(async () => { must(await supabase.rpc('round_confirm', { p_token: token, p_round: id, p_ok: ok })); });
-export const startExchange = (token: string, id: string, poolId: string) =>
-  wrap(async (): Promise<string> => must(await supabase.rpc('round_tag_exchange', { p_token: token, p_round: id, p_pool: poolId })) as string);
 export const voidRound = (token: string, id: string) =>
   wrap(async () => { must(await supabase.rpc('round_void', { p_token: token, p_round: id })); });
 

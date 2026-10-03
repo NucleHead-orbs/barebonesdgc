@@ -22,6 +22,9 @@ grant execute on function pg_temp.pool(text), pg_temp.mem(text), pg_temp.tok(tex
 create or replace function pg_temp.card(d int) returns jsonb language sql as $$
   select jsonb_agg(case when i <= abs(d) then 3 + sign(d)::int else 3 end order by i) from generate_series(1, 18) i $$;
 grant execute on function pg_temp.card(int) to anon, authenticated;
+-- round_tag_exchange is internal since tag_declare (only via round_save_swap); call it through a definer wrapper here
+create or replace function pg_temp.ex(t text, r uuid, p uuid) returns uuid language sql security definer as $$ select round_tag_exchange(t, r, p) $$;
+grant execute on function pg_temp.ex(text, uuid, uuid) to anon, authenticated;
 
 insert into auth.users (id, email, email_confirmed_at) values
   ('00000000-0000-4000-8000-0000000000aa', 'r-boss@club.test', now()),
@@ -82,10 +85,10 @@ select pg_temp.ok(jsonb_array_length(round_me(pg_temp.tok('Rex')) -> 'to_confirm
 select pg_temp.ok(not (round_me(pg_temp.tok('Rex'))::text like '%token%'), 'round_me never returns tokens');
 
 -- ===== tag exchange =====
-select pg_temp.ok(pg_temp.refused(format('select round_tag_exchange(%L, %L, %L)', pg_temp.tok('Zed'), pg_temp.v('r1'), pg_temp.pool('golden-boners')), 'no_tag_in_pool'),
+select pg_temp.ok(pg_temp.refused(format('select pg_temp.ex(%L, %L, %L)', pg_temp.tok('Zed'), pg_temp.v('r1'), pg_temp.pool('golden-boners')), 'no_tag_in_pool'),
   'you need a tag in that set to start an exchange');
-insert into r_ctx select 'x1', round_tag_exchange(pg_temp.tok('Rex'), pg_temp.v('r1')::uuid, pg_temp.pool('golden-boners'))::text;
-select pg_temp.ok(pg_temp.refused(format('select round_tag_exchange(%L, %L, %L)', pg_temp.tok('Moe'), pg_temp.v('r1'), pg_temp.pool('golden-boners')), 'already_exchanged'),
+insert into r_ctx select 'x1', pg_temp.ex(pg_temp.tok('Rex'), pg_temp.v('r1')::uuid, pg_temp.pool('golden-boners'))::text;
+select pg_temp.ok(pg_temp.refused(format('select pg_temp.ex(%L, %L, %L)', pg_temp.tok('Moe'), pg_temp.v('r1'), pg_temp.pool('golden-boners')), 'already_exchanged'),
   'one exchange per tag set per round');
 reset role;
 select pg_temp.ok((select count(*) = 3 and bool_and(score = (select strokes from club_round_players c where c.round_id = pg_temp.v('r1')::uuid and c.member_id = p.member_id))
@@ -118,7 +121,7 @@ select pg_temp.ok(pg_temp.refused(format('select round_void(%L, %L)', pg_temp.to
 -- ===== dispute + void =====
 insert into r_ctx select 'r2', round_save(pg_temp.tok('Moe'), jsonb_build_object('course', 'Papago', 'played_on', current_date - 1, 'pars', '[3,3,3]'::jsonb,
   'players', jsonb_build_array(jsonb_build_object('member_id', pg_temp.mem('Moe'), 'scores', '[2,3,3]'::jsonb), jsonb_build_object('member_id', pg_temp.mem('Rex'), 'scores', '[3,3,4]'::jsonb))))::text;
-insert into r_ctx select 'x2', round_tag_exchange(pg_temp.tok('Moe'), pg_temp.v('r2')::uuid, pg_temp.pool('golden-boners'))::text;
+insert into r_ctx select 'x2', pg_temp.ex(pg_temp.tok('Moe'), pg_temp.v('r2')::uuid, pg_temp.pool('golden-boners'))::text;
 select round_confirm(pg_temp.tok('Rex'), pg_temp.v('r2')::uuid, false);
 reset role;
 select pg_temp.ok((select status = 'disputed' from tag_matches where id = pg_temp.v('x2')::uuid)

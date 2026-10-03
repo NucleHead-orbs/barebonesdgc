@@ -246,6 +246,16 @@ function RecordRound({ pool, held, members, act }: Ctx) {
   const [busy, setBusy] = useState(false);
   const [src, setSrc] = useState<TagSource | null>(null);
   const [loaded, setLoaded] = useState<{ ev: EventConfig; board: LbRow[]; status: Parameters<typeof standings>[2] } | null>(null);
+  // other tag sets on the same card (e.g. Golden Boners): proposed from these results, pending until their holders confirm
+  const [others, setOthers] = useState<Array<{ pool: TagPool; tags: Tag[] }>>([]);
+  const [propose, setPropose] = useState<string[]>([]);
+  useEffect(() => { void (async () => {
+    const ps = await tagApi.loadPools();
+    if (!ps.data) return;
+    const rest = ps.data.filter((p) => p.id !== pool.id);
+    const ts = await Promise.all(rest.map((p) => tagApi.poolTags(p.id)));
+    setOthers(rest.map((p, i) => ({ pool: p, tags: (ts[i].data ?? []).filter((t) => t.status === 'held') })));
+  })(); }, [pool.id]);
   const tagOf = useCallback((id: string | null) => (id ? held.find((t) => t.holder_id === id)?.number ?? null : null), [held]);
 
   useEffect(() => { void (async () => {
@@ -285,12 +295,28 @@ function RecordRound({ pool, held, members, act }: Ctx) {
   const pvById = new Map(pv.map((p) => [p.id, p]));
   const dup = new Set(holders.map((r) => r.member_id).filter((id, i, a) => a.indexOf(id) !== i));
 
+  const otherSets = mode === 'event' ? others.map((o) => ({ ...o, rows: rows.filter((r) => r.member_id && r.score !== null && o.tags.some((t) => t.holder_id === r.member_id)) }))
+    .filter((o) => o.rows.length >= 2) : [];
+  const chosen = otherSets.filter((o) => propose.includes(o.pool.id));
+
   const submit = async () => {
     setBusy(true);
-    const ok = await act(tagApi.record(pool.id, mode === 'event' ? eventId : null, holders.map((r) => ({ member_id: r.member_id!, score: r.score! })), course, day),
-      `Recorded. ${pv.filter((p) => p.before !== p.after).length} tags moved.`);
+    const notes: string[] = [];
+    let ok = true;
+    if (holders.length >= 2) {
+      ok = await act(tagApi.record(pool.id, mode === 'event' ? eventId : null, holders.map((r) => ({ member_id: r.member_id!, score: r.score! })), course, day),
+        `Recorded. ${pv.filter((p) => p.before !== p.after).length} tags moved.`);
+      if (ok) notes.push(`${pool.name}: ${pv.filter((p) => p.before !== p.after).length} tags moved`);
+    }
+    for (const o of chosen) {
+      if (!ok) break;
+      const r = await act(tagApi.propose(o.pool.id, eventId, o.rows.map((x) => ({ member_id: x.member_id!, score: x.score! })), course, day));
+      if (r) notes.push(`${o.pool.name}: on the line, waiting on ${o.rows.length} holders to confirm`);
+      ok = ok && r;
+    }
+    if (notes.length) await act(Promise.resolve({}), notes.join(' · ') + '.');
     setBusy(false);
-    if (ok) { setRows([]); setEventId(''); setLeft([]); setCourse(''); }
+    if (ok) { setRows([]); setEventId(''); setLeft([]); setCourse(''); setPropose([]); }
   };
 
   const addHand = (id: string) => { if (!id || rows.some((r) => r.member_id === id)) return; const m = members.find((x) => x.id === id)!; setRows([...rows, { key: id, name: m.name, score: null, member_id: id }]); };
@@ -349,8 +375,9 @@ function RecordRound({ pool, held, members, act }: Ctx) {
                     {mode === 'event' ? (
                       <select className="td-select" value={r.member_id ?? ''} aria-label={`Tag holder for ${r.name}`}
                         onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, member_id: e.target.value || null } : x)))}>
-                        <option value="">No tag</option>
+                        <option value="">Not a member</option>
                         {held.map((t) => { const m = members.find((x) => x.id === t.holder_id); return m ? <option key={t.number} value={m.id}>#{t.number} {m.name}</option> : null; })}
+                        {members.filter((m) => !held.some((t) => t.holder_id === m.id)).map((m) => <option key={m.id} value={m.id}>{m.name} (no {pool.name} tag)</option>)}
                       </select>
                     ) : <button className="td-btn quiet" onClick={() => setRows(rows.filter((_, j) => j !== i))}>REMOVE</button>}
                   </td>
@@ -369,12 +396,24 @@ function RecordRound({ pool, held, members, act }: Ctx) {
       )}
       {left.length > 0 && <div className="td-hint">Not counted (no official finish): {left.join(', ')}.</div>}
       {dup.size > 0 && <div className="td-warn">One tag holder is picked twice. Fix it before recording.</div>}
+      {otherSets.length > 0 && (
+        <div className="tp-others">
+          <div className="td-label">OTHER TAG SETS ON THIS CARD</div>
+          {otherSets.map((o) => (
+            <label key={o.pool.id} className="td-inline">
+              <input type="checkbox" checked={propose.includes(o.pool.id)} onChange={(e) => { const c = e.target.checked; setPropose((x) => (c ? [...x, o.pool.id] : x.filter((y) => y !== o.pool.id))); }} />
+              <span><b>{o.pool.name}</b>: {o.rows.map((r) => `${r.name} #${o.tags.find((t) => t.holder_id === r.member_id)?.number}`).join(', ')}</span>
+            </label>
+          ))}
+          <span className="td-hint">Checked sets go on the line from these scores as pending. Each holder confirms from their My Tag link, and it swaps on the last one. Each set counts once per event.</span>
+        </div>
+      )}
       {rows.length > 0 && (
         <div className="td-row">
-          <button className="td-btn cta" disabled={holders.length < 2 || dup.size > 0 || busy || (mode === 'event' && !eventId)} onClick={() => void submit()}>
-            RECORD · {holders.length} TAG HOLDERS
+          <button className="td-btn cta" disabled={(holders.length < 2 && !chosen.length) || dup.size > 0 || busy || (mode === 'event' && !eventId)} onClick={() => void submit()}>
+            {holders.length >= 2 ? `RECORD · ${holders.length} TAG HOLDERS` : 'PUT ON THE LINE'}{chosen.length ? ` + ${chosen.map((o) => o.pool.name).join(' + ')}` : ''}
           </button>
-          {holders.length < 2 && <span className="td-hint">Needs at least 2 tag holders with scores.</span>}
+          {holders.length < 2 && !chosen.length && <span className="td-hint">Needs at least 2 tag holders with scores.</span>}
         </div>
       )}
     </section>

@@ -10,7 +10,12 @@ export interface Draft {
   pars: number[]; players: CardPlayer[]; scores: Array<Array<number | null>>; cur: number;
   /** The course's own hole names (Buffalo Ridge: 1 2 3 4 5 A B …) and feet, from the library layout. Absent = 1..n, no feet. */
   labels?: string[] | null; ft?: Array<number | null> | null;
+  /** Tag sets declared on the line before tee-off (pool ids). Locked once a score is in; saved with the round. */
+  onLine?: string[];
 }
+
+/** The round has started (any score in): tags on the line are locked. */
+export const started = (d: Pick<Draft, 'scores'>) => d.scores.some((s) => s.some((x) => x != null));
 
 /** What hole i (0-based) is called on the course. */
 export const holeName = (d: { labels?: string[] | null }, i: number) => d.labels?.[i] ?? String(i + 1);

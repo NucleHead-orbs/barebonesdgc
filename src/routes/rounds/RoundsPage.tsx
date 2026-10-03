@@ -6,9 +6,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import * as api from '../../lib/rounds/api';
 import type { Round, RoundMe } from '../../lib/rounds/api';
-import { ME_KEY, confirmState, exchangeOptions, fmtToPar, roundMessage, toParClass } from '../../lib/rounds/rounds';
+import { ME_KEY, confirmState, fmtToPar, roundMessage, toParClass } from '../../lib/rounds/rounds';
 import { niceDate } from '../../lib/leagues/leagues';
-import type { TagPool } from '../../lib/tags/tags';
 import { Banner, Button, SectionHeading } from '../../components/ui';
 import './rounds.css';
 
@@ -96,8 +95,6 @@ export function RoundDetail() {
   const { id = '' } = useParams();
   const [qs] = useSearchParams();
   const [r, setR] = useState<Round | null | undefined>(undefined);
-  const [pools, setPools] = useState<TagPool[]>([]);
-  const [tags, setTags] = useState<Array<{ pool_id: string; number: number; holder_id: string | null }>>([]);
   const [err, setErr] = useState('');
   const [ok, setOk] = useState(qs.get('saved') ? 'Saved. It\'s on Boner Rounds now.' : '');
   const [busy, setBusy] = useState(false);
@@ -108,10 +105,6 @@ export function RoundDetail() {
     const x = await api.loadRound(id);
     if (x.error) return setErr(roundMessage(x.error));
     setR(x.data ?? null);
-    if (x.data) {
-      const t = await api.tagsFor(x.data.players.map((p) => p.member_id).filter(Boolean) as string[]);
-      if (t.data) { setPools(t.data.pools); setTags(t.data.tags); }
-    }
   }, [id]);
   useEffect(() => { void (async () => { await load(); })(); }, [load]);
 
@@ -130,11 +123,7 @@ export function RoundDetail() {
 
   const meId = me?.me.id ?? null;
   const mine = r.players.find((p) => p.member_id && p.member_id === meId) ?? null;
-  const memberIds = r.players.map((p) => p.member_id).filter(Boolean) as string[];
-  const used = new Set(r.exchanges.map((x) => x.pool));
-  const options = exchangeOptions(memberIds, tags, pools).filter((o) => !used.has(o.pool.slug) && meId && o.holders.some((h) => h.member_id === meId));
   const nameOf = (mid: string) => r.players.find((p) => p.member_id === mid)?.name ?? '?';
-  const disputed = r.players.some((p) => p.disputed);
 
   return (
     <section className="sec">
@@ -175,19 +164,6 @@ export function RoundDetail() {
               <button className="br-btn cta" disabled={busy} onClick={() => void run(api.confirmRound(token!, r.id, true), 'Confirmed.')}>Confirm</button>
               <button className="br-btn" disabled={busy} onClick={() => void run(api.confirmRound(token!, r.id, false), 'Disputed.')}>Dispute</button>
             </div>
-          </div>
-        )}
-
-        {mine && options.length > 0 && !disputed && (
-          <div className="br-panel">
-            <b>Put tags on the line</b>
-            {options.map((o) => (
-              <div key={o.pool.id} className="br-ex">
-                <span>{o.pool.name}: {o.holders.map((h) => `${nameOf(h.member_id)} #${h.number}`).join(', ')}</span>
-                <button className="br-btn cta" disabled={busy} onClick={() => void run(api.startExchange(token!, r.id, o.pool.id), `${o.pool.name} tags are on the line. They swap when everyone on it confirms.`)}>Use this round</button>
-              </div>
-            ))}
-            <p className="br-hint">Best score takes the best tag; ties keep their order. The others confirm from their My Tag link (or right here).</p>
           </div>
         )}
 

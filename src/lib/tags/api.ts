@@ -133,6 +133,11 @@ export const record = (poolId: string, eventId: string | null, rows: Array<{ mem
   wrap(async (): Promise<string> => must(await supabase.rpc('td_tag_record', {
     p_pool: poolId, p_event: eventId, p_rows: rows, p_course: course || null, p_played_on: playedOn || null,
   })) as string);
+/** League night: put ANOTHER tag set on the line from the event's results. Pending until every holder confirms on My Tag. */
+export const propose = (poolId: string, eventId: string, rows: Array<{ member_id: string; score: number }>, course: string, playedOn: string) =>
+  wrap(async (): Promise<string> => must(await supabase.rpc('td_tag_propose', {
+    p_pool: poolId, p_event: eventId, p_rows: rows, p_course: course || null, p_played_on: playedOn || null,
+  })) as string);
 export const resolve = (matchId: string, apply: boolean) =>
   wrap(async (): Promise<string> => must(await supabase.rpc('td_tag_resolve', { p_match: matchId, p_apply: apply })) as string);
 export const undo = (poolId: string) => wrap(async () => { must(await supabase.rpc('td_tag_undo', { p_pool: poolId })); });
