@@ -29,6 +29,7 @@ export function MasterLayout() {
             <NavLink to="/jewel-xi">Jewel XI</NavLink>
             <NavLink to="/leagues">Leagues</NavLink>
             <NavLink to="/tags">Tags</NavLink>
+            <NavLink to="/rounds">Rounds</NavLink>
             <NavLink to="/gallery">Gallery</NavLink>
             <NavLink to="/music">Music</NavLink>
             <NavLink to="/sponsors">Sponsors</NavLink>

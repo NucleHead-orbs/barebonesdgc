@@ -2,6 +2,8 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import * as tagApi from '../../lib/tags/api';
+import * as roundsApi from '../../lib/rounds/api';
+import { ME_KEY } from '../../lib/rounds/rounds';
 import type { Match, TagHome } from '../../lib/tags/api';
 import { TAG_ART, display, parseScore, swap, tagMessage } from '../../lib/tags/tags';
 import { DigitalTag } from '../../components/DigitalTag';
@@ -18,12 +20,16 @@ export default function MyTagApp() {
   const [fatal, setFatal] = useState('');
   const [err, setErr] = useState('');
   const [toast, setToast] = useState('');
+  const [toConfirm, setToConfirm] = useState<Array<{ id: string; course: string; played_on: string }>>([]);
   useTheme('event', 'bone');
 
   const load = useCallback(async () => {
     const r = await tagApi.me(token);
     if (r.error || !r.data) { const m = tagMessage(r.error); if (/link/.test(m)) setFatal(m); else setErr(m); return; }
     setHome(r.data); setFatal('');
+    try { localStorage.setItem(ME_KEY, token); } catch { /* not remembered; the scorecard asks for the link instead */ }
+    const rm = await roundsApi.roundMe(token);
+    if (rm.data) setToConfirm(rm.data.to_confirm);
   }, [token]);
   useEffect(() => {
     void (async () => { await load(); })();
@@ -93,6 +99,19 @@ export default function MyTagApp() {
             ))}
           </section>
         )}
+
+        {toConfirm.length > 0 && (
+          <section className="td-panel mt-needs">
+            <h2>Boner Rounds to confirm</h2>
+            <p className="td-hint">Someone saved a round you played. Open it, check your score, and confirm.</p>
+            {toConfirm.map((x) => <Link key={x.id} className="td-btn" to={`/rounds/${x.id}`}>{x.course} · {niceDate(x.played_on)} ›</Link>)}
+          </section>
+        )}
+
+        <div className="td-row">
+          <Link className="td-btn cyan" to="/scorecard">OPEN THE SCORECARD</Link>
+          <Link className="td-btn quiet" to="/rounds">BONER ROUNDS</Link>
+        </div>
 
         {home.holdings.length > 0 && <LogRound home={home} token={token} act={act} />}
 
