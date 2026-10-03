@@ -28,21 +28,41 @@ export const loadPublic = () => wrap(async (): Promise<GalleryItem[]> =>
 export const loadAll = () => wrap(async (): Promise<GalleryItem[]> =>
   (must(await supabase.from('gallery_items').select(COLS).order('hidden', { ascending: false }).order('created_at', { ascending: false })) ?? []) as GalleryItem[]);
 
-/** Shrink an image in the browser to <= maxEdge px WebP (GIFs and anything that won't shrink pass through). */
+/** Decode an image file: createImageBitmap where it works, an <img> otherwise (older Safari). */
+async function decode(file: File): Promise<{ src: CanvasImageSource; w: number; h: number; done: () => void } | null> {
+  try { const b = await createImageBitmap(file); return { src: b, w: b.width, h: b.height, done: () => b.close() }; } catch { /* fall back */ }
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image(); img.src = url; await img.decode();
+    return { src: img, w: img.naturalWidth, h: img.naturalHeight, done: () => URL.revokeObjectURL(url) };
+  } catch { URL.revokeObjectURL(url); return null; }
+}
+const toBlob = (c: HTMLCanvasElement, type: string, q?: number) => new Promise<Blob | null>((res) => c.toBlob(res, type, q));
+function hasAlpha(ctx: CanvasRenderingContext2D, w: number, h: number): boolean {
+  const d = ctx.getImageData(0, 0, w, h).data;
+  for (let i = 3; i < d.length; i += 16) if (d[i] < 250) return true;
+  return false;
+}
+
+/**
+ * Shrink an image in the browser to <= maxEdge px. WebP where the browser can encode it; Safari can't, so there
+ * it's JPEG (opaque images) or PNG (images with transparency). GIFs and anything that won't shrink pass through.
+ */
 export async function shrink(file: File, maxEdge = MAX_EDGE): Promise<Blob> {
   if (file.type === 'image/gif') return file;
-  let bmp: ImageBitmap;
-  try { bmp = await createImageBitmap(file); } catch { return file; }
-  const scale = Math.min(1, maxEdge / Math.max(bmp.width, bmp.height));
-  const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+  const img = await decode(file);
+  if (!img) return file;
+  const scale = Math.min(1, maxEdge / Math.max(img.w, img.h));
+  const w = Math.max(1, Math.round(img.w * scale)), h = Math.max(1, Math.round(img.h * scale));
   const canvas = document.createElement('canvas');
   canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d');
-  if (!ctx) { bmp.close(); return file; }
-  ctx.drawImage(bmp, 0, 0, w, h);
-  bmp.close();
-  const out = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/webp', 0.85));
-  return out && out.type === 'image/webp' && out.size < file.size ? out : file;
+  if (!ctx) { img.done(); return file; }
+  ctx.drawImage(img.src, 0, 0, w, h);
+  img.done();
+  let out = await toBlob(canvas, 'image/webp', 0.85);
+  if (!out || out.type !== 'image/webp') out = hasAlpha(ctx, w, h) ? await toBlob(canvas, 'image/png') : await toBlob(canvas, 'image/jpeg', 0.85);
+  return out && out.size < file.size ? out : file;
 }
 
 const EXT: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' };
