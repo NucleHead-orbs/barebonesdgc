@@ -6,6 +6,7 @@ const pages = () => import('./routes/site/pages');
 const Home = lazy(() => pages().then((m) => ({ default: m.Home })));
 const JewelOverview = lazy(() => pages().then((m) => ({ default: m.JewelOverview })));
 const JewelCourse = lazy(() => pages().then((m) => ({ default: m.JewelCourse })));
+const JewelBand = lazy(() => pages().then((m) => ({ default: m.JewelBand })));
 const SponsorsPage = lazy(() => pages().then((m) => ({ default: m.Sponsors })));
 const MusicPage = lazy(() => pages().then((m) => ({ default: m.Music })));
 const GalleryPage = lazy(() => import('./routes/site/GalleryPage'));
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="/jewel-xi" element={<JewelLayout />}>
           <Route index element={<JewelOverview />} />
           <Route path="course" element={<JewelCourse />} />
+          <Route path="band" element={<JewelBand />} />
           <Route path="sponsors" element={<SponsorsPage jewel />} />
           <Route path="live" element={<Navigate to="/jewel" replace />} />
         </Route>

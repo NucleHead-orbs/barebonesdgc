@@ -28,11 +28,12 @@ export const loadPublic = () => wrap(async (): Promise<GalleryItem[]> =>
 export const loadAll = () => wrap(async (): Promise<GalleryItem[]> =>
   (must(await supabase.from('gallery_items').select(COLS).order('hidden', { ascending: false }).order('created_at', { ascending: false })) ?? []) as GalleryItem[]);
 
-async function shrink(file: File): Promise<Blob> {
+/** Shrink an image in the browser to <= maxEdge px WebP (GIFs and anything that won't shrink pass through). */
+export async function shrink(file: File, maxEdge = MAX_EDGE): Promise<Blob> {
   if (file.type === 'image/gif') return file;
   let bmp: ImageBitmap;
   try { bmp = await createImageBitmap(file); } catch { return file; }
-  const scale = Math.min(1, MAX_EDGE / Math.max(bmp.width, bmp.height));
+  const scale = Math.min(1, maxEdge / Math.max(bmp.width, bmp.height));
   const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
   const canvas = document.createElement('canvas');
   canvas.width = w; canvas.height = h;

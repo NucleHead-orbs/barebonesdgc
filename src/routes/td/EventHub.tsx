@@ -11,10 +11,11 @@ import { LayoutSelect } from './CourseLibrary';
 import { findLayout, sortLibrary, type LibCourse } from '../../lib/courses/courses';
 
 const GalleryPanel = lazy(() => import('./GalleryPanel'));
+const BandPanel = lazy(() => import('./BandPanel'));
 const TagsPanel = lazy(() => import('./TagsPanel'));
 
 /**
- * Home of /td: the events this account runs. ?e=<id> opens one. ?view=gallery (super admin) curates the club gallery. ?view=tags runs bag tags (league admins).
+ * Home of /td: the events this account runs. ?e=<id> opens one. ?view=gallery (super admin) curates the club gallery. ?view=band (super admin) runs Meet the Band. ?view=tags runs bag tags (league admins).
  * Super admin creates events from scratch; any TD of an event can duplicate it (league week 2).
  */
 export default function EventHub({ email, admin, onSignOut }: { email: string; admin: boolean; onSignOut: () => void }) {
@@ -53,6 +54,14 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
     );
   }
 
+  if (admin && params.get('view') === 'band') {
+    return (
+      <HubShell email={email} onSignOut={onSignOut} admin={admin}>
+        <Suspense fallback={<p className="td-empty">Loading the band…</p>}><BandPanel onBack={() => setParams({})} /></Suspense>
+      </HubShell>
+    );
+  }
+
   if (openId) {
     return <EventWorkspace key={openId} eventId={openId} email={email} admin={admin} onSignOut={onSignOut}
       onBack={() => { open(null); void reload(); }} />;
@@ -71,6 +80,7 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
           )}
           {tagAdmin && <button className="td-btn" onClick={() => setParams({ view: 'tags' })}>BAG TAGS</button>}
           {admin && <button className="td-btn" onClick={() => setParams({ view: 'gallery' })}>CLUB GALLERY</button>}
+          {admin && <button className="td-btn" onClick={() => setParams({ view: 'band' })}>THE BAND</button>}
           {admin && <button className="td-btn cta" onClick={() => setCreating(true)}>+ NEW EVENT</button>}
         </div>
         {creating && <NewEventForm onCancel={() => setCreating(false)} onCreated={(id) => { setCreating(false); open(id); }} />}

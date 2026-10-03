@@ -59,6 +59,7 @@ export function JewelLayout() {
         <nav className="jh-tabs" aria-label="Jewel XI">
           <NavLink to="/jewel-xi" end>Overview</NavLink>
           <NavLink to="/jewel-xi/course">Course</NavLink>
+          <NavLink to="/jewel-xi/band">The Band</NavLink>
           <Link to="/jewel">Live Scores ↗</Link>
           <NavLink to="/jewel-xi/sponsors">Sponsors</NavLink>
         </nav>

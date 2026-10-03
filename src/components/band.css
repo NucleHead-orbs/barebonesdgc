@@ -1,0 +1,19 @@
+.band-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 340px)); justify-content: center; gap: 32px; }
+.band-item { display: flex; flex-direction: column; gap: 10px; animation: band-in .5s var(--ease) both; }
+.band-card { position: relative; aspect-ratio: 800 / 1099; border-radius: 18px; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform .18s ease-out, box-shadow .25s; box-shadow: 0 10px 0 #000, 0 18px 40px rgba(0, 0, 0, .55); will-change: transform; }
+.band-card:hover { box-shadow: 0 10px 0 #000, 0 24px 60px rgba(255, 58, 209, .35); }
+.band-card img, .band-blank { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 18px; }
+.band-shine { position: absolute; inset: 0; border-radius: 18px; pointer-events: none; mix-blend-mode: color-dodge; opacity: 0; transition: opacity .25s;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 30%), rgba(255, 255, 255, .55), transparent 45%),
+    linear-gradient(115deg, transparent 30%, rgba(41, 225, 255, .25) 45%, rgba(255, 58, 209, .25) 55%, transparent 70%); }
+.band-card:hover .band-shine { opacity: .7; }
+.band-blank { display: grid; place-content: center; gap: 8px; text-align: center; background: radial-gradient(circle at 50% 30%, #3a1d4a, #0d0a14); border: 3px dashed var(--border); box-sizing: border-box; }
+.band-blank b { font-family: var(--font-display); text-transform: var(--display-case); font-size: 30px; }
+.band-blank span { color: var(--fg-3); font-size: 14px; }
+.band-cap { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.band-cap b { font-family: var(--font-display); text-transform: var(--display-case); font-size: 20px; line-height: 1.1; }
+.band-cap span { font-family: var(--font-label); font-weight: var(--label-weight); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-c); }
+.band-note { color: var(--fg-3); }
+@keyframes band-in { from { opacity: 0; transform: translateY(16px); } }
+@media (prefers-reduced-motion: reduce) { .band-card { transform: none; transition: none; } .band-item { animation: none; } }

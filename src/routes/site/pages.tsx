@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { CLUB, EVENT, GALLERY, JEWEL_NEWS, JEWEL_OVERVIEW, JEWEL_TEASER, MUSIC, SCHEDULE, TOUR } from '../../lib/jewel/content';
 import { fmtNewsDate, linkParts, registrationBanner, sortNews, type NewsPost } from '../../lib/jewel/news';
 import { Tracks } from '../../components/Tracks';
+import { BandCards } from '../../components/BandCards';
 import { Deck, MiniBar } from '../../components/music/Player';
 import { usePlayer } from '../../components/music/usePlayer';
 import { useLyrics } from '../../components/music/useLyrics';
@@ -187,6 +188,19 @@ export function JewelCourse() {
       <img className="map" src="/assets/coursemap-thumb.png" alt="Course map, Stripe Show Golf Course" />
       <CourseGuide />
     </div>
+  );
+}
+
+/** Meet the Band: the admin team and event managers (band_members; edited in /td → THE BAND). */
+export function JewelBand() {
+  return (
+    <section className="sec">
+      <div className="sec-inner">
+        <SectionHeading kicker="The Jewel XI World Tour" title="Meet the Band" size="l" as="h1" aside="Admins & managers" />
+        <p style={{ margin: '0 0 24px', maxWidth: 640 }}>The crew running the show. Find them on the course for rulings, cards, raffle tickets, and bad advice.</p>
+        <BandCards />
+      </div>
+    </section>
   );
 }
 

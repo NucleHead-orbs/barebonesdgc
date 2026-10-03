@@ -156,6 +156,15 @@ export const HELP: HelpSection[] = [
     ],
   },
   {
+    id: 'band', title: 'Meet the Band (super admin)',
+    steps: [
+      'From your events list tap **THE BAND**. These are the admins and managers on the Jewel XI site\'s **The Band** page.',
+      '**+ ADD MEMBER** with a name and role. New members start hidden.',
+      'Tap **UPLOAD CARD** and pick their character card (tall art like the Jewel XI cards). **REPLACE CARD** swaps it any time.',
+      'Flip **Visible** when they\'re ready. ◀ ▶ change the order. **REMOVE** takes them off (and deletes their uploaded card).',
+    ],
+  },
+  {
     id: 'gallery', title: 'Club gallery (super admin)',
     steps: [
       'From your events list tap **CLUB GALLERY**. Only the super admin sees it.',
