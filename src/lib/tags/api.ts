@@ -3,7 +3,7 @@
  * link token; admin actions are td_tag_* RPCs checked by can_tag(pool). Every call returns { data } or { error }.
  */
 import { supabase } from '../supabase';
-import type { MatchStatus, Tag, TagMember, TagPool } from './tags';
+import type { MatchStatus, PendingSwap, Tag, TagMember, TagPool } from './tags';
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
 const wrap = async <T>(fn: () => Promise<T>): Promise<Result<T>> => {
@@ -29,7 +29,7 @@ export interface HistoryLine { id: number; number: number; kind: 'issued' | 'mov
 export const loadPools = () => wrap(async (): Promise<TagPool[]> =>
   (must(await supabase.from('tag_pools').select('id, slug, name, sort, invite_only').order('sort')) ?? []) as TagPool[]);
 
-export interface Board { pool: TagPool; tags: Tag[]; members: Record<string, TagMember>; recent: Match[] }
+export interface Board { pool: TagPool; tags: Tag[]; members: Record<string, TagMember>; recent: Match[]; pending: PendingSwap[] }
 
 async function membersById(ids: string[]): Promise<Record<string, TagMember>> {
   const uniq = [...new Set(ids.filter(Boolean))];
@@ -57,8 +57,9 @@ export const loadBoard = (slug: string) => wrap(async (): Promise<Board> => {
   const pool = must(await supabase.from('tag_pools').select('id, slug, name, sort, invite_only').eq('slug', slug).maybeSingle()) as TagPool | null;
   if (!pool) throw new Error('unknown_pool');
   const tags = (must(await supabase.from('tags').select(TAG_COLS).eq('pool_id', pool.id).eq('status', 'held').order('number')) ?? []) as Tag[];
-  const [members, recent] = await Promise.all([membersById(tags.map((t) => t.holder_id ?? '')), recentMatches(pool, 12)]);
-  return { pool, tags, members, recent };
+  const [members, recent, pending] = await Promise.all([membersById(tags.map((t) => t.holder_id ?? '')), recentMatches(pool, 12),
+    supabase.rpc('tag_pending', { p_pool: pool.id })]);
+  return { pool, tags, members, recent, pending: (must(pending) ?? []) as PendingSwap[] };
 });
 
 export interface TagPage { pool: TagPool; tag: Tag | null; holder: TagMember | null; history: Array<HistoryLine & { who: TagMember | null; prev: TagMember | null }> }

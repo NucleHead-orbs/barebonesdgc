@@ -115,3 +115,11 @@
 .br-back { color: var(--accent-a); }
 .br-hint, .br-note { color: var(--fg-3); margin: 0; }
 .br-danger { color: var(--error); font-weight: 700; }
+
+/* tags on the line at save */
+.sc-swaps { display: flex; flex-direction: column; gap: 8px; }
+.sc-swap { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border: 2px solid var(--border); border-radius: var(--r-input); cursor: pointer; }
+.sc-swap.is-on { border-color: var(--accent-gold); }
+.sc-swap input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--accent-gold); flex: none; }
+.sc-swap span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sc-swap small { color: var(--fg-2); }

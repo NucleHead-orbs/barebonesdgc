@@ -5,7 +5,7 @@ import { CLUB } from '../../lib/jewel/content';
 import { Banner, Button, SectionHeading, Skeleton } from '../../components/ui';
 import { useLoad } from '../../lib/useLoad';
 import * as tagApi from '../../lib/tags/api';
-import { TAG_ART, display, type TagMember } from '../../lib/tags/tags';
+import { TAG_ART, display, projectPending, type TagMember } from '../../lib/tags/tags';
 import { DigitalTag } from '../../components/DigitalTag';
 import { niceDate } from '../../lib/leagues/leagues';
 import './tags.css';
@@ -47,15 +47,22 @@ export function TagsBoard() {
                 <SectionHeading kicker={board.data.pool.name} title="The Board" aside={`${board.data.tags.length} tags out`} />
                 {board.data.pool.invite_only && <Banner>Invite only. Golden Boners are carried by the club admins and core members, for bragging rights. Same rules as every tag: beat a holder, take the better number.</Banner>}
                 {!board.data.tags.length && <Banner>No tags issued in {board.data.pool.name} yet.{board.data.pool.invite_only ? '' : ' Ask your league TD for one.'}</Banner>}
+                {board.data.pending.some((p) => p.status === 'pending') && (
+                  <Banner tone="warn">Includes {board.data.pending.filter((p) => p.status === 'pending').length} swap{board.data.pending.filter((p) => p.status === 'pending').length === 1 ? '' : 's'} waiting on confirmation. Rows marked <b>pending</b> move for real once everyone on the round confirms.</Banner>
+                )}
                 <ol className="tg-board">
-                  {board.data.tags.map((t) => {
-                    const m = t.holder_id ? board.data!.members[t.holder_id] : null;
+                  {projectPending(board.data.tags, board.data.pending).map((row) => {
+                    const t = board.data!.tags.find((x) => x.holder_id === row.holder_id)!;
+                    const m = board.data!.members[row.holder_id] ?? null;
                     return (
-                      <li key={t.number}>
-                        <Link to={`/tags/${board.data!.pool.slug}/${t.number}`} className={`tg-row${t.number === 1 ? ' tg-top' : ''}`}>
-                          <span className="tg-num">#{t.number}</span>
+                      <li key={row.holder_id}>
+                        <Link to={`/tags/${board.data!.pool.slug}/${t.number}`} className={`tg-row${row.number === 1 ? ' tg-top' : ''}${row.was !== null ? ' tg-pending' : ''}`}>
+                          <span className="tg-num">#{row.number}</span>
                           <span className="tg-who"><b>{m ? display(m) : '?'}</b>
-                            <span>{t.moved_at ? `Won ${when(t.moved_at)}` : `Issued ${when(t.issued_at)}`}{t.moves ? ` · moved ${t.moves}×` : ''}</span></span>
+                            <span>{row.was !== null
+                              ? <><span className="tg-pend">pending</span> {row.was > row.number ? '▲' : '▼'} from #{row.was}</>
+                              : row.swaps.length ? <><span className="tg-pend">on a pending round</span> {t.moved_at ? `· won ${when(t.moved_at)}` : ''}</>
+                              : <>{t.moved_at ? `Won ${when(t.moved_at)}` : `Issued ${when(t.issued_at)}`}{t.moves ? ` · moved ${t.moves}×` : ''}</>}</span></span>
                           <span className="tg-go" aria-hidden>›</span>
                         </Link>
                       </li>
@@ -66,6 +73,24 @@ export function TagsBoard() {
             )}
           </div>
           <aside className="tg-side">
+            {board.data && board.data.pending.length > 0 && (
+              <>
+                <SectionHeading kicker="Not official yet" title="Waiting on confirmation" size="s" as="h3" />
+                <ul className="tg-rounds">
+                  {board.data.pending.map((sw) => (
+                    <li key={sw.id} className="tg-round">
+                      <div className="tg-round-head"><b>{niceDate(sw.played_on)}</b><span>{[sw.status === 'disputed' ? 'Disputed' : 'Tag round', sw.course].filter(Boolean).join(' · ')}</span></div>
+                      {sw.players.map((p) => {
+                        const mm = board.data!.members[p.member_id];
+                        return <div key={p.member_id} className="tg-round-row"><span>{mm ? mm.name : '?'}</span><span className="tg-score">{p.place === 1 ? '1st' : p.place === 2 ? '2nd' : p.place === 3 ? '3rd' : `${p.place}th`}</span>
+                          <span className={p.confirmed ? 'tg-up' : p.disputed ? 'tg-down' : 'tg-same'}>{p.confirmed ? '✓ confirmed' : p.disputed ? '✗ disputed' : 'waiting'}</span></div>;
+                      })}
+                      {sw.round_id ? <Link to={`/rounds/${sw.round_id}`} className="tg-link">On it? Confirm the round ›</Link> : <span className="tg-note">Players confirm from their My Tag link.</span>}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
             {board.data && board.data.recent.length > 0 && (
               <>
                 <SectionHeading kicker="Fresh blood" title="Recent rounds" size="s" as="h3" />

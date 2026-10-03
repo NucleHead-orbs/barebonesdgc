@@ -37,3 +37,10 @@
 
 .tg-dtag { width: 260px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 13px; color: var(--fg-3); }
 @media (max-width: 560px) { .tg-dtag { width: min(300px, 100%); justify-self: center; } }
+
+/* pending swaps (tag_pending): projected rows until the last confirmation */
+.tg-row.tg-pending { border-style: dashed; }
+.tg-pend { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; padding: 1px 7px; border-radius: var(--r-pill);
+  border: 1px solid var(--accent-gold); color: var(--accent-gold); }
+.tg-link { display: inline-block; margin-top: 6px; color: var(--accent-a); font-weight: 700; }
+.tg-note { display: inline-block; margin-top: 6px; color: var(--fg-3); font-size: 13px; }

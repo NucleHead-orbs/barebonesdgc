@@ -8,9 +8,9 @@ import * as api from '../../lib/rounds/api';
 import type { CourseOption, RoundMe } from '../../lib/rounds/api';
 import {
   DRAFT_KEY, HOLE_CHOICES, holeName, MAX_PLAYERS, ME_KEY, fmtToPar, holeDone, leaders, newDraft, parseTagLink, roundMessage, running,
-  saveProblems, setHoles, toPayload, toParClass, type Draft,
+  exchangeOptions, saveProblems, setHoles, toPayload, toParClass, type Draft,
 } from '../../lib/rounds/rounds';
-import { display, type TagMember } from '../../lib/tags/tags';
+import { display, swap, type TagMember, type TagPool } from '../../lib/tags/tags';
 import { localDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
 import './rounds.css';
@@ -63,10 +63,10 @@ export default function ScorecardApp() {
   }, [known]);
   const forget = () => { write(ME_KEY, null); setToken(null); setMe(null); };
 
-  const save = async () => {
+  const save = async (pools: string[]) => {
     if (!token) return;
     setBusy(true);
-    const r = await api.saveRound(token, toPayload(d));
+    const r = pools.length ? await api.saveRoundSwap(token, toPayload(d), pools) : await api.saveRound(token, toPayload(d));
     setBusy(false);
     if (r.error || !r.data) return setErr(roundMessage(r.error));
     write(DRAFT_KEY, null);
@@ -86,7 +86,7 @@ export default function ScorecardApp() {
       )}
       {view === 'setup'
         ? <Setup d={d} setD={setD} me={me} members={members} courses={courses} onStart={() => setView('card')} />
-        : <Card d={d} setD={setD} onSetup={() => setView('setup')} me={me} busy={busy} onSave={() => void save()} onConnect={connect}
+        : <Card d={d} setD={setD} onSetup={() => setView('setup')} me={me} busy={busy} onSave={(pools) => void save(pools)} onConnect={connect}
             onNew={() => { setD(newDraft(localDate(), me ? { id: me.me.id, name: me.me.nickname || me.me.name } : null)); setView('setup'); }} />}
     </div>
   );
@@ -178,9 +178,23 @@ function Setup({ d, setD, me, members, courses, onStart }: {
 // ---------- the card ----------
 function Card({ d, setD, onSetup, me, busy, onSave, onConnect, onNew }: {
   d: Draft; setD: (f: (d: Draft) => Draft) => void; onSetup: () => void; me: RoundMe | null; busy: boolean;
-  onSave: () => void; onConnect: (s: string) => void; onNew: () => void;
+  onSave: (pools: string[]) => void; onConnect: (s: string) => void; onNew: () => void;
 }) {
   const [link, setLink] = useState('');
+  const [pools, setPools] = useState<TagPool[]>([]);
+  const [tags, setTags] = useState<Array<{ pool_id: string; number: number; holder_id: string | null }>>([]);
+  const [onLine, setOnLine] = useState<string[]>([]);
+  const memberIds = useMemo(() => d.players.map((p) => p.memberId).filter(Boolean) as string[], [d.players]);
+  const memberKey = memberIds.join(',');
+  useEffect(() => {
+    if (!memberKey) return;
+    void (async () => {
+      const r = await api.tagsFor(memberKey.split(','));
+      if (r.data) { setPools(r.data.pools); setTags(r.data.tags); }
+    })();
+  }, [memberKey]);
+  const meId = me?.me.id ?? null;
+  const swapSets = exchangeOptions(memberIds, tags, pools).filter((o) => meId && o.holders.some((h) => h.member_id === meId));
   const [confirmNew, setConfirmNew] = useState(false);
   const h = d.cur, par = d.pars[h];
   const tots = useMemo(() => d.players.map((_, p) => running(d.pars, d.scores[p] ?? [])), [d]);
@@ -271,7 +285,28 @@ function Card({ d, setD, onSetup, me, busy, onSave, onConnect, onNew }: {
         ) : (
           <p className="sc-hint">All {d.pars.length} holes in. It shows on Boner Rounds right away; the other members on it confirm from their My Tag link. You can put tags on the line next.</p>
         )}
-        <button className="sc-btn cta big" disabled={!me || problems.length > 0 || busy || !allIn} onClick={onSave}>{busy ? 'Saving…' : 'Save round'}</button>
+        {me && swapSets.length > 0 && (
+          <div className="sc-swaps">
+            <div className="sc-label">Tags on the line?</div>
+            {swapSets.map((o) => {
+              const on = onLine.includes(o.pool.id);
+              const strokesOf = (mid: string) => tots[d.players.findIndex((p) => p.memberId === mid)]?.strokes ?? 0;
+              const prev = swap(o.holders.map((h) => ({ id: h.member_id, score: strokesOf(h.member_id), tag: h.number })));
+              const nameOf = (mid: string) => d.players.find((p) => p.memberId === mid)?.name ?? '?';
+              return (
+                <label key={o.pool.id} className={`sc-swap${on ? ' is-on' : ''}`}>
+                  <input type="checkbox" id={`sc-swap-${o.pool.slug}`} checked={on} onChange={(e) => { const c = e.target.checked; setOnLine((x) => (c ? [...x, o.pool.id] : x.filter((y) => y !== o.pool.id))); }} />
+                  <span><b>{o.pool.name}</b>
+                    <small>{allIn ? prev.slice().sort((a, b) => (a.after ?? 0) - (b.after ?? 0)).map((p) => `${nameOf(p.id)} ${p.before === p.after ? `keeps #${p.after}` : `#${p.before} → #${p.after}`}`).join(' · ')
+                      : o.holders.map((h) => `${nameOf(h.member_id)} #${h.number}`).join(' · ')}</small></span>
+                </label>
+              );
+            })}
+            <p className="sc-hint">Checked sets go on the line when you save. The tag boards show it as pending, and it swaps once everyone else on the card confirms from their My Tag link.</p>
+          </div>
+        )}
+        <button className="sc-btn cta big" disabled={!me || problems.length > 0 || busy || !allIn} onClick={() => onSave(onLine.filter((id) => swapSets.some((o) => o.pool.id === id)))}>
+          {busy ? 'Saving…' : onLine.length ? 'Save round + put tags on the line' : 'Save round'}</button>
         <div className="sc-row">
           {confirmNew
             ? <><span className="sc-danger">Throw this card away?</span><button className="sc-btn danger" onClick={() => { setConfirmNew(false); onNew(); }}>Yes, new card</button><button className="sc-btn" onClick={() => setConfirmNew(false)}>Keep it</button></>

@@ -21,6 +21,35 @@ export function swap(players: SwapIn[]): SwapOut[] {
   return players.map((p) => ({ id: p.id, score: p.score, before: p.tag, after: p.tag === null ? null : after.get(p.id) ?? null }));
 }
 
+/** A swap waiting on confirmations (tag_pending). place: 1 = best on that round, ties share a place. */
+export interface PendingSwap {
+  id: string; status: 'pending' | 'disputed'; round_id: string | null; course: string | null; played_on: string; created_at: string;
+  players: Array<{ member_id: string; place: number; confirmed: boolean; disputed: boolean }>;
+}
+export interface ProjectedRow { number: number; holder_id: string; was: number | null; swaps: string[] }
+
+/**
+ * The board if every waiting swap goes through, oldest first, using the same rule as the database:
+ * best place takes the lowest of those players' numbers; ties keep their (projected) order. Disputed swaps don't project.
+ * was = the holder's official number when it changed; swaps = the pending swaps that touch this holder.
+ */
+export function projectPending(tags: Array<{ number: number; holder_id: string | null }>, pending: PendingSwap[]): ProjectedRow[] {
+  const numOf = new Map(tags.filter((t) => t.holder_id).map((t) => [t.holder_id!, t.number]));
+  const official = new Map(numOf);
+  const touched = new Map<string, string[]>();
+  for (const sw of pending.slice().sort((a, b) => a.created_at.localeCompare(b.created_at))) {
+    const ps = sw.players.filter((p) => numOf.has(p.member_id));
+    ps.forEach((p) => touched.set(p.member_id, [...(touched.get(p.member_id) ?? []), sw.id]));
+    if (sw.status !== 'pending' || ps.length < 2) continue;
+    const nums = ps.map((p) => numOf.get(p.member_id)!).sort((a, b) => a - b);
+    ps.slice().sort((a, b) => a.place - b.place || numOf.get(a.member_id)! - numOf.get(b.member_id)!)
+      .forEach((p, i) => numOf.set(p.member_id, nums[i]));
+  }
+  return [...numOf].map(([holder_id, number]) => ({
+    number, holder_id, was: official.get(holder_id) === number ? null : official.get(holder_id)!, swaps: touched.get(holder_id) ?? [],
+  })).sort((a, b) => a.number - b.number);
+}
+
 /** "Mike 'Whitey' Minnier" style display. */
 export const display = (m: { name: string; nickname?: string | null }) => (m.nickname ? `${m.name} "${m.nickname}"` : m.name);
 

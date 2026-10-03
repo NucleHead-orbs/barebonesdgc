@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { display, matchMembers, parseScore, swap, tagSources } from './tags';
+import { display, projectPending, matchMembers, parseScore, swap, tagSources } from './tags';
 
 describe('swap (same rule as the database)', () => {
   it('best score takes the lowest of the numbers on the round', () => {
@@ -49,5 +49,22 @@ describe('tagSources', () => {
   });
   it('old rows without formats are singles', () => {
     expect(tagSources({ rounds: 1 }).dflt).toBe(1);
+  });
+});
+
+describe('pending swaps on the board', () => {
+  const tags = [{ number: 1, holder_id: 'yt' }, { number: 2, holder_id: 'jason' }, { number: 6, holder_id: 'hay' }];
+  const sw = (id: string, at: string, players: Array<[string, number]>, status: 'pending' | 'disputed' = 'pending') =>
+    ({ id, status, round_id: null, course: null, played_on: '2026-10-03', created_at: at, players: players.map(([member_id, place]) => ({ member_id, place, confirmed: false, disputed: false })) });
+  it('re-ranks with the swap rule and marks who moved', () => {
+    const r = projectPending(tags, [sw('a', '1', [['hay', 1], ['yt', 2]])]);
+    expect(r.map((x) => [x.number, x.holder_id, x.was])).toEqual([[1, 'hay', 6], [2, 'jason', null], [6, 'yt', 1]]);
+    expect(r[1].swaps).toEqual([]);
+  });
+  it('applies waiting swaps oldest first; ties keep their order; disputed ones do not move tags', () => {
+    const r = projectPending(tags, [sw('b', '2', [['jason', 1], ['hay', 1]]), sw('a', '1', [['hay', 1], ['yt', 2]]), sw('c', '3', [['yt', 1], ['jason', 2]], 'disputed')]);
+    // a: hay #1, yt #6. b: hay (#1) and jason (#2) tie -> keep order. c disputed: no move.
+    expect(r.map((x) => `${x.number}:${x.holder_id}`)).toEqual(['1:hay', '2:jason', '6:yt']);
+    expect(r.find((x) => x.holder_id === 'jason')!.swaps).toEqual(['b', 'c']);
   });
 });

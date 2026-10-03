@@ -45,6 +45,9 @@ export const loadCourses = () => wrap(async (): Promise<CourseOption[]> => {
 export const roundMe = (token: string) => wrap(async (): Promise<RoundMe> => must(await supabase.rpc('round_me', { p_token: token })) as RoundMe);
 export const saveRound = (token: string, payload: unknown) =>
   wrap(async (): Promise<string> => must(await supabase.rpc('round_save', { p_token: token, p_round: payload })) as string);
+/** Save + put tag sets on the line in one transaction (round_save_swap): all or nothing. */
+export const saveRoundSwap = (token: string, payload: unknown, poolIds: string[]) =>
+  wrap(async (): Promise<string> => (must(await supabase.rpc('round_save_swap', { p_token: token, p_round: payload, p_pools: poolIds })) as { round_id: string }).round_id);
 export const confirmRound = (token: string, id: string, ok: boolean) =>
   wrap(async () => { must(await supabase.rpc('round_confirm', { p_token: token, p_round: id, p_ok: ok })); });
 export const startExchange = (token: string, id: string, poolId: string) =>
