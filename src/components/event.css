@@ -24,5 +24,7 @@
 .ev-sgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
 .ev-scard { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 10px; text-align: center; }
 .ev-scard .ev-logo-pending { color: var(--fg-3); width: 100%; }
+.ev-scard .ev-logo:not(.ev-logo-pending) { height: auto; min-height: 96px; width: 100%; box-sizing: border-box; padding: 8px; }
+.ev-scard .ev-logo:not(.ev-logo-pending) img { max-height: 260px; max-width: 100%; border-radius: 4px; }
 .ev-scard b { font-size: 15px; }
 .ev-meta { font-size: 12px; color: var(--fg-3); }

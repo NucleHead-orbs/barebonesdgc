@@ -75,7 +75,7 @@ export default function SponsorsPanel({ eventId, holeCount, sponsors, onChange, 
       <div className="td-sponsors">
         {ordered.map((s) => (
           <div key={s.id} className={`td-sponsor${s.hidden ? ' waiting' : ''}`} aria-busy={busy === s.id}>
-            <label className="td-logo" title="Upload logo (PNG, JPG or WebP, under 2 MB)">
+            <label className="td-logo" title="Upload logo or photo (PNG, JPG or WebP, any size: it is shrunk for the web)">
               {s.logo_url ? <img src={s.logo_url} alt="" /> : <span>+ LOGO</span>}
               <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => void onLogo(s, e)} disabled={!!busy} />
             </label>

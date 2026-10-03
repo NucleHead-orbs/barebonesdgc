@@ -4,6 +4,7 @@
  * { data } or { error } — nothing here throws into the UI.
  */
 import { supabase } from '../supabase';
+import { shrink } from '../gallery/api';
 import type { BuilderPlayer, BuilderSettings, Card, Wave } from '../cards/generate';
 import type { ImportRow } from '../import/dgs';
 import type { ExistingPlayer, PublishCard, PublishedCard } from './builder';
@@ -178,12 +179,16 @@ export const deleteSponsor = (id: string) => wrap(async () => { must(await supab
 
 export const LOGO_BUCKET = 'sponsor-logos';
 /** Upload to the public logo bucket; returns the public URL to store on the sponsor. */
+/** Any size in: the browser shrinks it to <= 1200 px WebP (transparency kept) so it fits the bucket's 2 MB cap. */
+export const LOGO_EDGE = 1200;
 export const uploadLogo = (eventId: string, sponsorId: string, file: File) => wrap(async (): Promise<string> => {
-  const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' } as Record<string, string>)[file.type];
-  if (!ext) throw new Error('Logo must be a PNG, JPG or WebP.');
-  if (file.size > 2 * 1024 * 1024) throw new Error('Logo must be under 2 MB.');
-  const path = `${eventId}/${sponsorId}-${Date.now()}.${ext}`;
-  must(await supabase.storage.from(LOGO_BUCKET).upload(path, file, { contentType: file.type, upsert: false }));
+  const EXT: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+  if (!EXT[file.type]) throw new Error('Logo must be a PNG, JPG or WebP.');
+  let blob: Blob = file;
+  for (const edge of [LOGO_EDGE, 900, 640]) { blob = await shrink(file, edge); if (blob.size <= 2 * 1024 * 1024) break; }
+  if (blob.size > 2 * 1024 * 1024) throw new Error('That image is still over 2 MB after shrinking. Try a smaller export.');
+  const path = `${eventId}/${sponsorId}-${Date.now()}.${EXT[blob.type] ?? 'webp'}`;
+  must(await supabase.storage.from(LOGO_BUCKET).upload(path, blob, { contentType: blob.type, upsert: false }));
   return supabase.storage.from(LOGO_BUCKET).getPublicUrl(path).data.publicUrl;
 });
 
