@@ -29,3 +29,11 @@
 .mt-dtag-meta b { font-family: var(--font-display); font-size: 24px; font-weight: 400; }
 .mt-dtag-meta span { font-size: 13px; opacity: .75; }
 .mt-dtag-meta a { color: var(--cyan); font-size: 13px; }
+
+/* Early access (raffle tickets) */
+.mt-ea { border-color: var(--gold); }
+.mt-ea-total { display: flex; align-items: baseline; gap: 10px; }
+.mt-ea-total b { font-family: var(--font-display); font-size: 56px; line-height: 1; color: var(--gold); }
+.mt-ea-total span { font-family: var(--font-label); letter-spacing: 1px; opacity: .8; }
+.mt-ea-lines { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.mt-ea-lines li { display: flex; justify-content: space-between; border-bottom: 1px solid var(--raised); padding: 4px 0; }

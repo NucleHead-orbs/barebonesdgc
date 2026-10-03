@@ -1,0 +1,30 @@
+/* Early access (/jewel-xi/early-access). Semantic tokens only, so it skins with the Jewel theme. */
+.ea { display: flex; flex-direction: column; gap: 18px; }
+.ea-lead { margin: 0; max-width: 680px; font-size: 17px; line-height: 1.5; }
+.ea-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.ea-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.ea-p { margin: 0; line-height: 1.5; }
+.ea-muted { color: var(--fg-3); font-size: 14px; }
+.ea-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.ea-label { display: block; font-family: var(--font-label); font-weight: 700; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-2); margin: 4px 0 6px; }
+.ea-input { width: 100%; box-sizing: border-box; padding: 12px 14px; font: inherit; font-size: 16px; color: var(--fg-1);
+  background: var(--bg-raised); border: 2px solid var(--border); border-radius: 10px; }
+.ea-input:focus { border-color: var(--accent-a); outline: none; }
+.ea-names { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.ea-name { text-align: left; padding: 12px 14px; font: inherit; font-weight: 700; color: var(--fg-1); background: var(--bg-surface);
+  border: 2px solid var(--border); border-radius: 10px; cursor: pointer; }
+.ea-name:hover:not(:disabled) { border-color: var(--accent-a); }
+.ea-name:disabled { opacity: .55; cursor: default; }
+.ea-name span { font-weight: 500; color: var(--fg-3); }
+.ea-confirm { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.ea .ds-card-body { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; }
+.ea-link { align-self: flex-start; padding: 0; border: 0; background: none; font: inherit; color: var(--accent-a); text-decoration: underline; cursor: pointer; }
+.ea-rules { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; line-height: 1.45; }
+.ea-winners { margin: 0; padding-left: 22px; font-size: 20px; font-weight: 800; display: flex; flex-direction: column; gap: 6px; }
+.ea-board { width: 100%; border-collapse: collapse; font-size: 15px; }
+.ea-board th { text-align: left; font-family: var(--font-label); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); padding: 6px 8px; border-bottom: 2px solid var(--border); }
+.ea-board td { padding: 9px 8px; border-bottom: 1px solid var(--border-subtle); }
+.ea-board tr:first-child td { font-weight: 800; }
+.ea-num { text-align: right; font-variant-numeric: tabular-nums; }
+.ea-nick { color: var(--fg-3); font-weight: 500; }
+@media (max-width: 860px) { .ea-grid { grid-template-columns: 1fr; } }

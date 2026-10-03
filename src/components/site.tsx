@@ -61,6 +61,7 @@ export function JewelLayout() {
           <NavLink to="/jewel-xi" end>Overview</NavLink>
           <NavLink to="/jewel-xi/course">Course</NavLink>
           <NavLink to="/jewel-xi/band">The Band</NavLink>
+          <NavLink to="/jewel-xi/early-access">Early Access</NavLink>
           <Link to="/jewel">Live Scores ↗</Link>
           <NavLink to="/jewel-xi/sponsors">Sponsors</NavLink>
         </nav>

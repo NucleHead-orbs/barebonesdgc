@@ -410,3 +410,14 @@ button.td-vote-opt:disabled { cursor: default; }
 .td-home-updates p b { color: #fff; }
 .td-home-uhead { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
 .td-home .td-link { align-self: flex-start; }
+
+/* EARLY ACCESS tab */
+.td-ea-claim { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-top: 1px solid var(--raised); }
+.td-ea-claim:first-of-type { border-top: 0; }
+.td-ea-claim-who b { font-size: 16px; }
+.td-ea-winners { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 18px; }
+.td-ea-winners li > button { margin-left: 10px; }
+.td-ea-secret { border-color: var(--magenta); }
+.td-ea-award { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.td-ea-award span { opacity: .7; }
+.td-ea-field { display: flex; flex-direction: column; gap: 4px; }

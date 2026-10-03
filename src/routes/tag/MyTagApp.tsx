@@ -7,6 +7,7 @@ import { ME_KEY } from '../../lib/rounds/rounds';
 import type { Match, TagHome } from '../../lib/tags/api';
 import { TAG_ART, display, parseScore, swap, tagMessage } from '../../lib/tags/tags';
 import { DigitalTag } from '../../components/DigitalTag';
+import { EarlyMyTag } from '../../components/early/EarlyMyTag';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
 import '../td/td.css';
@@ -20,6 +21,7 @@ export default function MyTagApp() {
   const [fatal, setFatal] = useState('');
   const [err, setErr] = useState('');
   const [toast, setToast] = useState('');
+  const [rev, setRev] = useState(0);
   const [toConfirm, setToConfirm] = useState<Array<{ id: string; course: string; played_on: string }>>([]);
   useTheme('event', 'bone');
 
@@ -30,6 +32,7 @@ export default function MyTagApp() {
     try { localStorage.setItem(ME_KEY, token); } catch { /* not remembered; the scorecard asks for the link instead */ }
     const rm = await roundsApi.roundMe(token);
     if (rm.data) setToConfirm(rm.data.to_confirm);
+    setRev((n) => n + 1);
   }, [token]);
   useEffect(() => {
     void (async () => { await load(); })();
@@ -84,6 +87,8 @@ export default function MyTagApp() {
             </Link>
           ))}
         </div>
+
+        <EarlyMyTag token={token} rev={rev} />
 
         {needsMe.length > 0 && (
           <section className="td-panel mt-needs">

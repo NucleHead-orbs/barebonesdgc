@@ -15,6 +15,9 @@ const tagPages = () => import('./routes/site/TagsPages');
 const TagsBoard = lazy(() => tagPages().then((m) => ({ default: m.TagsBoard })));
 const TagPage = lazy(() => tagPages().then((m) => ({ default: m.TagPage })));
 const MyTagApp = lazy(() => import('./routes/tag/MyTagApp'));
+const earlyPages = () => import('./routes/site/EarlyAccess');
+const EarlyAccess = lazy(earlyPages);
+const EarlyAccessBySlug = lazy(() => earlyPages().then((m) => ({ default: m.EarlyAccessBySlug })));
 const roundPages = () => import('./routes/rounds/RoundsPage');
 const RoundsList = lazy(() => roundPages().then((m) => ({ default: m.RoundsList })));
 const RoundDetail = lazy(() => roundPages().then((m) => ({ default: m.RoundDetail })));
@@ -53,11 +56,13 @@ export default function App() {
           <Route path="/gallery" element={<GalleryPage />} />
           <Route path="/rounds" element={<RoundsList />} />
           <Route path="/rounds/:id" element={<RoundDetail />} />
+          <Route path="/e/:slug/early-access" element={<EarlyAccessBySlug />} />
         </Route>
         <Route path="/jewel-xi" element={<JewelLayout />}>
           <Route index element={<JewelOverview />} />
           <Route path="course" element={<JewelCourse />} />
           <Route path="band" element={<JewelBand />} />
+          <Route path="early-access" element={<EarlyAccess />} />
           <Route path="sponsors" element={<SponsorsPage jewel />} />
           <Route path="live" element={<Navigate to="/jewel" replace />} />
         </Route>
