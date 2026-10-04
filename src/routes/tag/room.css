@@ -1,0 +1,24 @@
+/* Tag room (/room/:token): name tiles, tap yours to activate. */
+.rm-app { max-width: 900px; margin: 0 auto; }
+.rm-lead { margin: 0; font-size: 15px; opacity: .85; }
+.rm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.rm-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 10px 12px; border-radius: var(--r-card);
+  border: 2px solid var(--gold); background: var(--surface); color: #fff; cursor: pointer; text-align: center;
+  transition: transform .12s ease, box-shadow .12s ease; }
+.rm-tile:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(0, 0, 0, .35); }
+.rm-tile:disabled { cursor: default; }
+.rm-tile.is-active { border-color: var(--border); opacity: .55; }
+.rm-tile-art { width: 88px; height: 88px; object-fit: contain; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .4)); }
+.rm-tile.is-active .rm-tile-art { filter: grayscale(.8); }
+.rm-tile-name { font-family: var(--font-display); font-weight: 400; font-size: 20px; line-height: 1.05; overflow-wrap: anywhere; }
+.rm-tile-sub { font-size: 12px; opacity: .7; }
+.rm-tile-state { margin-top: 2px; font-family: var(--font-label); font-size: 11px; letter-spacing: 1px; color: var(--gold); }
+.rm-tile.is-active .rm-tile-state { color: #fff; }
+.rm-done { align-items: flex-start; border-color: var(--gold); }
+.rm-done h2 { color: var(--gold); font-size: 40px; }
+.rm-done-tag { width: 100%; max-width: 240px; align-self: center; }
+.rm-sheet { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; padding: 16px;
+  background: rgba(0, 0, 0, .6); }
+.rm-sheet-card { width: 100%; max-width: 440px; border-color: var(--gold); }
+@media (min-width: 640px) { .rm-sheet { align-items: center; } }
+@media (prefers-reduced-motion: reduce) { .rm-tile { transition: none; } .rm-tile:hover:not(:disabled) { transform: none; } }

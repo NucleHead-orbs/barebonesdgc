@@ -15,6 +15,7 @@ const tagPages = () => import('./routes/site/TagsPages');
 const TagsBoard = lazy(() => tagPages().then((m) => ({ default: m.TagsBoard })));
 const TagPage = lazy(() => tagPages().then((m) => ({ default: m.TagPage })));
 const MyTagApp = lazy(() => import('./routes/tag/MyTagApp'));
+const TagRoom = lazy(() => import('./routes/tag/TagRoom'));
 const earlyPages = () => import('./routes/site/EarlyAccess');
 const EarlyAccess = lazy(earlyPages);
 const EarlyAccessBySlug = lazy(() => earlyPages().then((m) => ({ default: m.EarlyAccessBySlug })));
@@ -73,6 +74,7 @@ export default function App() {
         <Route path="/e/:slug" element={<RouteGuard><Suspense fallback={null}><EventBoard /></Suspense></RouteGuard>} />
         <Route path="/scorecard" element={<RouteGuard><Suspense fallback={null}><ScorecardApp /></Suspense></RouteGuard>} />
         <Route path="/tag/:token" element={<RouteGuard><Suspense fallback={null}><MyTagApp /></Suspense></RouteGuard>} />
+        <Route path="/room/:token" element={<RouteGuard><Suspense fallback={null}><TagRoom /></Suspense></RouteGuard>} />
         <Route path="/crew/:token" element={<RouteGuard><Suspense fallback={null}><CrewApp /></Suspense></RouteGuard>} />
         <Route path="/td" element={<RouteGuard><Suspense fallback={null}><TdRoute /></Suspense></RouteGuard>} />
         <Route path="*" element={<Placeholder title="Not here" note="That page doesn't exist. Head back to barebonesdiscgolf.club." />} />

@@ -9,6 +9,7 @@ import type { EventConfig } from '../../lib/td/setup';
 import { display, matchMembers, myTagUrl, parseScore, swap, tagMessage, tagPageUrl, tagSources, type Tag, type TagPool, type TagSource } from '../../lib/tags/tags';
 import { onlyRound, type LbRow } from '../../lib/jewel/leaderboard';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
+import RoomBox from './RoomBox';
 import './tags-panel.css';
 
 /**
@@ -78,6 +79,7 @@ export default function TagsPanel({ admin, onBack }: { admin: boolean; onBack: (
         <>
           <div className="td-hint">One numbered set per league. Best score on a round takes the lowest number on it; ties keep their order. Players log casual rounds from their <b>My Tag</b> link and confirm each other; league nights you record here from the scorecard.</div>
           {open.length > 0 && <OpenRounds rounds={open} act={act} />}
+          <RoomBox key={pool.id} pool={pool} members={members} held={held} onTags={reload} />
           <IssueTag {...ctx} />
           <TagList {...ctx} />
           <RecordRound {...ctx} />
