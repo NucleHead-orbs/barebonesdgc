@@ -3,11 +3,12 @@
  * (20261019000000_early_access.sql: _ea_rounds / _ea_standings); this file only labels and shapes them.
  */
 
-export interface EaRosterRow { player_id: string; name: string; joined: boolean }
+export interface EaRosterRow { player_id: string; name: string; joined: boolean; eligible?: boolean }
 export interface EaPublicRow { name: string; nickname: string | null; tag: number | null; tickets: number }
 export interface EaPublic {
   event: { id: string; slug: string; name: string; starts_on: string };
   pool: string; opens_on: string; closes_on: string; min_players: number; weekly_cap: number; today: string;
+  max_players?: number | null; registered?: number; // first N registrants only (null = everyone)
   roster: EaRosterRow[]; standings: EaPublicRow[]; winners: Array<{ name: string; nickname: string | null; at: string }>;
 }
 export interface EaStanding {
@@ -28,6 +29,7 @@ export interface EaBonus { id: number; member_id: string; name: string; tickets:
 export interface EaDraw { id: number; member_id: string; name: string; nickname: string | null; tickets: number; at: string }
 export interface EaTd {
   on: boolean; pool?: string; opens_on?: string; closes_on?: string; min_players?: number; weekly_cap?: number; today?: string; players?: number;
+  max_players?: number | null;
   claims?: EaClaim[]; linked?: EaLinked[]; bonus?: EaBonus[]; standings?: EaStanding[];
   awards?: { iron: EaStanding[]; collector: EaStanding[]; climb: EaStanding[] }; draws?: EaDraw[];
 }
@@ -77,6 +79,7 @@ export function earlyMessage(err: unknown): string {
   const m = e.message ?? String(err);
   if (/no_early_access/.test(m)) return "Early access isn't running for this event.";
   if (/window_closed/.test(m)) return 'Early access is closed. See you at the event.';
+  if (/early_access_full/.test(m)) return "Early access is full: it's for the first registrants only. See you at the event!";
   if (/unknown_player/.test(m)) return "That name isn't on the registration list. Reload and try again.";
   if (/already_joined/.test(m)) return "That player already joined. If it isn't you, tell a TD.";
   if (/already_claimed/.test(m)) return "You've already asked to join. Hang tight for a TD.";
@@ -98,4 +101,11 @@ export function earlyMessage(err: unknown): string {
   if (/event_started/.test(m)) return 'This event already started.';
   if (/forbidden|permission denied/i.test(m) || e.code === '42501') return "This account isn't a TD of this event.";
   return 'Something went wrong. Try again.';
+}
+
+/** Spots by registration order: how many are in, how many are left (null limit = no limit). */
+export function spots(max: number | null | undefined, registered: number): { max: number; taken: number; left: number } | null {
+  if (!max) return null;
+  const taken = Math.min(registered, max);
+  return { max, taken, left: max - taken };
 }

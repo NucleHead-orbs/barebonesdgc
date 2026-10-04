@@ -28,6 +28,7 @@ export const tdGet = (eventId: string) => rpc<EaTd>('td_ea_get', { p_event: even
 export const tdStart = (eventId: string) => rpc<null>('td_ea_start', { p_event: eventId });
 export const tdSettings = (eventId: string, opens: string, closes: string, min: number, cap: number) =>
   rpc<null>('td_ea_settings', { p_event: eventId, p_opens: opens, p_closes: closes, p_min: min, p_cap: cap });
+export const tdSetMax = (eventId: string, max: number | null) => rpc<null>('td_ea_set_max', { p_event: eventId, p_max: max });
 export const tdApprove = (claimId: string, memberId: string | null) =>
   rpc<{ member_id: string; number: number }>('td_ea_approve', { p_claim: claimId, p_member: memberId });
 export const tdDecline = (claimId: string) => rpc<null>('td_ea_decline', { p_claim: claimId });

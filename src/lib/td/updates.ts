@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'ea-spots', date: '2026-10-04', help: 'early', who: 'all',
+    title: 'Early access: first 50 registrants',
+    body: '**EARLY ACCESS → Rules → SPOTS** limits early access to the first N registrants by registration order (Jewel XI: 50). The public page shows how many spots are left. Re-import the DGS CSV so the newest registrants appear.',
+  },
+  {
     id: 'vest-page', date: '2026-10-04', help: 'winners', who: 'all',
     title: 'The Safety Vest page + dubs vests',
     body: 'Each league award has its own page (Lazy Boners: **/leagues/lazy-boners/vest**): this week\'s holders, the group photo, **Most vests** and every week. On a dubs week, **LEAGUE WEEK** awards the winning team, so both partners wear it. Upload the award\'s picture in **LEAGUES → SETUP → AWARD ART**.',

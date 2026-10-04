@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import * as ea from '../../lib/early/api';
-import { claimKey, daysLeft, earlyMessage, rulesText, windowState, type EaClaimStatus, type EaPublic } from '../../lib/early/early';
+import { claimKey, daysLeft, earlyMessage, rulesText, spots, windowState, type EaClaimStatus, type EaPublic } from '../../lib/early/early';
 import { ME_KEY } from '../../lib/rounds/rounds';
 import { niceDate } from '../../lib/leagues/leagues';
 import { Banner, Button, Card, SectionHeading, Skeleton } from '../../components/ui';
@@ -53,14 +53,19 @@ export default function EarlyAccess({ slug = 'jewel-xi-2026' }: { slug?: string 
 
   const win = windowState(data.today, data.opens_on, data.closes_on);
   const joined = data.roster.filter((r) => r.joined).length;
+  const sp = spots(data.max_players, data.registered ?? data.roster.length);
+  const inCount = data.roster.filter((r) => r.eligible !== false).length;
 
   return (
-    <Page aside={`${joined} of ${data.roster.length} joined`}>
+    <Page aside={`${joined} of ${inCount} joined`}>
       <p className="ea-lead">
         Registered for {data.event.name}? Get your bag tag early, play rounds with other Jewel players on the Scorecard, and stack raffle
         tickets for the players meeting. You're also our test pilots: if something breaks, tell us. That's worth tickets too.
       </p>
       {win === 'open' && <Banner tone="success">Open now · {daysLeft(data.today, data.closes_on)} days left (closes {niceDate(data.closes_on)})</Banner>}
+      {sp && win !== 'closed' && (sp.left > 0
+        ? <Banner tone="warn">The first {sp.max} registrants get in. <b>{sp.left} {sp.left === 1 ? 'spot' : 'spots'} left</b>: register for {data.event.name} to grab one.</Banner>
+        : <Banner>All {sp.max} early access spots went to the first {sp.max} registrants.</Banner>)}
       {win === 'before' && <Banner>Opens {niceDate(data.opens_on)}.</Banner>}
       {win === 'closed' && <Banner tone="warn">Early access is closed. Winners are drawn at the players meeting.</Banner>}
 
@@ -185,8 +190,8 @@ function ClaimForm({ data, myTag, onSecret, onMine }: { data: EaPublic; myTag: s
       {list.length > 0 && !chosen && (
         <div className="ea-names" role="list">
           {list.map((r) => (
-            <button key={r.player_id} type="button" role="listitem" className="ea-name" disabled={r.joined} onClick={() => setPick(r.player_id)}>
-              {r.name}{r.joined && <span> · joined ✓</span>}
+            <button key={r.player_id} type="button" role="listitem" className="ea-name" disabled={r.joined || r.eligible === false} onClick={() => setPick(r.player_id)}>
+              {r.name}{r.joined ? <span> · joined ✓</span> : r.eligible === false ? <span> · past the first {data.max_players}</span> : null}
             </button>
           ))}
         </div>

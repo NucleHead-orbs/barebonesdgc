@@ -70,6 +70,7 @@ export const HELP: HelpSection[] = [
     steps: [
       'Registrants get an early bag tag set to test the Scorecard and tags before the event, and earn raffle tickets for playing. Not on yet for this event? Tap **START EARLY ACCESS**.',
       'Share the **PUBLIC PAGE** link (Jewel XI: barebonesdiscgolf.club/jewel-xi/early-access). A player finds their name and taps **That\'s me**. No email or phone needed.',
+      '**SPOTS:** limit it to the first N registrants (Jewel XI: 50) by registration order from the Disc Golf Scene import. Re-import the latest DGS CSV so new registrants show up. Anyone past the limit can\'t claim; if someone ahead drops out, the next one moves in.',
       '**REQUESTS:** tap **APPROVE** if it\'s really them, else **DECLINE**. Approving gives them the next tag at the bottom of the set (first in gets #1) and turns their phone into their My Tag. A yellow note means the name matches an existing club member: approving hands that phone the member\'s existing link, so only approve if you know them.',
       'Tickets count themselves: a round saved on the Scorecard with at least 3 joined players, everyone confirmed = 1 ticket (max 2 a week), plus 1 per new partner. Voided or disputed rounds drop off.',
       '**BONUS TICKETS:** bug bounty. Pick the player, 1 to 5 tickets, and what they found. **VOID** takes it back.',

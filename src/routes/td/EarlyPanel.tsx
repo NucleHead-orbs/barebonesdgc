@@ -251,6 +251,9 @@ function Settings({ d, eventId, busy, run }: { d: EaTd; eventId: string; busy: s
   const [closes, setCloses] = useState(d.closes_on ?? '');
   const [min, setMin] = useState(d.min_players ?? 3);
   const [cap, setCap] = useState(d.weekly_cap ?? 2);
+  const [max, setMax] = useState(d.max_players ? String(d.max_players) : '');
+  const maxN = max.trim() === '' ? null : Math.round(Number(max));
+  const maxOk = maxN === null || (Number.isFinite(maxN) && maxN >= 1 && maxN <= 500);
   return (
     <section className="td-panel">
       <h2>Rules</h2>
@@ -265,6 +268,13 @@ function Settings({ d, eventId, busy, run }: { d: EaTd; eventId: string; busy: s
         <button className="td-btn" disabled={busy === 'set'} onClick={() => void run('set', () => ea.tdSettings(eventId, opens, closes, min, cap), 'Saved.')}>SAVE RULES</button>
       </div>
       <p className="td-hint">Changing these re-counts everyone's tickets right away.</p>
+      <div className="td-row">
+        <label className="td-ea-field"><span className="td-label">SPOTS (FIRST N REGISTRANTS)</span>
+          <input className="td-input" inputMode="numeric" value={max} placeholder="Everyone" onChange={(e) => setMax(e.target.value.replace(/[^0-9]/g, ''))} /></label>
+        <button className="td-btn" disabled={busy === 'max' || !maxOk || maxN === (d.max_players ?? null)}
+          onClick={() => void run('max', () => ea.tdSetMax(eventId, maxN), maxN ? `First ${maxN} registrants only.` : 'Open to every registrant.')}>SAVE SPOTS</button>
+      </div>
+      <p className="td-hint">By registration order (the Disc Golf Scene import). {d.max_players ? `${Math.min(d.players ?? 0, d.max_players)} of ${d.max_players} taken${(d.players ?? 0) > d.max_players ? `, ${(d.players ?? 0) - d.max_players} past the limit` : ''}.` : 'Blank = every registrant.'} If someone ahead drops out, the next one moves in.</p>
     </section>
   );
 }
