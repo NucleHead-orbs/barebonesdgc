@@ -15,7 +15,7 @@ const writeSeen = (id: string) => { try { localStorage.setItem(SEEN_KEY, id); } 
 const RUN: Array<[string, string, string]> = [
   ['setup', 'SETUP', 'course, divisions, rounds'],
   ['players', 'PLAYERS', 'import and check in'],
-  ['cards', 'CARDS & QR', 'generate, publish, print'],
+  ['cards', 'CARDS & QR', 'generate, publish & start, print'],
   ['scoring', 'SCORING', 'phones score each card'],
   ['winners', 'WINNERS', 'payouts, post results'],
 ];

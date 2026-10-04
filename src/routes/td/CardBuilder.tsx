@@ -174,7 +174,7 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
     if (r.error || !r.data) return setAlert(rpcError(r.error, round));
     const live = r.data;
     setPublished((p) => ({ ...p, [round]: live }));
-    flash(`Published ${live.length} cards for Round ${round}. QR sheet is ready.`);
+    flash(`Round ${round} is live: ${live.length} cards can score. QR sheet is ready.`);
   };
 
   const exportCsv = () => {
@@ -252,10 +252,13 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
         <button className="td-btn gold" onClick={() => setView('qr')} disabled={!isPublished || unpublished}
           title={unpublished ? 'Publish your changes first: codes come from the published round.' : undefined}>QR SHEET</button>
         <button className="td-btn cta" onClick={() => void publish(false)} disabled={!roundCards.length || !!busy}>
-          {busy === 'publish' ? 'PUBLISHING…' : `PUBLISH R${round}`}
+          {busy === 'publish' ? 'PUBLISHING…' : isPublished ? `REPUBLISH R${round}` : `PUBLISH & START R${round}`}
         </button>
       </div>
       {toast && <div className="td-toast" role="status">{toast}</div>}
+      {roundCards.length > 0 && !isPublished && (
+        <div className="td-warn" role="status">Round {round} hasn't started. Cards are a draft until you tap <b>PUBLISH &amp; START R{round}</b>: that opens scoring and makes the QR codes.</div>
+      )}
       <div className="td-body">
         <aside className="td-side">
           {rounds.length > 1 && (

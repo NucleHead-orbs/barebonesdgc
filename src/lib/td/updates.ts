@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'publish-start', date: '2026-10-04', help: 'cards', who: 'all',
+    title: 'PUBLISH is now PUBLISH & START',
+    body: 'On **CARDS & QR**, the button that opens the round is now **PUBLISH & START**. Until you tap it the cards are a draft: no scoring, no QR codes. After that it reads **REPUBLISH** for late changes.',
+  },
+  {
     id: 'league-week', date: '2026-10-04', help: 'winners', who: 'all',
     title: 'Safety Vest + group photo',
     body: 'On a league night, **WINNERS → LEAGUE WEEK**: award the **Lazy Boner Safety Vest** and load the group photo. Every week lands on the **Vest Wall** on the Leagues page, and the current holder shows on the Lazy Boners card.',
