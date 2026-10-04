@@ -91,6 +91,8 @@ select pg_temp.ok((select count(*) from jsonb_array_elements(ea_public('jewel-xi
 reset role;
 
 -- ---------- tickets ----------
+-- r3/r4 must share r1's Mon-Sun week: on a Sunday that means yesterday, so let the window start a few days back
+update early_access set opens_on = least(opens_on, current_date - 6) where event_id = pg_temp.ev();
 select pg_temp.put('r1', pg_temp.round(array['Axl Anhyzer Jr', 'Rex', 'Dee Skip', 'guest:Buddy'], current_date)::text);
 select pg_temp.ok(coalesce(pg_temp.st('Axl Anhyzer Jr', 'tickets'), -1) = 0, 'unconfirmed round earns nothing');
 select pg_temp.confirm('Rex', pg_temp.v('r1')::uuid);
@@ -100,8 +102,8 @@ select pg_temp.ok(pg_temp.st('Axl Anhyzer Jr', 'round_tickets') = 1 and pg_temp.
 select pg_temp.put('r2', pg_temp.round(array['Axl Anhyzer Jr', 'Rex'], current_date)::text);
 select pg_temp.confirm('Rex', pg_temp.v('r2')::uuid);
 select pg_temp.ok(pg_temp.st('Axl Anhyzer Jr', 'rounds') = 1, 'a round with only 2 Jewel players doesn''t count');
-select pg_temp.put('r3', pg_temp.round(array['Axl Anhyzer Jr', 'Rex', 'Dee Skip'], current_date + 1)::text);
-select pg_temp.put('r4', pg_temp.round(array['Axl Anhyzer Jr', 'Rex', 'Dee Skip'], current_date + 1)::text);
+select pg_temp.put('r3', pg_temp.round(array['Axl Anhyzer Jr', 'Rex', 'Dee Skip'], current_date + case when extract(isodow from current_date) = 7 then -1 else 1 end)::text);
+select pg_temp.put('r4', pg_temp.round(array['Axl Anhyzer Jr', 'Rex', 'Dee Skip'], current_date + case when extract(isodow from current_date) = 7 then -1 else 1 end)::text);
 select pg_temp.confirm('Rex', pg_temp.v('r3')::uuid); select pg_temp.confirm('Dee Skip', pg_temp.v('r3')::uuid);
 select pg_temp.confirm('Rex', pg_temp.v('r4')::uuid); select pg_temp.confirm('Dee Skip', pg_temp.v('r4')::uuid);
 select pg_temp.ok(pg_temp.st('Axl Anhyzer Jr', 'rounds') = 3 and pg_temp.st('Axl Anhyzer Jr', 'round_tickets') = 2

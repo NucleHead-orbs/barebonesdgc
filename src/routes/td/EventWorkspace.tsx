@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react';
 import * as api from '../../lib/td/api';
 import { rpcError, type ExistingPlayer } from '../../lib/td/builder';
 import { dateRange, eventTabs, formatSummary, type Tab } from '../../lib/td/setup';
@@ -13,8 +13,9 @@ import SetupPanel from './SetupPanel';
 import SponsorsPanel from './SponsorsPanel';
 import EarlyPanel from './EarlyPanel';
 import { HelpButton } from './Help';
+const TagsPanel = lazy(() => import('./TagsPanel'));
 
-const TAB_LABEL: Record<Tab, string> = { setup: 'SETUP', prep: 'PREP', crew: 'CREW', early: 'EARLY ACCESS', players: 'PLAYERS', requests: 'REQUESTS', cards: 'CARDS & QR', winners: 'WINNERS', sponsors: 'SPONSORS' };
+const TAB_LABEL: Record<Tab, string> = { setup: 'SETUP', prep: 'PREP', crew: 'CREW', early: 'EARLY ACCESS', tags: 'TAGS', players: 'PLAYERS', requests: 'REQUESTS', cards: 'CARDS & QR', winners: 'WINNERS', sponsors: 'SPONSORS' };
 const POLL_MS = 20_000; // new player requests show up without a reload
 
 /**
@@ -100,6 +101,9 @@ export default function EventWorkspace({ eventId, email, admin, onSignOut, onBac
       {current === 'prep' && <PrepPanel setup={setup} players={players} onPlayers={setPlayers} email={email} />}
       {current === 'crew' && <CrewPanel eventId={ev.id} eventName={ev.name} email={email} startsOn={ev.starts_on} endsOn={ev.ends_on} />}
       {current === 'early' && <EarlyPanel eventId={ev.id} slug={ev.slug} eventName={ev.name} />}
+      {current === 'tags' && (ev.tag_pool_id
+        ? <Suspense fallback={<p className="td-empty">Loading tags…</p>}><TagsPanel admin={admin} onlyPool={ev.tag_pool_id} eventId={ev.id} /></Suspense>
+        : <main className="td-main"><div className="td-warn soft">Pick this league's tag set in <b>SETUP → Event or league</b>, then its tags show here.</div></main>)}
       {current === 'players' && <PlayersPanel setup={setup} players={players} sponsors={sponsors} priv={priv}
         onPlayers={setPlayers} onReload={async () => { await Promise.all([loadPlayers(), loadRequests(), loadPrivate()]); }} onSponsors={setSponsors} onPrivate={loadPrivate} />}
       {current === 'requests' && <RequestsPanel setup={setup} players={players} requests={requests} onReload={loadRequests} />}

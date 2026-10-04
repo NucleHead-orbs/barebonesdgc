@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS } from '../cards/generate';
 import { defaultSettings, mergeSettings, rpcError } from './builder';
 import {
-  cardPool, coursePar, divisionsProblem, emailOk, eventTabs, formatSummary, holesProblem, normEmail, normalizeDivCode,
+  cardPool, coursePar, ctpHoles, divisionsProblem, emailOk, eventTabs, formatSummary, holesProblem, normEmail, normalizeDivCode,
   resizeHoles, settingsForFormat, setupMessage, withWaves, type HoleRow,
 } from './setup';
 
@@ -56,6 +56,9 @@ describe('format', () => {
     expect(eventTabs({ use_sponsors: false })).not.toContain('sponsors');
     expect(eventTabs({ use_sponsors: false })).toEqual(['setup', 'prep', 'crew', 'early', 'players', 'requests', 'cards', 'winners']);
     expect(eventTabs({ use_sponsors: true })).toContain('sponsors');
+    expect(eventTabs({ use_sponsors: false, kind: 'league' })).toEqual(['setup', 'players', 'requests', 'cards', 'winners', 'tags']);
+    expect(eventTabs({ use_sponsors: true, kind: 'league' })).toContain('sponsors');
+    expect(eventTabs({ use_sponsors: false, kind: 'league' })).not.toContain('prep');
   });
   it('builds cards from checked-in players only when check-in is on', () => {
     const ps = [{ id: 'a', checked_in: true }, { id: 'b', checked_in: false }];
@@ -92,5 +95,11 @@ describe('server refusals', () => {
     expect(emailOk('a@b.co')).toBe(true);
     expect(emailOk('nope')).toBe(false);
     expect(normEmail(' A@B.CO ')).toBe('a@b.co');
+  });
+});
+
+describe('CTP holes', () => {
+  it('lists holes with a prize, in order', () => {
+    expect(ctpHoles([{ n: 9, ctp_prize: '$10' }, { n: 2, ctp_prize: null }, { n: 3, ctp_prize: '$20' }])).toEqual([{ n: 3, prize: '$20' }, { n: 9, prize: '$10' }]);
   });
 });

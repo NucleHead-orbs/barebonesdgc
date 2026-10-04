@@ -421,3 +421,9 @@ button.td-vote-opt:disabled { cursor: default; }
 .td-ea-award { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
 .td-ea-award span { opacity: .7; }
 .td-ea-field { display: flex; flex-direction: column; gap: 4px; }
+
+/* CTP holes (Setup) */
+.td-ctps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.td-ctps li { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.td-ctps li b { min-width: 64px; }
+.td-ctps li .td-input { flex: 1 1 160px; min-width: 0; }

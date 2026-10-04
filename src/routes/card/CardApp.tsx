@@ -154,9 +154,12 @@ export default function CardApp() {
           <h1 className="sc-hole-n">Hole {info.n}</h1>
           <div className="sc-hole-meta">PAR {info.par}{info.dist_ft ? ` · ${info.dist_ft} FT` : ''}</div>
           {info.ob && <div className="sc-hole-ob">OB: {info.ob}</div>}
+          {info.ctp_prize && <div className="sc-ctp-tag" role="status"><CtpTarget /> CTP · {info.ctp_prize}</div>}
         </div>
         <button type="button" className="sc-arrow" aria-label="Next hole" onClick={() => go(1)}>›</button>
       </section>
+
+      {info.ctp_prize && <CtpFlash key={info.n} prize={info.ctp_prize} />}
 
       <nav className="sc-dots" aria-label="Holes">
         {order.map((n) => (
@@ -183,6 +186,30 @@ export default function CardApp() {
       {td && (snap.submitted || signed > 0) && <TdUnlock cardId={snap.card.id} onDone={sync} />}
       <a className="sc-board" href={snap.event ? `/e/${snap.event.slug}` : '/jewel'}>Live leaderboard ›</a>
     </Shell>
+  );
+}
+
+/** Concentric target, drawn (no image). */
+function CtpTarget({ big }: { big?: boolean }) {
+  return (
+    <svg className={big ? 'sc-ctp-target big' : 'sc-ctp-target'} viewBox="0 0 40 40" aria-hidden="true">
+      <circle cx="20" cy="20" r="18" /><circle cx="20" cy="20" r="12" /><circle cx="20" cy="20" r="6" /><circle className="dot" cx="20" cy="20" r="2.5" />
+    </svg>
+  );
+}
+
+/** Plays once each time a CTP hole comes up (remounted per hole via key). Pure CSS: never blocks a tap. */
+function CtpFlash({ prize }: { prize: string }) {
+  return (
+    <div className="sc-ctp-flash" aria-hidden="true">
+      <div className="sc-ctp-card">
+        <span className="sc-ctp-ring" /><span className="sc-ctp-ring r2" />
+        <CtpTarget big />
+        <b>CTP HOLE</b>
+        <span className="sc-ctp-prize">{prize}</span>
+        <small>Closest to the pin takes it</small>
+      </div>
+    </div>
   );
 }
 

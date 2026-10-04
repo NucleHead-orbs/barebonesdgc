@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'league-mode', date: '2026-10-04', help: 'setup', who: 'all',
+    title: 'League mode + CTP holes',
+    body: '**SETUP → Event or league**: a league drops PREP, CREW and EARLY ACCESS, runs one day and one round, and gets a **TAGS** tab for its tag set that opens on tonight\'s round. **CTP holes**: pick the hole and the prize; players get a gold **CTP HOLE** flash on their scorecard when they reach it.',
+  },
+  {
     id: 'tags-declared', date: '2026-10-03', help: 'rounds', who: 'all',
     title: 'Tags go on the line before you tee off',
     body: 'On the club scorecard, pick **Tags on the line?** on the New Round screen. It locks once the first score is in, and the round saves with the swap. Nobody can put tags on the line after seeing the scores.',

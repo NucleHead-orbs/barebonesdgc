@@ -48,7 +48,7 @@ export async function fetchCard(token: string): Promise<CardSnapshot> {
   const d = raw.card.format === 'doubles' ? { ...rest, players: scoringSeats(raw.players, teams ?? []) } : rest;
   const ids = d.players.map((p) => p.id);
   const [h, s] = await Promise.all([
-    supabase.from('holes').select('n, par, dist_ft, ob').eq('event_id', d.card.event_id).order('n'),
+    supabase.from('holes').select('n, par, dist_ft, ob, ctp_prize').eq('event_id', d.card.event_id).order('n'),
     ids.length
       ? supabase.from('scores').select('player_id, hole, strokes').eq('round', d.card.round).in('player_id', ids)
       : Promise.resolve({ data: [], error: null }),

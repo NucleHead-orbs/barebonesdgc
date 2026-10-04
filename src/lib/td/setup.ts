@@ -30,7 +30,11 @@ export interface EventConfig {
   r1_format: RoundFormat;
   r2_format: RoundFormat;
   dubs_style: DubsStyle;
+  /** 'league' = weekly night: no Prep/Crew/Early Access, one round, one day, a TAGS tab for its tag set. */
+  kind?: EventKind;
+  tag_pool_id?: string | null;
 }
+export type EventKind = 'event' | 'league';
 
 export const roundFormat = (ev: Pick<EventConfig, 'r1_format' | 'r2_format'>, round: number): RoundFormat =>
   (round === 2 ? ev.r2_format : ev.r1_format) ?? 'singles';
@@ -38,7 +42,7 @@ export const roundFormat = (ev: Pick<EventConfig, 'r1_format' | 'r2_format'>, ro
 export const hasDoubles = (ev: Pick<EventConfig, 'r1_format' | 'r2_format' | 'rounds'>) =>
   ev.r1_format === 'doubles' || (ev.rounds === 2 && ev.r2_format === 'doubles');
 
-export interface HoleRow { n: number; par: number; dist_ft: number | null; ob: string | null }
+export interface HoleRow { n: number; par: number; dist_ft: number | null; ob: string | null; ctp_prize?: string | null }
 export interface DivisionRow { code: string; wave: 'AM' | 'PM' }
 
 export const PALETTES: Array<{ id: Palette; label: string; swatch: [string, string, string] }> = [
@@ -111,9 +115,17 @@ export function formatSummary(ev: Pick<EventConfig, 'rounds' | 'waves'> & Partia
   ].join(' · ');
 }
 
-export type Tab = 'setup' | 'prep' | 'crew' | 'early' | 'players' | 'requests' | 'cards' | 'winners' | 'sponsors';
-export const eventTabs = (ev: Pick<EventConfig, 'use_sponsors'>): Tab[] =>
-  ev.use_sponsors ? ['setup', 'prep', 'crew', 'early', 'players', 'requests', 'cards', 'winners', 'sponsors'] : ['setup', 'prep', 'crew', 'early', 'players', 'requests', 'cards', 'winners'];
+export type Tab = 'setup' | 'prep' | 'crew' | 'early' | 'tags' | 'players' | 'requests' | 'cards' | 'winners' | 'sponsors';
+/** Tabs by kind: a tournament gets Prep, Crew and Early Access; a league gets its tag set (TAGS) instead. */
+export const eventTabs = (ev: Pick<EventConfig, 'use_sponsors'> & { kind?: EventKind }): Tab[] => {
+  const base: Tab[] = ev.kind === 'league'
+    ? ['setup', 'players', 'requests', 'cards', 'winners', 'tags']
+    : ['setup', 'prep', 'crew', 'early', 'players', 'requests', 'cards', 'winners'];
+  return ev.use_sponsors ? [...base, 'sponsors'] : base;
+};
+/** CTP holes in hole order: [{n, prize}]. */
+export const ctpHoles = (holes: Array<{ n: number; ctp_prize?: string | null }>) =>
+  holes.filter((h) => h.ctp_prize).map((h) => ({ n: h.n, prize: h.ctp_prize! })).sort((a, b) => a.n - b.n);
 
 /** Who goes into card generation: with check-in on, only checked-in players. */
 export function cardPool<P extends { checked_in?: boolean }>(players: P[], useCheckin: boolean): P[] {

@@ -18,6 +18,7 @@ export const HELP: HelpSection[] = [
   {
     id: 'setup', title: 'Set up your event (SETUP tab)',
     steps: [
+      '**Event or league:** a tournament keeps **PREP**, **CREW** and **EARLY ACCESS**. A **LEAGUE** night drops those, is one day and one round, and gets a **TAGS** tab for its tag set: pick the set (e.g. Lazy Boners) under **LEAGUE TAG SET**, tap **SAVE**.',
       '**Event:** name, club, dates, colors, rounds (1 or 2), waves (single or AM/PM), check-in on/off. Tap **SAVE EVENT**.',
       '**Course:** pick your course from the **library** list and tap **LOAD**: par, feet, OB and mandos fill in. Not listed? Type the holes, tap **SAVE COURSE**, then **SAVE TO LIBRARY** so every TD can use it next time.',
       'Loading copies the holes into your event. Fixing the library later never changes an event you already ran.',
@@ -25,6 +26,7 @@ export const HELP: HelpSection[] = [
       '**Extra tee pads:** holes with a second pad (Rec / Ladies, AM) get one row each. Enter its feet, and par if it differs. Each pad is its own tee sign a sponsor can take. Scoring is still by hole.',
       '**Divisions:** tap the ones you use. Tap **SAVE DIVISIONS**.',
       '**Round format:** each round is **SINGLES** or **RANDOM DRAW DUBS**, plus the dubs style (best shot, best disc, alternate shot). A Pop Up is usually Round 1 dubs, Round 2 singles. Locked once that round has cards.',
+      '**CTP holes:** pick a hole, type what it pays ("$20 + a disc"), tap **ADD CTP**. Players get a gold **CTP HOLE** flash when they reach it on their scorecard, and the hole stays tagged. Change or remove it any time; **DUPLICATE** keeps it for next week.',
       'Not sure what something does? Leave it. The defaults work.',
     ],
   },
@@ -121,6 +123,7 @@ export const HELP: HelpSection[] = [
     steps: [
       'Players point the camera at their card\'s QR code and tap the link.',
       'Tap a gray number to give par, use minus / plus to change it, tap **NEXT HOLE**.',
+      'A **CTP** hole flashes a gold target with the prize when it comes up, and shows **CTP · prize** under the hole number.',
       'No signal is fine: it saves on the phone and catches up later.',
       'After the last hole everyone types initials and taps **Sign**, then one person taps **SUBMIT CARD**.',
       'Dubs round: one score line per team. Either partner can enter it and sign for the team.',
@@ -162,7 +165,7 @@ export const HELP: HelpSection[] = [
       'From your events list tap **BAG TAGS**. You see the leagues you run; the super admin adds league admins at the bottom.',
       '**Issue a tag:** take the buy-in, type the player\'s name, tap **ISSUE TAG**. They get the next number at the bottom. Type a number only to hand back a freed tag or load someone\'s existing physical tag.',
       'Right after issuing, have them scan the **My Tag** QR and save the page. That page is how they log casual rounds and confirm the ones they\'re on.',
-      '**League night:** after cards are signed and submitted, go to **Record a round → From the scorecard**, pick the event, check the name matches, tap **RECORD**. Tag holders trade tags by total. Each event counts once.',
+      '**League night:** after cards are signed and submitted, open the league\'s **TAGS** tab (or **BAG TAGS** from your events list). **Record a round → From the scorecard** opens on tonight\'s event: check the name matches, tap **RECORD**. Tag holders trade tags by total. Each event counts once.',
       'Other tag sets on the card (like **Golden Boners**) show under **OTHER TAG SETS ON THIS CARD**. Check one to put it on the line from the same scores: it goes up pending, every holder confirms from their **My Tag** link, and it swaps on the last confirmation. Your own league\'s tags still move right away.',
       'Pop Up with a dubs round? Tags only record from a **singles** round: pick it under **Round**. Dubs rounds never move tags.',
       '**Golden Boners** is the invite-only set: admins and core members only. It works like a league (issue, My Tag, rounds, undo) but only the super admin, or someone they add as its admin, can issue one.',

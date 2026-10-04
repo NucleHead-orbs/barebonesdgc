@@ -2,14 +2,16 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import * as api from '../../lib/td/api';
 import { rpcError, type ExistingPlayer } from '../../lib/td/builder';
 import {
-  PALETTES, coursePar, divisionsProblem, emailOk, holesProblem, normEmail, resizeHoles, withWaves,
-  type DivisionRow, type EventConfig, type HoleRow,
+  PALETTES, coursePar, ctpHoles, divisionsProblem, emailOk, holesProblem, normEmail, resizeHoles, withWaves,
+  type DivisionRow, type EventConfig, type EventKind, type HoleRow,
   DUBS_STYLES, type DubsStyle,
 } from '../../lib/td/setup';
 import { DivisionPicker, Field } from './EventHub';
 import { LibraryBar } from './CourseLibrary';
 import { sortLibrary, type LibCourse } from '../../lib/courses/courses';
 import type { HoleTee } from '../../lib/proofs/teeSigns';
+import { loadPools } from '../../lib/tags/api';
+import type { TagPool } from '../../lib/tags/tags';
 
 /**
  * The build menu. Each section saves on its own through the matching RPC, so a refusal in one
@@ -27,9 +29,11 @@ export default function SetupPanel({ setup, admin, players, onSaved, onDeleted }
   useEffect(() => { void (async () => { await loadLib(); })(); }, [loadLib]);
   return (
     <main className="td-main td-setup">
+      <KindSection ev={ev} onSaved={onSaved} />
       <EventSection ev={ev} onSaved={onSaved} />
       <CourseSection eventId={ev.id} holes={setup.holes} onSaved={onSaved} admin={admin} lib={lib} onLib={loadLib} linkedId={ev.course_layout_id ?? null} />
-      <TeePadSection eventId={ev.id} holes={setup.holes} />
+      <CtpSection eventId={ev.id} holes={setup.holes} onSaved={onSaved} />
+      {ev.kind !== 'league' && <TeePadSection eventId={ev.id} holes={setup.holes} />}
       <DivisionSection eventId={ev.id} waves={ev.waves} divisions={setup.divisions} players={players} onSaved={onSaved} />
       <TdSection eventId={ev.id} tds={setup.tds} admin={admin} onSaved={onSaved} />
       {admin && ev.slug !== 'jewel-xi-2026' && <DangerSection ev={ev} onDeleted={onDeleted} />}
@@ -78,17 +82,95 @@ function Toggle({ on, label, onChange }: { on: boolean; label: string; onChange:
   );
 }
 
+/** Event (tournament) or League (weekly night). Changes the tabs; a league picks its tag set. */
+function KindSection({ ev, onSaved }: { ev: EventConfig; onSaved: () => Promise<void> }) {
+  const kind: EventKind = ev.kind ?? 'event';
+  const [pools, setPools] = useState<TagPool[]>([]);
+  const [k, setK] = useState<EventKind>(kind);
+  const [pool, setPool] = useState(ev.tag_pool_id ?? '');
+  const { busy, msg, run } = useSave(onSaved);
+  useEffect(() => { void (async () => { const r = await loadPools(); if (r.data) setPools(r.data.filter((p) => !p.invite_only)); })(); }, []);
+  const dirty = k !== kind || (k === 'league' && pool !== (ev.tag_pool_id ?? ''));
+  return (
+    <Section title="Event or league" hint={k === 'league'
+      ? 'League night: one day, one round. No PREP, CREW or EARLY ACCESS. TAGS records your league\'s tag set from tonight\'s scores.'
+      : 'Tournament: PREP (checklist, shirts, designs), CREW (helper links, stations) and EARLY ACCESS are on.'} msg={msg}>
+      <Seg value={k} options={[['event', 'EVENT'], ['league', 'LEAGUE']]} onChange={setK} />
+      {k === 'league' && (
+        <Field label="LEAGUE TAG SET">
+          <select className="td-select" value={pool} onChange={(e) => setPool(e.target.value)}>
+            <option value="">None (no tags)</option>
+            {pools.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </Field>
+      )}
+      {k === 'league' && (ev.rounds === 2 || ev.waves === 2 || ev.ends_on !== ev.starts_on) && (
+        <div className="td-hint">Saving the Event section below sets this to one day, one round, one wave.</div>
+      )}
+      <div className="td-actions">
+        <button className="td-btn cta" disabled={busy || !dirty} onClick={() => void run(() => api.setLeague(ev.id, k, k === 'league' ? pool || null : null), k === 'league' ? 'League mode on.' : 'Event mode on.')}>
+          {busy ? 'SAVING…' : 'SAVE'}</button>
+      </div>
+    </Section>
+  );
+}
+
+/** Closest-to-the-pin holes and their prizes. Scorecards flag these holes. */
+function CtpSection({ eventId, holes, onSaved }: { eventId: string; holes: HoleRow[]; onSaved: () => Promise<void> }) {
+  const ctps = ctpHoles(holes);
+  const free = holes.filter((h) => !h.ctp_prize);
+  const [n, setN] = useState('');
+  const [prize, setPrize] = useState('');
+  const [edit, setEdit] = useState<Record<number, string>>({});
+  const { busy, msg, run } = useSave(onSaved);
+  const add = () => {
+    const hole = Number(n);
+    if (!hole || !prize.trim()) return;
+    void run(() => api.setCtp(eventId, hole, prize.trim()), `Hole ${hole} is a CTP.`).then(() => { setN(''); setPrize(''); });
+  };
+  return (
+    <Section title="CTP holes" hint="Closest to the pin. Pick the hole and what it pays. Players get a heads-up animation when they reach it on their scorecard. Duplicating for next week keeps these." msg={msg}>
+      {ctps.length > 0 && (
+        <ul className="td-ctps">
+          {ctps.map((c) => (
+            <li key={c.n}>
+              <b>Hole {c.n}</b>
+              <input className="td-input" aria-label={`Hole ${c.n} CTP prize`} maxLength={60} value={edit[c.n] ?? c.prize}
+                onChange={(e) => setEdit({ ...edit, [c.n]: e.target.value })} />
+              {(edit[c.n] ?? c.prize) !== c.prize && edit[c.n]?.trim() && (
+                <button className="td-btn quiet" disabled={busy} onClick={() => void run(() => api.setCtp(eventId, c.n, edit[c.n]), `Hole ${c.n} prize saved.`)}>SAVE</button>
+              )}
+              <button className="td-link danger" disabled={busy} onClick={() => void run(() => api.setCtp(eventId, c.n, ''), `Hole ${c.n} is no longer a CTP.`)}>Remove</button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {holes.length === 0 ? <div className="td-hint">Set up the course first.</div> : (
+        <form className="td-row" onSubmit={(e) => { e.preventDefault(); add(); }}>
+          <select className="td-select" aria-label="CTP hole" value={n} onChange={(e) => setN(e.target.value)}>
+            <option value="">Hole…</option>
+            {free.map((h) => <option key={h.n} value={h.n}>Hole {h.n} · par {h.par}{h.dist_ft ? ` · ${h.dist_ft} ft` : ''}</option>)}
+          </select>
+          <input className="td-input" style={{ flex: '1 1 180px' }} aria-label="CTP prize" placeholder="Prize (e.g. $20 + a disc)" maxLength={60} value={prize} onChange={(e) => setPrize(e.target.value)} />
+          <button className="td-btn cta" disabled={busy || !n || !prize.trim()}>ADD CTP</button>
+        </form>
+      )}
+    </Section>
+  );
+}
+
 function EventSection({ ev, onSaved }: { ev: EventConfig; onSaved: () => Promise<void> }) {
   const [f, setF] = useState(ev);
   const { busy, msg, run } = useSave(onSaved);
   const set = (p: Partial<EventConfig>) => setF((x) => ({ ...x, ...p }));
   const dirty = (['name', 'club_name', 'starts_on', 'ends_on', 'palette', 'rounds', 'waves', 'use_checkin', 'use_sponsors', 'archived'] as const)
     .some((k) => f[k] !== ev[k]);
+  const league = ev.kind === 'league';
   const save = () => {
     if (!f.name.trim()) return;
     void run(() => api.updateEvent(ev.id, {
-      name: f.name, club_name: f.club_name ?? '', starts_on: f.starts_on, ends_on: f.ends_on, palette: f.palette,
-      rounds: f.rounds, waves: f.waves, use_checkin: f.use_checkin, use_sponsors: f.use_sponsors, archived: f.archived,
+      name: f.name, club_name: f.club_name ?? '', starts_on: f.starts_on, ends_on: league ? f.starts_on : f.ends_on, palette: f.palette,
+      rounds: league ? 1 : f.rounds, waves: league ? 1 : f.waves, use_checkin: f.use_checkin, use_sponsors: f.use_sponsors, archived: f.archived,
       r1_format: f.r1_format, r2_format: f.r2_format, dubs_style: f.dubs_style,
     }), 'Event saved.');
   };
@@ -97,8 +179,8 @@ function EventSection({ ev, onSaved }: { ev: EventConfig; onSaved: () => Promise
       <div className="td-fields">
         <Field label="EVENT NAME"><input className="td-input" value={f.name} onChange={(e) => set({ name: e.target.value })} /></Field>
         <Field label="CLUB"><input className="td-input" value={f.club_name ?? ''} onChange={(e) => set({ club_name: e.target.value })} /></Field>
-        <Field label="STARTS"><input className="td-input" type="date" value={f.starts_on} onChange={(e) => set({ starts_on: e.target.value, ends_on: f.ends_on < e.target.value ? e.target.value : f.ends_on })} /></Field>
-        <Field label="ENDS"><input className="td-input" type="date" value={f.ends_on} min={f.starts_on} onChange={(e) => set({ ends_on: e.target.value })} /></Field>
+        <Field label={league ? 'DATE' : 'STARTS'}><input className="td-input" type="date" value={f.starts_on} onChange={(e) => set({ starts_on: e.target.value, ends_on: league || f.ends_on < e.target.value ? e.target.value : f.ends_on })} /></Field>
+        {!league && <Field label="ENDS"><input className="td-input" type="date" value={f.ends_on} min={f.starts_on} onChange={(e) => set({ ends_on: e.target.value })} /></Field>}
       </div>
       <div className="td-group">
         <div className="td-label">PALETTE</div>
@@ -110,13 +192,15 @@ function EventSection({ ev, onSaved }: { ev: EventConfig; onSaved: () => Promise
           ))}
         </div>
       </div>
+      {!league && (
+        <div className="td-fields">
+          <Field label="ROUNDS"><Seg value={f.rounds} options={[[1, '1 ROUND'], [2, '2 ROUNDS']]} onChange={(v) => set({ rounds: v })} /></Field>
+          <Field label="WAVES"><Seg value={f.waves} options={[[1, 'SINGLE'], [2, 'AM / PM']]} onChange={(v) => set({ waves: v })} /></Field>
+        </div>
+      )}
       <div className="td-fields">
-        <Field label="ROUNDS"><Seg value={f.rounds} options={[[1, '1 ROUND'], [2, '2 ROUNDS']]} onChange={(v) => set({ rounds: v })} /></Field>
-        <Field label="WAVES"><Seg value={f.waves} options={[[1, 'SINGLE'], [2, 'AM / PM']]} onChange={(v) => set({ waves: v })} /></Field>
-      </div>
-      <div className="td-fields">
-        <Field label="ROUND 1"><Seg value={f.r1_format} options={[['singles', 'SINGLES'], ['doubles', 'RANDOM DRAW DUBS']]} onChange={(v) => set({ r1_format: v })} /></Field>
-        {f.rounds === 2 && <Field label="ROUND 2"><Seg value={f.r2_format} options={[['singles', 'SINGLES'], ['doubles', 'RANDOM DRAW DUBS']]} onChange={(v) => set({ r2_format: v })} /></Field>}
+        <Field label={league ? 'FORMAT' : 'ROUND 1'}><Seg value={f.r1_format} options={[['singles', 'SINGLES'], ['doubles', 'RANDOM DRAW DUBS']]} onChange={(v) => set({ r1_format: v })} /></Field>
+        {!league && f.rounds === 2 && <Field label="ROUND 2"><Seg value={f.r2_format} options={[['singles', 'SINGLES'], ['doubles', 'RANDOM DRAW DUBS']]} onChange={(v) => set({ r2_format: v })} /></Field>}
         {(f.r1_format === 'doubles' || (f.rounds === 2 && f.r2_format === 'doubles')) && (
           <Field label="DUBS STYLE (printed on cards)">
             <select className="td-select" value={f.dubs_style} onChange={(e) => set({ dubs_style: e.target.value as DubsStyle })}>

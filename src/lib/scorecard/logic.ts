@@ -9,7 +9,7 @@
 import type { QueuedScore } from '../offline/queue';
 
 export interface CardPlayer { id: string; name: string; div_code: string; seat: number }
-export interface HoleInfo { n: number; par: number; dist_ft: number | null; ob: string | null }
+export interface HoleInfo { n: number; par: number; dist_ft: number | null; ob: string | null; /** closest-to-the-pin prize; null = not a CTP hole */ ctp_prize?: string | null }
 export type ScoreMap = Record<string, Record<number, number>>; // playerId -> hole -> strokes
 
 /** Doubles: one scoring line per team, keyed to the captain (the server keeps team scores + signatures there). */

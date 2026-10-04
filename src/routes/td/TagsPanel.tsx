@@ -16,7 +16,8 @@ import './tags-panel.css';
  * Bag tags admin (league TDs for their pool; super admin for all). Issue tags, hand out My Tag links,
  * settle rounds, record league nights from the scorecard, undo the last round.
  */
-export default function TagsPanel({ admin, onBack }: { admin: boolean; onBack: () => void }) {
+/** onlyPool + eventId: embedded in a league's TAGS tab (that set only, Record a round starts on this event). */
+export default function TagsPanel({ admin, onBack, onlyPool, eventId }: { admin: boolean; onBack?: () => void; onlyPool?: string; eventId?: string }) {
   const [pools, setPools] = useState<TagPool[] | null>(null);
   const [poolId, setPoolId] = useState('');
   const [tags, setTags] = useState<Tag[]>([]);
@@ -29,8 +30,9 @@ export default function TagsPanel({ admin, onBack }: { admin: boolean; onBack: (
   useEffect(() => { void (async () => {
     const r = await tagApi.myPools();
     if (r.error) return setErr(tagMessage(r.error));
-    setPools(r.data!); if (r.data!.length) setPoolId(r.data![0].id);
-  })(); }, []);
+    const mine = onlyPool ? r.data!.filter((p) => p.id === onlyPool) : r.data!;
+    setPools(mine); if (mine.length) setPoolId(mine[0].id);
+  })(); }, [onlyPool]);
 
   const reload = useCallback(async () => {
     if (!pool) return;
@@ -58,8 +60,8 @@ export default function TagsPanel({ admin, onBack }: { admin: boolean; onBack: (
   return (
     <div className="td-main">
       <div className="td-row">
-        <button className="td-btn" onClick={onBack}>‹ BACK TO EVENTS</button>
-        <div className="td-title">Bag Tags</div>
+        {onBack && <button className="td-btn" onClick={onBack}>‹ BACK TO EVENTS</button>}
+        <div className="td-title">{onlyPool && pool ? `${pool.name} tags` : 'Bag Tags'}</div>
         {pool && <>
           <div className="td-stat"><b>{held.length}</b><span>TAGS OUT</span></div>
           <div className="td-stat"><b style={{ color: open.length ? 'var(--gold)' : '#fff' }}>{open.length}</b><span>ROUNDS OPEN</span></div>
@@ -74,7 +76,7 @@ export default function TagsPanel({ admin, onBack }: { admin: boolean; onBack: (
       )}
       {toast && <div className="td-ok" role="status">{toast}</div>}
       {err && <div className="td-warn" role="alert">⚠ {err} <button className="td-btn quiet" onClick={() => setErr('')}>OK</button></div>}
-      {pools && !pools.length && <div className="td-warn soft">This account doesn't run any league's tags yet. Ask the super admin to add your email to a league.</div>}
+      {pools && !pools.length && <div className="td-warn soft">{onlyPool ? 'This account doesn\'t run this league\'s tags yet. Ask the super admin to add your email as its tag admin.' : 'This account doesn\'t run any league\'s tags yet. Ask the super admin to add your email to a league.'}</div>}
       {pool && (
         <>
           <div className="td-hint">One numbered set per league. Best score on a round takes the lowest number on it; ties keep their order. Players log casual rounds from their <b>My Tag</b> link and confirm each other; league nights you record here from the scorecard.</div>
@@ -82,7 +84,7 @@ export default function TagsPanel({ admin, onBack }: { admin: boolean; onBack: (
           <RoomBox key={pool.id} pool={pool} members={members} held={held} onTags={reload} />
           <IssueTag {...ctx} />
           <TagList {...ctx} />
-          <RecordRound {...ctx} />
+          <RecordRound {...ctx} eventId={eventId} />
           <History matches={matches.filter((m) => m.status === 'applied').slice(0, 10)} act={act} poolId={pool.id} />
           <People {...ctx} />
           {admin && <PoolAdmins poolId={pool.id} poolName={pool.name} />}
@@ -236,7 +238,7 @@ function TagList({ pool, tags, byId, act }: Ctx) {
 
 interface Row { key: string; name: string; score: number | null; member_id: string | null }
 
-function RecordRound({ pool, held, members, act }: Ctx) {
+function RecordRound({ pool, held, members, act, eventId: startEvent }: Ctx & { eventId?: string }) {
   const [mode, setMode] = useState<'event' | 'hand'>('event');
   const [events, setEvents] = useState<EventConfig[]>([]);
   const [eventId, setEventId] = useState('');
@@ -260,14 +262,9 @@ function RecordRound({ pool, held, members, act }: Ctx) {
   })(); }, [pool.id]);
   const tagOf = useCallback((id: string | null) => (id ? held.find((t) => t.holder_id === id)?.number ?? null : null), [held]);
 
-  useEffect(() => { void (async () => {
-    const r = await tdApi.myEvents();
-    if (r.data) setEvents(r.data.filter((e) => !e.archived).sort((a, b) => b.starts_on.localeCompare(a.starts_on)));
-  })(); }, []);
-
-  const loadEvent = async (id: string) => {
+  const loadEvent = async (id: string, list: EventConfig[] = events) => {
     setEventId(id); setRows([]); setLeft([]);
-    const ev = events.find((e) => e.id === id);
+    const ev = list.find((e) => e.id === id);
     if (!ev) return;
     setLoading(true);
     try {
@@ -281,6 +278,16 @@ function RecordRound({ pool, held, members, act }: Ctx) {
     } catch (e) { act(Promise.resolve({ error: e })); }
     setLoading(false);
   };
+  // League TAGS tab (startEvent): open on tonight's event once the list is in
+  const hasMembers = members.length > 0;
+  useEffect(() => { void (async () => {
+    const r = await tdApi.myEvents();
+    if (!r.data) return;
+    const list = r.data.filter((e) => !e.archived).sort((a, b) => b.starts_on.localeCompare(a.starts_on));
+    setEvents(list);
+    // names match against the member list, so wait for it before opening tonight's event
+    if (startEvent && hasMembers && list.some((e) => e.id === startEvent)) await loadEvent(startEvent, list);
+  })(); }, [startEvent, hasMembers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Tags record from singles rounds only (a Pop Up's dubs round never moves tags).
   function fill(board: LbRow[], ev: EventConfig, status: Parameters<typeof standings>[2], from: TagSource | null) {

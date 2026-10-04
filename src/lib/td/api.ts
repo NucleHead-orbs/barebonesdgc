@@ -26,7 +26,7 @@ const must = <T>(r: { data: T; error: unknown }): T => { if (r.error) throw r.er
 const list = <T>(r: { data: T[] | null; error: unknown }): T[] => must(r) ?? [];
 
 // ---------- events (build menu) ----------
-const EVENT_COLS = 'id, slug, name, club_name, starts_on, ends_on, skin, palette, rounds, waves, use_checkin, use_sponsors, archived, course_layout_id, r1_format, r2_format, dubs_style';
+const EVENT_COLS = 'id, slug, name, club_name, starts_on, ends_on, skin, palette, rounds, waves, use_checkin, use_sponsors, archived, course_layout_id, r1_format, r2_format, dubs_style, kind, tag_pool_id';
 
 /** Events this account can run (super admin: all). */
 export const myEvents = () => wrap(async (): Promise<EventConfig[]> =>
@@ -37,7 +37,7 @@ export interface EventSetup { event: EventConfig; holes: HoleRow[]; divisions: A
 export const loadEventSetup = (eventId: string) => wrap(async (): Promise<EventSetup> => {
   const [ev, holes, divs, tds] = await Promise.all([
     supabase.from('events').select(EVENT_COLS).eq('id', eventId).maybeSingle(),
-    supabase.from('holes').select('n, par, dist_ft, ob').eq('event_id', eventId).order('n'),
+    supabase.from('holes').select('n, par, dist_ft, ob, ctp_prize').eq('event_id', eventId).order('n'),
     supabase.from('divisions').select('code, sort, wave_default').eq('event_id', eventId).order('sort'),
     supabase.from('event_tds').select('email').eq('event_id', eventId).order('added_at'),
   ]);
@@ -74,6 +74,12 @@ export const lockedPlayerIds = (eventId: string) => wrap(async (): Promise<Set<s
 });
 
 export type EventPatch = Partial<Pick<EventConfig, 'name' | 'club_name' | 'starts_on' | 'ends_on' | 'palette' | 'rounds' | 'waves' | 'use_checkin' | 'use_sponsors' | 'archived' | 'r1_format' | 'r2_format' | 'dubs_style'>>;
+/** Event or league (and the league's tag set). */
+export const setLeague = (eventId: string, kind: 'event' | 'league', poolId: string | null) =>
+  wrap(async () => { must(await supabase.rpc('td_set_league', { p_event: eventId, p_kind: kind, p_pool: poolId })); });
+/** Hole n pays a closest-to-the-pin prize (blank = not a CTP). */
+export const setCtp = (eventId: string, n: number, prize: string) =>
+  wrap(async () => { must(await supabase.rpc('td_set_ctp', { p_event: eventId, p_n: n, p_prize: prize })); });
 export const updateEvent = (eventId: string, patch: EventPatch) => wrap(async (): Promise<EventConfig> =>
   must(await supabase.rpc('td_update_event', { p_event_id: eventId, p: patch })) as EventConfig);
 
