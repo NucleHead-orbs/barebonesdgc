@@ -124,6 +124,11 @@ export const TAG_ART: Record<string, TagArt> = {
     front: '/assets/tags/golden-boners/front.svg', back: '/assets/tags/golden-boners/back.svg', shape: 'square',
     numColor: '#ffe12e', numStroke: '#22061f', numSize: 24, cx: 0.5, cy: 0.6, // medallion centre on the 1000x1000 back
   },
+  // RBFL: art side = Mike's Root Beer Float League tag (2026-10-04); number side drawn to match, number on the full moon.
+  rbfl: {
+    front: '/assets/tags/rbfl/front.svg', back: '/assets/tags/rbfl/back.svg', shape: 'square',
+    numColor: '#c35ff0', numStroke: '#0b0710', numSize: 24, cx: 0.5, cy: 0.455, // moon centre on the 1000x1000 back
+  },
 };
 
 /**
