@@ -113,11 +113,16 @@ export interface TagArt {
   front: string; back: string; numColor: string; cx: number; cy: number;
   /** 'tall' (default) = portrait number side + landscape art side; 'square' = both sides square, plain flip. */
   shape?: 'tall' | 'square'; numStroke?: string; numSize?: number;
+  /** Optional CSS gradient for the number's fill (drawn over a numStroke outline), e.g. the Lazy Boners drip colours. */
+  numFill?: string;
 }
 export const TAG_ART: Record<string, TagArt> = {
+  // Art 2026-10-04 (Mike): number side = the psychedelic leaf with the medallion, art side = Safety Sundays.
+  // Both square; the swirl, leaf glow and sun cycle colours (animations live in the SVGs).
   'lazy-boners': {
-    front: '/assets/tags/lazy-boners/front.svg', back: '/assets/tags/lazy-boners/back.svg',
-    numColor: '#adcb36', cx: 89.85 / 180, cy: 264.55 / 306, // circle centre on the 180x306 back
+    front: '/assets/tags/lazy-boners/front.svg', back: '/assets/tags/lazy-boners/back.svg', shape: 'square',
+    numColor: '#f2ff3a', numStroke: '#0b0710', numSize: 30, cx: 0.502, cy: 0.59, // medallion centre on the 1000x1000 back
+    numFill: 'linear-gradient(180deg, #f2ff3a 0%, #e6ff2e 38%, #ff9a1f 62%, #ff3fa8 88%)',
   },
   // Invite-only set (admins + core members). Art: Mike's Golden Boners tag; number side drawn to match (public/assets/tags/golden-boners).
   'golden-boners': {

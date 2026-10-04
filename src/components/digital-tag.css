@@ -15,6 +15,7 @@
 .dt-n { position: absolute; transform: translate(-50%, -48%); font-family: 'Luckiest Guy', var(--font-display); font-weight: 400; line-height: 1; letter-spacing: -.02em; }
 .dt-n1, .dt-n2 { font-size: 21cqw; }
 .dt-n3 { font-size: 14cqw; }
+.dt-nfill { color: transparent; -webkit-background-clip: text; background-clip: text; }
 /* Square tags (Golden Boners): both faces square, a plain flip. */
 .dt-sq .dt-card { aspect-ratio: 1; height: 94%; }
 .dt-sq .dt-card.is-flipped { transform: rotateY(180deg); }
