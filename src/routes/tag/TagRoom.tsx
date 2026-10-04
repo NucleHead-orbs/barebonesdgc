@@ -23,12 +23,15 @@ export default function TagRoom() {
   const [pick, setPick] = useState<room.RoomTile | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ number: number; token: string; name: string } | null>(null);
+  const [skew, setSkew] = useState(0);       // server clock - this phone's clock
+  const [now, setNow] = useState(() => Date.now());
   useTheme('event', 'bone');
 
   const load = useCallback(async () => {
     const r = await room.getRoom(token);
     if (r.error || !r.data) { setFatal(room.roomMessage(r.error)); return; }
     setData(r.data); setFatal('');
+    setSkew(Date.parse(r.data.now) - Date.now());
   }, [token]);
   useEffect(() => {
     void (async () => { await load(); })();
@@ -37,6 +40,15 @@ export default function TagRoom() {
     document.addEventListener('visibilitychange', tick);
     return () => { window.clearInterval(t); document.removeEventListener('visibilitychange', tick); };
   }, [load]);
+
+  const unlockAt = data?.opens_at ? Date.parse(data.opens_at) : 0;
+  const left = unlockAt ? unlockAt - (now + skew) : 0;
+  useEffect(() => {
+    if (!(left > 0)) return;
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [left]);
+  const locked = left > 0;
 
   const go = async () => {
     if (!pick) return;
@@ -79,15 +91,22 @@ export default function TagRoom() {
         ) : (
           <>
             {!data.open && <div className="td-warn soft">The room is closed right now. Ask an admin to open it.</div>}
-            {data.open && <p className="rm-lead">Tap your name. Your tag activates right away and gets the next number.</p>}
+            {data.open && locked && (
+              <div className="rm-lock" role="timer" aria-live="off">
+                <span>UNLOCKS AT {new Date(unlockAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                <b>{room.countdown(left)}</b>
+                <span>Find your name now. First tap after the bell gets #1.</span>
+              </div>
+            )}
+            {data.open && !locked && <p className="rm-lead">Tap your name. Your tag activates right away and gets the next number.</p>}
             <div className="rm-grid">
               {data.tiles.map((t) => (
-                <button key={t.member_id} type="button" className={`rm-tile${t.active ? ' is-active' : ''}`} disabled={t.active || !data.open}
+                <button key={t.member_id} type="button" className={`rm-tile${t.active ? ' is-active' : ''}`} disabled={t.active || !data.open || locked}
                   onClick={() => setPick(t)} aria-label={t.active ? `${room.tileTitle(t)}: tag #${t.number ?? '?'} active` : `I'm ${room.tileTitle(t)}`}>
                   {art && <img className="rm-tile-art" src={art.front} alt="" draggable={false} />}
                   <b className="rm-tile-name">{room.tileTitle(t)}</b>
                   {t.nickname && <span className="rm-tile-sub">{t.name}</span>}
-                  <span className="rm-tile-state">{t.active ? `#${t.number ?? '?'} ✓` : 'TAP TO ACTIVATE'}</span>
+                  <span className="rm-tile-state">{t.active ? `#${t.number ?? '?'} ✓` : locked ? 'LOCKED' : 'TAP TO ACTIVATE'}</span>
                 </button>
               ))}
             </div>

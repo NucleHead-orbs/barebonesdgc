@@ -22,3 +22,8 @@
 .rm-sheet-card { width: 100%; max-width: 440px; border-color: var(--gold); }
 @media (min-width: 640px) { .rm-sheet { align-items: center; } }
 @media (prefers-reduced-motion: reduce) { .rm-tile { transition: none; } .rm-tile:hover:not(:disabled) { transform: none; } }
+
+.rm-lock { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px; border: 2px dashed var(--gold); border-radius: var(--r-card); text-align: center; }
+.rm-lock span { font-family: var(--font-label); font-size: 12px; letter-spacing: 1px; opacity: .85; }
+.rm-lock b { font-family: var(--font-display); font-weight: 400; font-size: 64px; line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; }
+.rm-tile:disabled:not(.is-active) { opacity: .8; }

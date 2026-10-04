@@ -5,9 +5,9 @@
 import { supabase } from '../supabase';
 
 export interface RoomTile { member_id: string; name: string; nickname: string | null; active: boolean; number: number | null }
-export interface Room { pool: { id: string; slug: string; name: string }; open: boolean; tiles: RoomTile[] }
+export interface Room { pool: { id: string; slug: string; name: string }; open: boolean; opens_at: string | null; now: string; tiles: RoomTile[] }
 export interface RoomInvite { member_id: string; name: string; nickname: string | null; activated_at: string | null; number: number | null }
-export interface RoomAdmin { on: boolean; token?: string; open?: boolean; invites?: RoomInvite[] }
+export interface RoomAdmin { on: boolean; token?: string; open?: boolean; opens_at?: string | null; invites?: RoomInvite[] }
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
 const rpc = async <T>(fn: string, args: Record<string, unknown>): Promise<Result<T>> => {
@@ -19,6 +19,14 @@ const rpc = async <T>(fn: string, args: Record<string, unknown>): Promise<Result
 };
 
 export const roomUrl = (origin: string, token: string) => `${origin.replace(/\/$/, '')}/room/${encodeURIComponent(token)}`;
+/** "12:04" / "1:02:09" until the unlock, from milliseconds left (0 or less = ""). */
+export function countdown(ms: number): string {
+  if (!(ms > 0)) return '';
+  const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return h ? `${h}:${pad(m)}:${pad(x)}` : `${m}:${pad(x)}`;
+}
+
 /** Tiles show the nickname big when there is one. */
 export const tileTitle = (t: Pick<RoomTile, 'name' | 'nickname'>) => t.nickname?.trim() || t.name;
 
@@ -37,6 +45,7 @@ export const invite = (poolId: string, who: { member: string } | { name: string;
     ? { p_pool: poolId, p_member: who.member, p_name: null, p_nickname: null }
     : { p_pool: poolId, p_member: null, p_name: who.name.trim(), p_nickname: who.nickname.trim() || null });
 export const uninvite = (poolId: string, memberId: string) => rpc<null>('td_room_uninvite', { p_pool: poolId, p_member: memberId });
+export const setUnlock = (poolId: string, at: string | null) => rpc<null>('td_room_set_unlock', { p_pool: poolId, p_at: at });
 export const reset = (poolId: string, memberId: string) => rpc<null>('td_room_reset', { p_pool: poolId, p_member: memberId });
 
 export function roomMessage(err: unknown): string {
@@ -44,6 +53,7 @@ export function roomMessage(err: unknown): string {
   const m = e.message ?? String(err);
   if (/invalid_room/.test(m)) return "This room link doesn't work anymore. Ask an admin for the new one.";
   if (/room_closed/.test(m)) return 'The room is closed right now. Ask an admin to open it.';
+  if (/room_not_yet/.test(m)) return "Not yet! The room hasn't unlocked. Hang tight.";
   if (/not_invited/.test(m)) return "That name isn't on the list anymore. Reload.";
   if (/already_active/.test(m)) return 'Someone already tapped that one. Not you? Tell an admin.';
   if (/already_has_tag/.test(m)) return 'They already hold a tag in this set.';

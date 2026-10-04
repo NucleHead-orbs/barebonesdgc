@@ -78,6 +78,8 @@ export default function RoomBox({ pool, members, held, onTags }: { pool: TagPool
         </div>
       </div>
 
+      <Unlock poolId={pool.id} at={d.opens_at ?? null} busy={busy} run={run} />
+
       <form className="td-row" onSubmit={(e) => {
         e.preventDefault();
         const w = who ? { member: who } : { name, nickname: nick };
@@ -112,5 +114,22 @@ export default function RoomBox({ pool, members, held, onTags }: { pool: TagPool
         </table>
       )}
     </section>
+  );
+}
+
+/** When the room unlocks: tiles stay locked (and the server refuses taps) until then. */
+function Unlock({ poolId, at, busy, run }: { poolId: string; at: string | null; busy: boolean; run: (p: () => Promise<{ error?: unknown }>, ok?: string) => Promise<boolean> }) {
+  const toLocal = (iso: string) => { const d = new Date(iso); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
+  const [v, setV] = useState(at ? toLocal(at) : '');
+  const label = at ? new Date(at).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+  const future = at ? Date.parse(at) > Date.now() : false;
+  return (
+    <div className="td-row">
+      <span className="td-label">UNLOCKS</span>
+      <span>{at ? `${label}${future ? '' : ' (unlocked)'}` : 'Right away'}</span>
+      <input className="td-input" type="datetime-local" aria-label="Unlock time" value={v} onChange={(e) => setV(e.target.value)} />
+      <button className="td-btn quiet" disabled={busy || !v} onClick={() => void run(() => room.setUnlock(poolId, new Date(v).toISOString()), 'Unlock time set.')}>SET</button>
+      {at && <button className="td-btn quiet" disabled={busy} onClick={() => void run(() => room.setUnlock(poolId, null), 'Unlocked now.')}>UNLOCK NOW</button>}
+    </div>
   );
 }
