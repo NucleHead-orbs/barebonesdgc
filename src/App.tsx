@@ -11,6 +11,7 @@ const SponsorsPage = lazy(() => pages().then((m) => ({ default: m.Sponsors })));
 const MusicPage = lazy(() => pages().then((m) => ({ default: m.Music })));
 const GalleryPage = lazy(() => import('./routes/site/GalleryPage'));
 const LeaguesPage = lazy(() => import('./routes/site/LeaguesPage'));
+const VestPage = lazy(() => import('./routes/site/VestPage'));
 const tagPages = () => import('./routes/site/TagsPages');
 const TagsBoard = lazy(() => tagPages().then((m) => ({ default: m.TagsBoard })));
 const TagPage = lazy(() => tagPages().then((m) => ({ default: m.TagPage })));
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="/sponsors" element={<SponsorsPage />} />
           <Route path="/music" element={<MusicPage />} />
           <Route path="/leagues" element={<LeaguesPage />} />
+          <Route path="/leagues/:slug/vest" element={<VestPage />} />
           <Route path="/tags" element={<TagsBoard />} />
           <Route path="/tags/:pool" element={<TagsBoard />} />
           <Route path="/tags/:pool/:number" element={<TagPage />} />

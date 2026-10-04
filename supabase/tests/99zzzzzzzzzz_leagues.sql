@@ -85,12 +85,12 @@ select pg_temp.ok((select count(*) = 1 from td_my_events() where id = pg_temp.v(
 select td_set_ctp(pg_temp.v('w1')::uuid, 4, 'Ace pot');
 reset role;
 insert into players (event_id, name, div_code, checked_in) values (pg_temp.v('w1')::uuid, 'Thumb One', 'MA1', true), (pg_temp.v('w1')::uuid, 'Thumb Two', 'MA3', true);
-update events set vest_player_id = (select id from players where name = 'Thumb One' and event_id = pg_temp.v('w1')::uuid) where id = pg_temp.v('w1')::uuid;
+insert into league_vest (event_id, player_id) select pg_temp.v('w1')::uuid, id from players where name = 'Thumb One' and event_id = pg_temp.v('w1')::uuid;
 
 select pg_temp.claims('00000000-0000-4000-8000-000000000ab1', false); set role authenticated;
 insert into lg_ctx select 'w2', td_league_new_week(pg_temp.v('lg')::uuid, '2026-11-12', 'Thumpers Week 2')->>'id';
 reset role;
-select pg_temp.ok((select name = 'Thumpers Week 2' and league_id = pg_temp.v('lg')::uuid and vest_player_id is null and group_photo is null from events where id = pg_temp.v('w2')::uuid),
+select pg_temp.ok((select name = 'Thumpers Week 2' and league_id = pg_temp.v('lg')::uuid and not exists (select 1 from league_vest where event_id = pg_temp.v('w2')::uuid) and group_photo is null from events where id = pg_temp.v('w2')::uuid),
   'next week copies the newest, without the vest');
 select pg_temp.ok((select count(*) = 9 from holes where event_id = pg_temp.v('w2')::uuid)
   and (select ctp_prize = 'Ace pot' from holes where event_id = pg_temp.v('w2')::uuid and n = 4), 'course + CTPs carry');

@@ -1,0 +1,44 @@
+/* The weekly award page (/leagues/<slug>/vest). Semantic tokens only. */
+.vp-hero { overflow: hidden; }
+.vp-top { display: grid; grid-template-columns: minmax(200px, 360px) minmax(0, 1fr); gap: 40px; align-items: center; }
+.vp-art { position: relative; display: grid; place-items: center; }
+.vp-art::before { content: ''; position: absolute; inset: 6%; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--accent-gold) 45%, transparent), transparent 70%);
+  animation: vp-glow 3.4s ease-in-out infinite; }
+.vp-art img, .vp-art .vp-vest { position: relative; width: 100%; max-width: 340px; height: auto; animation: vp-sway 4.5s ease-in-out infinite; transform-origin: 50% 0; filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .45)); }
+.vp-copy { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.vp-copy h1 { font-size: clamp(38px, 6vw, 64px); }
+.vp-k { font-family: var(--font-label); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-3); margin-top: 8px; }
+.vp-names { display: flex; flex-direction: column; gap: 2px; }
+.vp-names b { font-family: var(--font-display); font-weight: 400; font-size: clamp(32px, 5vw, 48px); line-height: 1; color: var(--accent-gold); text-transform: var(--display-case); overflow-wrap: anywhere; }
+.vp-meta { color: var(--fg-2); font-weight: 700; }
+.vp-note { font-size: 26px; }
+.vp-photo { display: block; width: 100%; padding: 0; border: 3px solid var(--ink, #000); border-radius: var(--r-card); overflow: hidden; background: #000; cursor: zoom-in; }
+.vp-photo img { display: block; width: 100%; max-height: 640px; object-fit: cover; }
+.vp-cols { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 32px; align-items: start; }
+.vp-board, .vp-weeks { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.vp-list { list-style: none; margin: 0; padding: 6px 0; }
+.vp-list li { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 16px; border-top: 1px solid var(--border); }
+.vp-list li:first-child { border-top: 0; }
+.vp-list li:first-child b { color: var(--accent-gold); }
+.vp-list b { overflow-wrap: anywhere; }
+.vp-place { font-family: var(--font-display); font-size: 22px; color: var(--fg-3); }
+.vp-count { font-family: var(--font-display); font-size: 26px; display: flex; align-items: baseline; gap: 4px; }
+.vp-count small { font-family: var(--font-body, inherit); font-size: 12px; color: var(--fg-3); }
+.vp-timeline { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.vp-week { margin: 0; display: flex; flex-direction: column; overflow: hidden; }
+.vp-thumb { display: block; width: 100%; aspect-ratio: 4 / 3; padding: 0; border: 0; border-bottom: 2px solid var(--border); background: var(--ink, #000); cursor: zoom-in; }
+.vp-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.vp-nothumb { display: grid; place-items: center; cursor: default; }
+.vp-week-body { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px 14px; }
+.vp-week-body b { font-size: 20px; line-height: 1.15; }
+.vp-week-body a { margin-top: 4px; font-weight: 700; font-size: 14px; color: var(--accent-a); }
+.vp-vest.sm { width: 34%; max-width: 110px; opacity: .55; }
+.vp-glint { animation: vp-glint 4s ease-in-out infinite; }
+@keyframes vp-sway { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+@keyframes vp-glow { 0%, 100% { opacity: .45; transform: scale(.95); } 50% { opacity: 1; transform: scale(1.06); } }
+@keyframes vp-glint { 0%, 55% { transform: translateX(0) skewX(-20deg); } 100% { transform: translateX(320px) skewX(-20deg); } }
+@media (max-width: 760px) {
+  .vp-top, .vp-cols { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .vp-art img, .vp-art .vp-vest { max-width: 240px; }
+}
+@media (prefers-reduced-motion: reduce) { .vp-art::before, .vp-art img, .vp-art .vp-vest, .vp-glint { animation: none; } }

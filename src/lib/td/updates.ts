@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'vest-page', date: '2026-10-04', help: 'winners', who: 'all',
+    title: 'The Safety Vest page + dubs vests',
+    body: 'Each league award has its own page (Lazy Boners: **/leagues/lazy-boners/vest**): this week\'s holders, the group photo, **Most vests** and every week. On a dubs week, **LEAGUE WEEK** awards the winning team, so both partners wear it. Upload the award\'s picture in **LEAGUES → SETUP → AWARD ART**.',
+  },
+  {
     id: 'leagues', date: '2026-10-04', help: 'week2', who: 'tags',
     title: 'Leagues have a home: LEAGUES',
     body: 'Tap **LEAGUES** on your events list. Each league has **WEEKS** (**+ NEW WEEK** copies last week), **SETUP** (everything the Leagues page shows, live), **TAGS** and **TDS**. League TDs run every week of their league automatically.',

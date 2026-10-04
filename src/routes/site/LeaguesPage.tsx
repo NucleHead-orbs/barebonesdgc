@@ -1,9 +1,10 @@
 /** Leagues & Pop Ups (/leagues). Leagues: the leagues table (edited by league TDs). Live bits (scores, next Pop Up, vest wall): events. Design: canvas Leagues.dc.html + Leagues-Mobile.dc.html. */
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CLUB } from '../../lib/jewel/content';
 import { Banner, Button, SectionHeading } from '../../components/ui';
 import { useLoad } from '../../lib/useLoad';
-import { imageSrc, loadLeaguesPage, loadPublicEvents, photoUrl } from '../../lib/leagues/api';
+import { imageSrc, loadLeaguesPage, loadPublicEvents } from '../../lib/leagues/api';
 import { POPUPS_PAST, POPUP_FORMAT, currentHolder, leagueEvent, localDate, nextPopUp, niceDate, type League, type LeagueWeek, type PublicEvent } from '../../lib/leagues/leagues';
 import '../../components/gallery.css';
 import './leagues.css';
@@ -42,7 +43,6 @@ export default function LeaguesPage() {
         </div>
       </section>
 
-      {weeks && leagues.some((l) => l.award && weeks[l.id]?.length) && <VestWall leagues={leagues} weeks={weeks} />}
 
       <section id="popups" className="lg-pop">
         <div className="sec-inner" style={{ gap: 28 }}>
@@ -96,12 +96,13 @@ function LeagueCard({ league: l, event, group, weeks }: { league: League; event:
           {l.where_text && <Row k="Where" v={l.where_text} note={l.where_note ?? undefined} />}
           {l.buy_in && <Row k="Cost" v={l.buy_in} />}
         </div>
-        {holder && (
-          <a className="lg-vest" href="#vest-wall">
-            <span className="lg-vest-k">{l.award} · {niceDate(holder.starts_on)}</span>
-            <b>{holder.vest}</b>
-            {holder.vest_note && <span className="lg-vest-note">{holder.vest_note}</span>}
-          </a>
+        {l.award && (
+          <Link className="lg-vest" to={`/leagues/${l.slug}/vest`}>
+            <span className="lg-vest-k">{l.award}{holder ? ` · ${niceDate(holder.starts_on)}` : ''}</span>
+            {holder ? <b>{holder.vest}</b> : <b className="lg-vest-none">Nobody's worn it yet</b>}
+            {holder?.vest_note && <span className="lg-vest-note">{holder.vest_note}</span>}
+            <span className="lg-vest-more">The vest page ›</span>
+          </Link>
         )}
         <div className="row lg-card-actions">
           {event && <Button to={`/e/${event.slug}`}>This week's scores</Button>}
@@ -173,48 +174,5 @@ function PopUpsPast() {
         <button type="button" className="gal-x" onClick={close} aria-label="Close">×</button>
       </dialog>
     </>
-  );
-}
-
-/** Every league week with a vest or a group photo, newest first (league_weeks). Photos enlarge on tap. */
-function VestWall({ leagues: all, weeks }: { leagues: League[]; weeks: Record<string, LeagueWeek[]> }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const [open, setOpen] = useState<{ src: string; alt: string } | null>(null);
-  const close = () => ref.current?.close();
-  const leagues = all.filter((l) => l.award && weeks[l.id]?.length);
-  return (
-    <section id="vest-wall" className="sec lg-wall">
-      <div className="sec-inner" style={{ gap: 24 }}>
-        {leagues.map((l) => (
-          <div key={l.id} className="lg-wall-league">
-            <SectionHeading kicker={`${l.name} · every week`} title={`The ${l.award} Wall`} size="m" as="h2" aside={`${weeks[l.id].length} weeks`} />
-            <div className="lg-wall-grid">
-              {weeks[l.id].map((w) => {
-                const alt = `${l.name} group photo, ${niceDate(w.starts_on)}`;
-                return (
-                  <figure key={w.slug} className="ds-card lg-week">
-                    {w.photo
-                      ? <button type="button" className="lg-week-pic" onClick={() => { setOpen({ src: photoUrl(w.photo!), alt }); ref.current?.showModal(); }} aria-label={`View: ${alt}`}>
-                          <img src={photoUrl(w.photo)} alt="" loading="lazy" />
-                        </button>
-                      : <div className="lg-week-pic lg-week-nopic">No group photo this week</div>}
-                    <figcaption>
-                      <span className="lg-vest-k">{niceDate(w.starts_on)}</span>
-                      {w.vest ? <b>{w.vest}</b> : <span className="lg-muted">Vest not awarded</span>}
-                      {w.vest_note && <span className="lg-vest-note">{w.vest_note}</span>}
-                      <a href={`/e/${w.slug}`}>Scores ›</a>
-                    </figcaption>
-                  </figure>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-      <dialog ref={ref} className="gal-dlg" onClose={() => setOpen(null)} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
-        {open && <img src={open.src} alt={open.alt} />}
-        <button type="button" className="gal-x" onClick={close} aria-label="Close">×</button>
-      </dialog>
-    </section>
   );
 }

@@ -12,9 +12,10 @@ export interface League {
   run_by: string | null; started_by: string | null; when_text: string | null; where_text: string | null; where_note: string | null;
   buy_in: string | null; award: string | null;
   banner: string | null; logo: string | null; // '/assets/...' (built in) or '<league_id>/...' in the league-photos bucket
+  award_image?: string | null; // the award's art (e.g. the Safety Vest), same rules as banner/logo
   tag_pool_id: string; hidden: boolean; sort: number;
 }
-export const LEAGUE_COLS = 'id, slug, name, subtitle, title, scrawl, run_by, started_by, when_text, where_text, where_note, buy_in, award, banner, logo, tag_pool_id, hidden, sort';
+export const LEAGUE_COLS = 'id, slug, name, subtitle, title, scrawl, run_by, started_by, when_text, where_text, where_note, buy_in, award, banner, logo, award_image, tag_pool_id, hidden, sort';
 
 /** Text fields a league TD edits (League setup), in screen order. */
 export const LEAGUE_FIELDS: Array<{ key: keyof League; label: string; max: number; hint?: string }> = [
@@ -95,6 +96,34 @@ export interface LeagueWeek { slug: string; name: string; starts_on: string; ves
 
 /** This week's award holder: the newest week that has one. */
 export const currentHolder = (weeks: LeagueWeek[]): LeagueWeek | null => weeks.find((w) => w.vest) ?? null;
+
+/** The vest page (league_vest_page): every week with a vest or a photo, newest first, and the most-vests board. */
+export interface VestWeek { slug: string; name: string; starts_on: string; course: string | null; holders: string[]; note: string | null; photo: string | null }
+export interface VestPageData {
+  league: Pick<League, 'id' | 'slug' | 'name' | 'award' | 'banner' | 'logo'> & { award_image: string | null };
+  weeks: VestWeek[]; board: Array<{ name: string; weeks: number; last_on: string }>;
+}
+/** This week's holders: the newest week that has any. */
+export const currentVest = (weeks: VestWeek[]): VestWeek | null => weeks.find((w) => w.holders.length > 0) ?? null;
+/** "Alex", "Alex & Bo" */
+export const holderNames = (names: string[]) => names.join(' & ');
+/** Rank labels for the board: ties share a place ("T2"). */
+export function boardPlaces(rows: Array<{ weeks: number }>): string[] {
+  return rows.map((r) => {
+    const first = rows.findIndex((x) => x.weeks === r.weeks);
+    const tied = rows.filter((x) => x.weeks === r.weeks).length > 1;
+    return `${tied ? 'T' : ''}${first + 1}`;
+  });
+}
+
+/** Dubs week: the low team (lowest to-par with holes in). null = nobody's in yet, or 1st is tied. */
+export function teamLeader(rows: Array<{ team_id: string; to_par: number | null; holes_played: number }>): string | null {
+  const scored = rows.filter((r) => r.to_par !== null && r.holes_played > 0);
+  if (!scored.length) return null;
+  const best = Math.min(...scored.map((r) => r.to_par as number));
+  const top = scored.filter((r) => r.to_par === best);
+  return top.length === 1 ? top[0].team_id : null;
+}
 
 /** Who's winning the week (lowest to-par with holes in). null = nobody's in yet, or 1st is tied (the TD picks). */
 export function weekLeader(rows: Array<{ player_id: string; r1_to_par: number | null; hole_count: number }>): string | null {

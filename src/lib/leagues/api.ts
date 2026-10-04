@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import { shrink } from '../gallery/api';
-import { LEAGUE_COLS, type League, type LeagueWeek, type PublicEvent } from './leagues';
+import { LEAGUE_COLS, type League, type LeagueWeek, type PublicEvent, type VestPageData } from './leagues';
 
 /** Every live event (public read). The page picks league scores and the next Pop Up from these. */
 export async function loadPublicEvents(): Promise<PublicEvent[]> {
@@ -35,6 +35,13 @@ export async function loadAllWeeks(leagues: League[]): Promise<Record<string, Le
   return Object.fromEntries(leagues.map((l, i) => [l.id, all[i]]));
 }
 
+/** The vest page for one league (null = no such league, or hidden). */
+export async function loadVestPage(slug: string): Promise<VestPageData | null> {
+  const { data, error } = await supabase.rpc('league_vest_page', { p_slug: slug });
+  if (error) throw error;
+  return (data ?? null) as VestPageData | null;
+}
+
 /** The public page in one load: leagues + their walls. */
 export async function loadLeaguesPage(): Promise<{ leagues: League[]; weeks: Record<string, LeagueWeek[]> }> {
   const leagues = await loadPublicLeagues();
@@ -58,7 +65,7 @@ export async function createLeague(name: string, slug: string): Promise<string> 
 }
 
 export type LeaguePatch = Partial<Pick<League, 'name' | 'subtitle' | 'title' | 'scrawl' | 'run_by' | 'started_by' | 'when_text' | 'where_text'
-  | 'where_note' | 'buy_in' | 'award' | 'banner' | 'logo' | 'hidden' | 'sort'>>;
+  | 'where_note' | 'buy_in' | 'award' | 'banner' | 'logo' | 'award_image' | 'hidden' | 'sort'>>;
 export async function saveLeague(id: string, patch: LeaguePatch): Promise<void> {
   const { error } = await supabase.rpc('td_save_league', { p_league: id, p: patch });
   if (error) throw error;
@@ -95,28 +102,38 @@ async function uploadTo(folder: string, name: string, file: File, maxEdge: numbe
 }
 
 /** Upload a league banner or logo and point the league at it. If saving fails, the upload is removed. */
-export async function uploadLeagueImage(leagueId: string, which: 'banner' | 'logo', file: File): Promise<string> {
-  const path = await uploadTo(leagueId, which, file, which === 'banner' ? 2000 : 800);
+export async function uploadLeagueImage(leagueId: string, which: 'banner' | 'logo' | 'award_image', file: File): Promise<string> {
+  const path = await uploadTo(leagueId, which === 'award_image' ? 'award' : which, file, which === 'banner' ? 2000 : 1000);
   try { await saveLeague(leagueId, { [which]: path }); } catch (e) { await supabase.storage.from(LEAGUE_PHOTOS).remove([path]); throw e; }
   return path;
 }
 
 // ---------- TD side: a week (WINNERS → LEAGUE WEEK) ----------
-export interface WeekState { vest_player_id: string | null; vest_note: string | null; group_photo: string | null; award: string | null }
+export interface WeekTeam { id: string; player_a: string; player_b: string | null }
+export interface WeekState { holders: string[]; vest_note: string | null; group_photo: string | null; award: string | null; league_slug: string | null; teams: WeekTeam[] }
 
 export async function loadWeekState(eventId: string): Promise<WeekState> {
-  const { data, error } = await supabase.from('events').select('vest_player_id, vest_note, group_photo, league_id').eq('id', eventId).single();
-  if (error) throw error;
-  let award: string | null = null;
-  if (data.league_id) {
-    const l = await supabase.from('leagues').select('award').eq('id', data.league_id).maybeSingle();
-    award = (l.data?.award as string | null | undefined) ?? null;
+  const [ev, held, teams] = await Promise.all([
+    supabase.from('events').select('vest_note, group_photo, league_id').eq('id', eventId).single(),
+    supabase.from('league_vest').select('player_id').eq('event_id', eventId),
+    supabase.from('teams').select('id, player_a, player_b').eq('event_id', eventId).eq('round', 1).order('team_no'),
+  ]);
+  if (ev.error) throw ev.error;
+  if (held.error) throw held.error;
+  let award: string | null = null; let league_slug: string | null = null;
+  if (ev.data.league_id) {
+    const l = await supabase.from('leagues').select('award, slug').eq('id', ev.data.league_id).maybeSingle();
+    award = (l.data?.award as string | null | undefined) ?? null; league_slug = (l.data?.slug as string | undefined) ?? null;
   }
-  return { vest_player_id: data.vest_player_id, vest_note: data.vest_note, group_photo: data.group_photo, award };
+  return {
+    holders: (held.data ?? []).map((r) => r.player_id as string), vest_note: ev.data.vest_note, group_photo: ev.data.group_photo, award, league_slug,
+    teams: (teams.data ?? []) as WeekTeam[],
+  };
 }
 
-export async function setVest(eventId: string, playerId: string | null, note: string): Promise<void> {
-  const { error } = await supabase.rpc('td_set_vest', { p_event: eventId, p_player: playerId, p_note: note });
+/** Award the week's vest: 0–2 players (a dubs week: the winning team). Empty = taken back. */
+export async function setVest(eventId: string, playerIds: string[], note: string): Promise<void> {
+  const { error } = await supabase.rpc('td_set_vest_holders', { p_event: eventId, p_players: playerIds, p_note: note });
   if (error) throw error;
 }
 

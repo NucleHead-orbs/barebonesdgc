@@ -139,7 +139,7 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
         <a className="td-btn quiet" href={`/e/${ev.slug}/winners`} target="_blank" rel="noreferrer">PUBLIC PAGE ↗</a>
         <button className="td-btn cta" onClick={() => void post()} disabled={busy || (!changed && !!posted)}>{busy ? 'POSTING…' : 'POST RESULTS'}</button>
       </div>
-      {ev.kind === 'league' && <LeagueWeek eventId={ev.id} players={players} board={board} />}
+      {ev.kind === 'league' && <LeagueWeek eventId={ev.id} players={players} board={board} teamRows={teamRows} doubles={roundFormat(ev, 1) === 'doubles'} />}
       {mode === 'live' && <div className="td-warn soft">Live preview counts unsigned scores. Post from OFFICIAL once cards are signed.</div>}
 
       <section className="td-panel td-money">

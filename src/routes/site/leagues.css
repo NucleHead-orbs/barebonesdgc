@@ -57,19 +57,11 @@
 }
 @media (prefers-reduced-motion: reduce) { .lg-flier { transition: none; } }
 
-/* Weekly award (Lazy Boner Safety Vest): card callout + the wall */
+/* Weekly award (e.g. Lazy Boner Safety Vest): card callout → /leagues/<slug>/vest */
 .lg-vest { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border: 3px solid var(--accent-gold); border-radius: var(--r-banner);
   background: color-mix(in srgb, var(--accent-gold) 14%, transparent); color: inherit; text-decoration: none; }
 .lg-vest b { font-size: 22px; line-height: 1.1; }
 .lg-vest-k { font-family: var(--font-label); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold); }
 .lg-vest-note { font-family: var(--font-hand); font-size: 19px; color: var(--accent-a); }
-.lg-wall { scroll-margin-top: 12px; }
-.lg-wall-league { display: flex; flex-direction: column; gap: 18px; }
-.lg-wall-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-.lg-week { margin: 0; display: flex; flex-direction: column; overflow: hidden; }
-.lg-week-pic { display: block; width: 100%; aspect-ratio: 4 / 3; padding: 0; border: 0; border-bottom: 2px solid var(--border); background: var(--ink); cursor: zoom-in; }
-.lg-week-pic img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.lg-week-nopic { display: flex; align-items: center; justify-content: center; cursor: default; color: var(--fg-3); font-weight: 700; font-size: 14px; }
-.lg-week figcaption { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px 14px; }
-.lg-week figcaption b { font-size: 20px; line-height: 1.15; }
-.lg-week figcaption a { margin-top: 4px; font-weight: 700; font-size: 14px; color: var(--accent-a); }
+.lg-vest-none { font-size: 18px !important; color: var(--fg-3); }
+.lg-vest-more { margin-top: 4px; font-weight: 700; font-size: 14px; color: var(--accent-gold); }

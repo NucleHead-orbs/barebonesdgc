@@ -245,6 +245,7 @@ function SetupTab({ league, onSaved }: { league: MyLeague; onSaved: () => Promis
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const banner = useRef<HTMLInputElement>(null);
   const logo = useRef<HTMLInputElement>(null);
+  const awardImg = useRef<HTMLInputElement>(null);
   const dirty = LEAGUE_FIELDS.some((f) => (vals[f.key] ?? '').trim() !== ((league[f.key] as string | null) ?? ''));
 
   const run = async (key: string, fn: () => Promise<unknown>, ok: string) => {
@@ -256,9 +257,9 @@ function SetupTab({ league, onSaved }: { league: MyLeague; onSaved: () => Promis
     if (!vals.name?.trim()) return setMsg({ ok: false, text: 'The league needs a name.' });
     void run('save', () => saveLeague(league.id, Object.fromEntries(LEAGUE_FIELDS.map((f) => [f.key, (vals[f.key] ?? '').trim()]))), 'Saved. The Leagues page shows it now.');
   };
-  const img = (which: 'banner' | 'logo', f: File | undefined, input: HTMLInputElement | null) => {
+  const img = (which: 'banner' | 'logo' | 'award_image', f: File | undefined, input: HTMLInputElement | null) => {
     if (!f) return;
-    void run(which, () => uploadLeagueImage(league.id, which, f), which === 'banner' ? 'Banner is up.' : 'Logo is up.').then(() => { if (input) input.value = ''; });
+    void run(which, () => uploadLeagueImage(league.id, which, f), which === 'banner' ? 'Banner is up.' : which === 'logo' ? 'Logo is up.' : 'Award art is up.').then(() => { if (input) input.value = ''; });
   };
 
   return (
@@ -280,25 +281,26 @@ function SetupTab({ league, onSaved }: { league: MyLeague; onSaved: () => Promis
       </section>
 
       <section className="td-panel td-form">
-        <h2>Banner or logo</h2>
-        <p className="td-hint">A wide banner across the top of the card, or a logo on black when there's no banner. JPG or PNG; it shrinks itself.</p>
+        <h2>Pictures</h2>
+        <p className="td-hint">Banner: a wide picture across the top of the league's card (or a logo on black when there's no banner). Award art: the weekly award (e.g. the Safety Vest) on its page. JPG, PNG or WebP; it shrinks itself.</p>
         <div className="lw-grid">
-          {(['banner', 'logo'] as const).map((which) => {
+          {([['banner', 'BANNER'], ['logo', 'LOGO'], ['award_image', 'AWARD ART']] as const).map(([which, label]) => {
             const cur = league[which];
-            const ref = which === 'banner' ? banner : logo;
+            const ref = which === 'banner' ? banner : which === 'logo' ? logo : awardImg;
             return (
               <div key={which} className="lw-block">
-                <div className="td-label">{which.toUpperCase()}</div>
-                {cur ? <img className={which === 'banner' ? 'lw-photo' : 'lg-td-logo'} src={imageSrc(cur)} alt={`${league.name} ${which}`} /> : <p className="td-hint">None.</p>}
+                <div className="td-label">{label}</div>
+                {cur ? <img className={which === 'banner' ? 'lw-photo' : 'lg-td-logo'} src={imageSrc(cur)} alt={`${league.name} ${label.toLowerCase()}`} /> : <p className="td-hint">None.</p>}
                 <input ref={ref} type="file" accept="image/*" hidden onChange={(e) => img(which, e.target.files?.[0], ref.current)} />
                 <div className="td-row">
                   <button className="td-btn" disabled={!!busy} onClick={() => ref.current?.click()}>{busy === which ? 'UPLOADING…' : cur ? 'REPLACE' : 'UPLOAD'}</button>
-                  {cur && <button className="td-btn quiet" disabled={!!busy} onClick={() => void run(which, () => saveLeague(league.id, { [which]: '' }), `${which === 'banner' ? 'Banner' : 'Logo'} removed.`)}>REMOVE</button>}
+                  {cur && <button className="td-btn quiet" disabled={!!busy} onClick={() => void run(which, () => saveLeague(league.id, { [which]: '' }), `${label[0]}${label.slice(1).toLowerCase()} removed.`)}>REMOVE</button>}
                 </div>
               </div>
             );
           })}
         </div>
+        {league.award && <p className="td-hint">The {league.award} page: <a href={`/leagues/${league.slug}/vest`} target="_blank" rel="noreferrer">/leagues/{league.slug}/vest ↗</a></p>}
       </section>
 
       <section className="td-panel td-form">

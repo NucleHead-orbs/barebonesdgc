@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { currentHolder, leagueEvent, leagueSlug, nextPopUp, niceDate, validSlug, weekLeader, weekName, type LeagueWeek, type PublicEvent } from './leagues';
+import { boardPlaces, currentVest, teamLeader, currentHolder, leagueEvent, leagueSlug, nextPopUp, niceDate, validSlug, weekLeader, weekName, type LeagueWeek, type PublicEvent } from './leagues';
 
 const ev = (slug: string, name: string, starts_on: string, archived = false, ends_on: string | null = null, league_id: string | null = null): PublicEvent => ({ slug, name, starts_on, ends_on, archived, league_id });
 
@@ -66,5 +66,22 @@ describe('league week', () => {
     const w = (slug: string, vest: string | null): LeagueWeek => ({ slug, name: slug, starts_on: '2026-10-04', vest, vest_note: null, photo: null });
     expect(currentHolder([w('wk3', null), w('wk2', 'Hayden'), w('wk1', 'YT')])?.vest).toBe('Hayden');
     expect(currentHolder([w('wk3', null)])).toBeNull();
+  });
+});
+
+describe('vest page', () => {
+  it('dubs leader is the lone low team', () => {
+    const t = (team_id: string, to_par: number | null, holes_played = 18) => ({ team_id, to_par, holes_played });
+    expect(teamLeader([t('a', -2), t('b', -5), t('c', 0)])).toBe('b');
+    expect(teamLeader([t('a', -5), t('b', -5)])).toBeNull();
+    expect(teamLeader([t('a', null, 0)])).toBeNull();
+  });
+  it('current holders = newest week that has any', () => {
+    const w = (slug: string, holders: string[]) => ({ slug, name: slug, starts_on: '2026-10-04', course: null, holders, note: null, photo: null });
+    expect(currentVest([w('3', []), w('2', ['Alex', 'Bo']), w('1', ['Cal'])])?.slug).toBe('2');
+    expect(currentVest([w('3', [])])).toBeNull();
+  });
+  it('board places share ties', () => {
+    expect(boardPlaces([{ weeks: 3 }, { weeks: 2 }, { weeks: 2 }, { weeks: 1 }])).toEqual(['1', 'T2', 'T2', '4']);
   });
 });
