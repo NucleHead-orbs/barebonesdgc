@@ -1,16 +1,18 @@
-/** Leagues & Pop Ups (/leagues). Facts: src/lib/leagues/leagues.ts. Live bits (scores, next Pop Up): the events table. Design: canvas Leagues.dc.html + Leagues-Mobile.dc.html. */
+/** Leagues & Pop Ups (/leagues). Leagues: the leagues table (edited by league TDs). Live bits (scores, next Pop Up, vest wall): events. Design: canvas Leagues.dc.html + Leagues-Mobile.dc.html. */
 import { useRef, useState } from 'react';
 import { CLUB } from '../../lib/jewel/content';
 import { Banner, Button, SectionHeading } from '../../components/ui';
 import { useLoad } from '../../lib/useLoad';
-import { loadAllWeeks, loadPublicEvents, photoUrl } from '../../lib/leagues/api';
-import { LEAGUES, POPUPS_PAST, POPUP_FORMAT, currentHolder, leagueEvent, localDate, nextPopUp, niceDate, type League, type LeagueWeek, type PublicEvent } from '../../lib/leagues/leagues';
+import { imageSrc, loadLeaguesPage, loadPublicEvents, photoUrl } from '../../lib/leagues/api';
+import { POPUPS_PAST, POPUP_FORMAT, currentHolder, leagueEvent, localDate, nextPopUp, niceDate, type League, type LeagueWeek, type PublicEvent } from '../../lib/leagues/leagues';
 import '../../components/gallery.css';
 import './leagues.css';
 
 export default function LeaguesPage() {
   const { data: events } = useLoad(loadPublicEvents); // a failed load just means no live buttons, never a broken page
-  const { data: weeks } = useLoad(loadAllWeeks); // same: no wall, never a broken page
+  const { data: page } = useLoad(loadLeaguesPage); // a failed load = no league cards, never a broken page
+  const leagues = page?.leagues ?? [];
+  const weeks = page?.weeks;
   const today = localDate();
   const next = events ? nextPopUp(events, today) : null;
   const group = CLUB.facebookUrl;
@@ -23,7 +25,7 @@ export default function LeaguesPage() {
           <h1>Leagues &amp;<span className="hl">Pop Ups</span></h1>
           <p className="lead lg-lead">Two leagues on the regular, and Pop Ups whenever the Boners get restless. Same crew, same trash talk, more rounds.</p>
           <nav className="chips" aria-label="On this page">
-            {LEAGUES.map((l) => <a key={l.id} className="ds-chip lg-chip" href={`#${l.id}`}>{l.name}</a>)}
+            {leagues.map((l) => <a key={l.id} className="ds-chip lg-chip" href={`#${l.slug}`}>{l.name}</a>)}
             <a className="ds-chip lg-chip" aria-pressed="true" href="#popups">Pop Ups · coming back</a>
           </nav>
         </div>
@@ -31,16 +33,16 @@ export default function LeaguesPage() {
 
       <section className="sec">
         <div className="sec-inner" style={{ gap: 24 }}>
-          <SectionHeading kicker="Weekly damage" title="The Leagues" size="l" aside={`${LEAGUES.length} leagues`} />
+          <SectionHeading kicker="Weekly damage" title="The Leagues" size="l" aside={page ? `${leagues.length} league${leagues.length === 1 ? '' : 's'}` : undefined} />
           <div className="lg-grid">
-            {LEAGUES.map((l) => <LeagueCard key={l.id} league={l} event={events ? leagueEvent(l, events, today) : null} group={group} weeks={weeks?.[l.id] ?? []} />)}
+            {leagues.map((l) => <LeagueCard key={l.id} league={l} event={events ? leagueEvent(l.id, events, today) : null} group={group} weeks={weeks?.[l.id] ?? []} />)}
           </div>
           <span className="lg-scrawl lg-gold">I'll put you down for a 4 there...</span>
           <Banner>Scores run on our own scorecard: scan the QR on your card, score every hole, everybody signs, submit. Only signed &amp; submitted rounds count.</Banner>
         </div>
       </section>
 
-      {weeks && LEAGUES.some((l) => l.award && weeks[l.id]?.length) && <VestWall weeks={weeks} />}
+      {weeks && leagues.some((l) => l.award && weeks[l.id]?.length) && <VestWall leagues={leagues} weeks={weeks} />}
 
       <section id="popups" className="lg-pop">
         <div className="sec-inner" style={{ gap: 28 }}>
@@ -68,7 +70,7 @@ export default function LeaguesPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div className="ds-kicker">For TDs</div>
             <h2 className="ds-display ds-display-m" style={{ margin: 0 }}>Every league night and Pop Up runs on the same scorecard as the Jewel.</h2>
-            <p className="lg-muted">Duplicate last week's event, check in walk-ups, print the QR cards. Standings go live on the event's leaderboard.</p>
+            <p className="lg-muted">League TDs add next week from LEAGUES, check in walk-ups, print the QR cards. Standings go live on the event's leaderboard.</p>
           </div>
           <Button to="/td" variant="outline-accent" size="lg">TD login</Button>
         </div>
@@ -80,21 +82,19 @@ export default function LeaguesPage() {
 function LeagueCard({ league: l, event, group, weeks }: { league: League; event: PublicEvent | null; group: string | undefined; weeks: LeagueWeek[] }) {
   const holder = l.award ? currentHolder(weeks) : null;
   return (
-    <article id={l.id} className="ds-card lg-card">
-      {l.banner && <img className="lg-banner" src={l.banner} alt="" loading="lazy" />}
-      {l.logos && (
-        <div className="lg-logos">{l.logos.map((g) => <img key={g.src} src={g.src} alt={g.alt} loading="lazy" />)}</div>
-      )}
-      <div className="ds-card-head"><span className="ds-card-title">{l.name}</span><span className="ds-card-aside">{l.tag}</span></div>
+    <article id={l.slug} className="ds-card lg-card">
+      {l.banner && <img className="lg-banner" src={imageSrc(l.banner)} alt="" loading="lazy" />}
+      {!l.banner && l.logo && <div className="lg-logos"><img src={imageSrc(l.logo)} alt={`${l.name} logo`} loading="lazy" /></div>}
+      <div className="ds-card-head"><span className="ds-card-title">{l.name}</span>{l.subtitle && <span className="ds-card-aside">{l.subtitle}</span>}</div>
       <div className="ds-card-body lg-card-body">
-        <h3 className="ds-display ds-display-m" style={{ margin: 0 }}>{l.title}</h3>
-        <span className="lg-scrawl">{l.scrawl}</span>
+        <h3 className="ds-display ds-display-m" style={{ margin: 0 }}>{l.title ?? l.name}</h3>
+        {l.scrawl && <span className="lg-scrawl">{l.scrawl}</span>}
         <div className="ds-tour">
-          <Row k="Runs it" v={l.runBy} />
-          {l.startedBy && <Row k="Started by" v={l.startedBy} />}
-          <Row k="When" v={l.when} />
-          <Row k="Where" v={l.where} note={l.whereNote} />
-          {l.buyIn && <Row k="Cost" v={l.buyIn} />}
+          {l.run_by && <Row k="Runs it" v={l.run_by} />}
+          {l.started_by && <Row k="Started by" v={l.started_by} />}
+          {l.when_text && <Row k="When" v={l.when_text} />}
+          {l.where_text && <Row k="Where" v={l.where_text} note={l.where_note ?? undefined} />}
+          {l.buy_in && <Row k="Cost" v={l.buy_in} />}
         </div>
         {holder && (
           <a className="lg-vest" href="#vest-wall">
@@ -105,7 +105,7 @@ function LeagueCard({ league: l, event, group, weeks }: { league: League; event:
         )}
         <div className="row lg-card-actions">
           {event && <Button to={`/e/${event.slug}`}>This week's scores</Button>}
-          <Button to={`/tags/${l.tagPool}`} variant="outline-accent">Tag board</Button>
+          <Button to={`/tags/${l.slug}`} variant="outline-accent">Tag board</Button>
           {group && <Button href={group} external variant="outline">Ask in the group ↗</Button>}
         </div>
       </div>
@@ -177,11 +177,11 @@ function PopUpsPast() {
 }
 
 /** Every league week with a vest or a group photo, newest first (league_weeks). Photos enlarge on tap. */
-function VestWall({ weeks }: { weeks: Record<string, LeagueWeek[]> }) {
+function VestWall({ leagues: all, weeks }: { leagues: League[]; weeks: Record<string, LeagueWeek[]> }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState<{ src: string; alt: string } | null>(null);
   const close = () => ref.current?.close();
-  const leagues = LEAGUES.filter((l) => l.award && weeks[l.id]?.length);
+  const leagues = all.filter((l) => l.award && weeks[l.id]?.length);
   return (
     <section id="vest-wall" className="sec lg-wall">
       <div className="sec-inner" style={{ gap: 24 }}>

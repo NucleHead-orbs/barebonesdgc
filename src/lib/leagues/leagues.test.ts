@@ -1,28 +1,36 @@
 import { describe, expect, it } from 'vitest';
-import { LEAGUES, currentHolder, leagueByPool, leagueEvent, nextPopUp, niceDate, weekLeader, type LeagueWeek, type PublicEvent } from './leagues';
+import { currentHolder, leagueEvent, leagueSlug, nextPopUp, niceDate, validSlug, weekLeader, weekName, type LeagueWeek, type PublicEvent } from './leagues';
 
-const ev = (slug: string, name: string, starts_on: string, archived = false, ends_on: string | null = null): PublicEvent => ({ slug, name, starts_on, ends_on, archived });
-const lazy = LEAGUES.find((l) => l.id === 'lazy')!;
-const rbfl = LEAGUES.find((l) => l.id === 'rbfl')!;
+const ev = (slug: string, name: string, starts_on: string, archived = false, ends_on: string | null = null, league_id: string | null = null): PublicEvent => ({ slug, name, starts_on, ends_on, archived, league_id });
 
 describe('leagueEvent', () => {
   const events = [
-    ev('lb1', 'Lazy Boners League', '2026-09-20'),
-    ev('lb2', 'Lazy Boners League Week 2', '2026-09-27'),
-    ev('lb3', 'Lazy Boners League Week 3', '2026-10-04'), // future
-    ev('lbx', 'Lazy Boners (old)', '2026-09-28', true), // archived
-    ev('rb1', 'Root Beer Float League', '2026-09-24'),
-    ev('j', 'The Bare Bones Jewel XI', '2026-11-21'),
+    ev('lb1', 'Lazy Boners League', '2026-09-20', false, null, 'lazy'),
+    ev('lb2', 'Anything named', '2026-09-27', false, null, 'lazy'),
+    ev('lb3', 'Lazy Boners · Oct 4', '2026-10-04', false, null, 'lazy'), // future
+    ev('lbx', 'Lazy Boners (old)', '2026-09-28', true, null, 'lazy'), // archived
+    ev('rb1', 'Root Beer Float League', '2026-09-24', false, null, 'rbfl'),
+    ev('nm', 'Lazy Boners named but not attached', '2026-09-28'),
   ];
-  it('picks the newest started, non-archived event of that league', () => {
-    expect(leagueEvent(lazy, events, '2026-09-29')?.slug).toBe('lb2');
-    expect(leagueEvent(rbfl, events, '2026-09-29')?.slug).toBe('rb1');
-  });
-  it('matches RBFL by either name and ignores case/punctuation', () => {
-    expect(leagueEvent(rbfl, [ev('r', 'RBFL: week 1', '2026-09-01')], '2026-09-29')?.slug).toBe('r');
+  it('picks the newest started, non-archived week attached to that league (names don\'t matter)', () => {
+    expect(leagueEvent('lazy', events, '2026-09-29')?.slug).toBe('lb2');
+    expect(leagueEvent('rbfl', events, '2026-09-29')?.slug).toBe('rb1');
   });
   it('null when the league has nothing yet (button hides)', () => {
-    expect(leagueEvent(rbfl, [ev('x', 'Lazy Boners', '2026-09-01')], '2026-09-29')).toBeNull();
+    expect(leagueEvent('new', events, '2026-09-29')).toBeNull();
+  });
+});
+
+describe('league setup helpers', () => {
+  it('slug from a name', () => {
+    expect(leagueSlug('Thursday Thumpers!')).toBe('thursday-thumpers');
+    expect(leagueSlug('  RBFL  ')).toBe('rbfl');
+    expect(validSlug(leagueSlug('Thursday Thumpers!'))).toBe(true);
+    expect(validSlug('x')).toBe(false);
+    expect(validSlug('Bad Slug')).toBe(false);
+  });
+  it('default week name', () => {
+    expect(weekName({ name: 'Lazy Boners' }, '2026-10-11')).toBe('Lazy Boners · Oct 11');
   });
 });
 
@@ -47,11 +55,6 @@ describe('niceDate', () => {
 });
 
 describe('league week', () => {
-  it('finds the league by tag set and its award', () => {
-    expect(leagueByPool('lazy-boners')?.award).toBe('Lazy Boner Safety Vest');
-    expect(leagueByPool('nope')).toBeNull();
-    expect(leagueByPool(null)).toBeNull();
-  });
   it('leader is the lone low score; ties and empty boards pick nobody', () => {
     const r = (player_id: string, r1_to_par: number | null, hole_count = 18) => ({ player_id, r1_to_par, hole_count });
     expect(weekLeader([])).toBeNull();

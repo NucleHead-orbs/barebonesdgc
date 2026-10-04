@@ -33,6 +33,7 @@ export interface EventConfig {
   /** 'league' = weekly night: no Prep/Crew/Early Access, one round, one day, a TAGS tab for its tag set. */
   kind?: EventKind;
   tag_pool_id?: string | null;
+  league_id?: string | null; // the league this week belongs to (leagues table); kind + tag set follow it
 }
 export type EventKind = 'event' | 'league';
 

@@ -1,43 +1,118 @@
 import { supabase } from '../supabase';
 import { shrink } from '../gallery/api';
-import { LEAGUES, type LeagueWeek, type PublicEvent } from './leagues';
+import { LEAGUE_COLS, type League, type LeagueWeek, type PublicEvent } from './leagues';
 
 /** Every live event (public read). The page picks league scores and the next Pop Up from these. */
 export async function loadPublicEvents(): Promise<PublicEvent[]> {
-  const { data, error } = await supabase.from('events').select('slug, name, starts_on, ends_on, archived').eq('archived', false);
+  const { data, error } = await supabase.from('events').select('slug, name, starts_on, ends_on, archived, league_id').eq('archived', false);
   if (error) throw error;
   return (data ?? []) as PublicEvent[];
 }
 
-/** Group photos: public bucket, <event_id>/<file>; only that event's TDs write. */
+/** Leagues on the public site (not hidden), in their order. */
+export async function loadPublicLeagues(): Promise<League[]> {
+  const { data, error } = await supabase.from('leagues').select(LEAGUE_COLS).eq('hidden', false).order('sort').order('name');
+  if (error) throw error;
+  return (data ?? []) as League[];
+}
+
+/** Group photos + league banners/logos: public bucket. <event_id>/... = a week's photo, <league_id>/... = league art. */
 export const LEAGUE_PHOTOS = 'league-photos';
 export const photoUrl = (path: string) => supabase.storage.from(LEAGUE_PHOTOS).getPublicUrl(path).data.publicUrl;
+/** A league image: built-in '/assets/...' as is, otherwise an upload in league-photos. */
+export const imageSrc = (path: string) => (path.startsWith('/') ? path : photoUrl(path));
 
-/** The vest wall for one league tag set, newest first. */
-export async function loadWeeks(poolSlug: string): Promise<LeagueWeek[]> {
-  const { data, error } = await supabase.rpc('league_weeks', { p_pool_slug: poolSlug });
+/** The vest wall for one league, newest first. */
+export async function loadWeeks(leagueSlug: string): Promise<LeagueWeek[]> {
+  const { data, error } = await supabase.rpc('league_weeks', { p_pool_slug: leagueSlug });
   if (error) throw error;
   return (data ?? []) as LeagueWeek[];
 }
 
-/** Every league's wall, keyed by league id. A league that fails to load just shows no wall. */
-export async function loadAllWeeks(): Promise<Record<string, LeagueWeek[]>> {
-  const all = await Promise.all(LEAGUES.map((l) => loadWeeks(l.tagPool).catch(() => [] as LeagueWeek[])));
-  return Object.fromEntries(LEAGUES.map((l, i) => [l.id, all[i]]));
+/** The walls of these leagues, keyed by league id. A league that fails to load just shows no wall. */
+export async function loadAllWeeks(leagues: League[]): Promise<Record<string, LeagueWeek[]>> {
+  const all = await Promise.all(leagues.map((l) => loadWeeks(l.slug).catch(() => [] as LeagueWeek[])));
+  return Object.fromEntries(leagues.map((l, i) => [l.id, all[i]]));
 }
 
-// ---------- TD side (WINNERS tab of a league week) ----------
-export interface WeekState { vest_player_id: string | null; vest_note: string | null; group_photo: string | null; pool_slug: string | null }
+/** The public page in one load: leagues + their walls. */
+export async function loadLeaguesPage(): Promise<{ leagues: League[]; weeks: Record<string, LeagueWeek[]> }> {
+  const leagues = await loadPublicLeagues();
+  return { leagues, weeks: await loadAllWeeks(leagues.filter((l) => l.award)) };
+}
+
+// ---------- TD side: leagues ----------
+export type MyLeague = League & { pool_slug: string };
+
+export async function myLeagues(): Promise<MyLeague[]> {
+  const { data, error } = await supabase.rpc('td_my_leagues');
+  if (error) throw error;
+  return (data ?? []) as MyLeague[];
+}
+
+/** Super admin: a new league + its own tag set. Returns the league id. */
+export async function createLeague(name: string, slug: string): Promise<string> {
+  const { data, error } = await supabase.rpc('td_create_league', { p_name: name, p_slug: slug });
+  if (error) throw error;
+  return data as string;
+}
+
+export type LeaguePatch = Partial<Pick<League, 'name' | 'subtitle' | 'title' | 'scrawl' | 'run_by' | 'started_by' | 'when_text' | 'where_text'
+  | 'where_note' | 'buy_in' | 'award' | 'banner' | 'logo' | 'hidden' | 'sort'>>;
+export async function saveLeague(id: string, patch: LeaguePatch): Promise<void> {
+  const { error } = await supabase.rpc('td_save_league', { p_league: id, p: patch });
+  if (error) throw error;
+}
+
+/** Next week: copies the newest week (or a blank week with these holes/divisions when it's the first). Returns the event id. */
+export async function newWeek(leagueId: string, date: string, opts: { name?: string; copyPlayers?: boolean; holes?: number; divisions?: Array<{ code: string; wave?: string }> } = {}): Promise<string> {
+  const { data, error } = await supabase.rpc('td_league_new_week', {
+    p_league: leagueId, p_date: date, p_name: opts.name?.trim() || null, p_copy_players: opts.copyPlayers ?? true,
+    p_hole_count: opts.holes ?? 18, p_divisions: (opts.divisions ?? []).map((d) => ({ code: d.code, wave: d.wave ?? 'AM' })),
+  });
+  if (error) throw error;
+  return (data as { id: string }).id;
+}
+
+/** Attach an event to a league (null = plain event again). */
+export async function setEventLeague(eventId: string, leagueId: string | null): Promise<void> {
+  const { error } = await supabase.rpc('td_set_event_league', { p_event: eventId, p_league: leagueId });
+  if (error) throw error;
+}
+
+const PHOTO_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+const MAX_BYTES = 8 * 1024 * 1024;
+
+async function uploadTo(folder: string, name: string, file: File, maxEdge: number): Promise<string> {
+  const blob = await shrink(file, maxEdge);
+  const ext = PHOTO_TYPES[blob.type];
+  if (!ext) throw new Error('That file type won\'t load here. Use a JPG, PNG or WebP image.');
+  if (blob.size > MAX_BYTES) throw new Error('That image is over 8 MB even after shrinking.');
+  const path = `${folder}/${name}-${Date.now()}.${ext}`;
+  const up = await supabase.storage.from(LEAGUE_PHOTOS).upload(path, blob, { contentType: blob.type, upsert: false });
+  if (up.error) throw up.error;
+  return path;
+}
+
+/** Upload a league banner or logo and point the league at it. If saving fails, the upload is removed. */
+export async function uploadLeagueImage(leagueId: string, which: 'banner' | 'logo', file: File): Promise<string> {
+  const path = await uploadTo(leagueId, which, file, which === 'banner' ? 2000 : 800);
+  try { await saveLeague(leagueId, { [which]: path }); } catch (e) { await supabase.storage.from(LEAGUE_PHOTOS).remove([path]); throw e; }
+  return path;
+}
+
+// ---------- TD side: a week (WINNERS → LEAGUE WEEK) ----------
+export interface WeekState { vest_player_id: string | null; vest_note: string | null; group_photo: string | null; award: string | null }
 
 export async function loadWeekState(eventId: string): Promise<WeekState> {
-  const { data, error } = await supabase.from('events').select('vest_player_id, vest_note, group_photo, tag_pool_id').eq('id', eventId).single();
+  const { data, error } = await supabase.from('events').select('vest_player_id, vest_note, group_photo, league_id').eq('id', eventId).single();
   if (error) throw error;
-  let pool_slug: string | null = null;
-  if (data.tag_pool_id) {
-    const p = await supabase.from('tag_pools').select('slug').eq('id', data.tag_pool_id).maybeSingle();
-    pool_slug = (p.data?.slug as string | undefined) ?? null;
+  let award: string | null = null;
+  if (data.league_id) {
+    const l = await supabase.from('leagues').select('award').eq('id', data.league_id).maybeSingle();
+    award = (l.data?.award as string | null | undefined) ?? null;
   }
-  return { vest_player_id: data.vest_player_id, vest_note: data.vest_note, group_photo: data.group_photo, pool_slug };
+  return { vest_player_id: data.vest_player_id, vest_note: data.vest_note, group_photo: data.group_photo, award };
 }
 
 export async function setVest(eventId: string, playerId: string | null, note: string): Promise<void> {
@@ -45,18 +120,9 @@ export async function setVest(eventId: string, playerId: string | null, note: st
   if (error) throw error;
 }
 
-const PHOTO_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
-const MAX_BYTES = 8 * 1024 * 1024;
-
 /** Shrink, upload to <event>/group-<time>.<ext>, point the week at it. If that fails, the upload is removed. Returns the path. */
 export async function uploadGroupPhoto(eventId: string, file: File): Promise<string> {
-  const blob = await shrink(file, 2000);
-  const ext = PHOTO_TYPES[blob.type];
-  if (!ext) throw new Error('That file type won\'t load here. Use a JPG or PNG photo.');
-  if (blob.size > MAX_BYTES) throw new Error('That photo is over 8 MB even after shrinking.');
-  const path = `${eventId}/group-${Date.now()}.${ext}`;
-  const up = await supabase.storage.from(LEAGUE_PHOTOS).upload(path, blob, { contentType: blob.type, upsert: false });
-  if (up.error) throw up.error;
+  const path = await uploadTo(eventId, 'group', file, 2000);
   const { error } = await supabase.rpc('td_set_group_photo', { p_event: eventId, p_path: path });
   if (error) { await supabase.storage.from(LEAGUE_PHOTOS).remove([path]); throw error; }
   return path;

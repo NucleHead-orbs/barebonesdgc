@@ -44,7 +44,7 @@ export default function TdHome({ admin, tagAdmin }: { admin: boolean; tagAdmin: 
           ))}
         </ol>
         <p className="td-hint">Before the day: <button className="td-link" onClick={() => setHelp('prep')}>PREP</button> (checklist, shirts, designs, votes) and{' '}
-          <button className="td-link" onClick={() => setHelp('crew')}>CREW</button> (helper links, stations, raffle). League week 2? <button className="td-link" onClick={() => setHelp('week2')}>DUPLICATE</button> last week.</p>
+          <button className="td-link" onClick={() => setHelp('crew')}>CREW</button> (helper links, stations, raffle). Running a league? <button className="td-link" onClick={() => setHelp('week2')}>LEAGUES → + NEW WEEK</button>.</p>
         <p className="td-hint">On the club site: <a href="/scorecard">Scorecard</a> · <a href="/rounds">Boner Rounds</a> · <a href="/tags">Tag boards</a> · <a href="/leagues">Leagues</a></p>
       </section>
 

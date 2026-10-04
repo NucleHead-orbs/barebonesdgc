@@ -10,8 +10,7 @@ import { DivisionPicker, Field } from './EventHub';
 import { LibraryBar } from './CourseLibrary';
 import { sortLibrary, type LibCourse } from '../../lib/courses/courses';
 import type { HoleTee } from '../../lib/proofs/teeSigns';
-import { loadPools } from '../../lib/tags/api';
-import type { TagPool } from '../../lib/tags/tags';
+import { myLeagues, setEventLeague, type MyLeague } from '../../lib/leagues/api';
 
 /**
  * The build menu. Each section saves on its own through the matching RPC, so a refusal in one
@@ -82,33 +81,39 @@ function Toggle({ on, label, onChange }: { on: boolean; label: string; onChange:
   );
 }
 
-/** Event (tournament) or League (weekly night). Changes the tabs; a league picks its tag set. */
+/** Event or league week. A week belongs to a league (LEAGUES on your events list); its tag set comes with it. */
 function KindSection({ ev, onSaved }: { ev: EventConfig; onSaved: () => Promise<void> }) {
   const kind: EventKind = ev.kind ?? 'event';
-  const [pools, setPools] = useState<TagPool[]>([]);
+  const [leagues, setLeagues] = useState<MyLeague[] | null>(null);
   const [k, setK] = useState<EventKind>(kind);
-  const [pool, setPool] = useState(ev.tag_pool_id ?? '');
+  const [league, setLeague] = useState(ev.league_id ?? '');
   const { busy, msg, run } = useSave(onSaved);
-  useEffect(() => { void (async () => { const r = await loadPools(); if (r.data) setPools(r.data.filter((p) => !p.invite_only)); })(); }, []);
-  const dirty = k !== kind || (k === 'league' && pool !== (ev.tag_pool_id ?? ''));
+  useEffect(() => { void (async () => { try { setLeagues(await myLeagues()); } catch { setLeagues([]); } })(); }, []);
+  const current = leagues?.find((l) => l.id === ev.league_id);
+  const dirty = k !== kind || (k === 'league' && league !== (ev.league_id ?? ''));
+  const save = () => run(async () => {
+    try { await setEventLeague(ev.id, k === 'league' ? league : null); return {}; } catch (error) { return { error }; }
+  }, k === 'league' ? `This is a ${leagues?.find((l) => l.id === league)?.name ?? 'league'} week now.` : 'Event mode on.');
   return (
-    <Section title="Event or league" hint={k === 'league'
-      ? 'League night: one day, one round. No PREP, CREW or EARLY ACCESS. TAGS records your league\'s tag set from tonight\'s scores.'
+    <Section title="Event or league week" hint={k === 'league'
+      ? 'League week: one day, one round. No PREP, CREW or EARLY ACCESS. TAGS records the league\'s tag set from this week\'s scores. Next week: LEAGUES → the league → + NEW WEEK.'
       : 'Tournament: PREP (checklist, shirts, designs), CREW (helper links, stations) and EARLY ACCESS are on.'} msg={msg}>
-      <Seg value={k} options={[['event', 'EVENT'], ['league', 'LEAGUE']]} onChange={setK} />
+      <Seg value={k} options={[['event', 'EVENT'], ['league', 'LEAGUE WEEK']]} onChange={setK} />
       {k === 'league' && (
-        <Field label="LEAGUE TAG SET">
-          <select className="td-select" value={pool} onChange={(e) => setPool(e.target.value)}>
-            <option value="">None (no tags)</option>
-            {pools.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        <Field label="LEAGUE">
+          <select className="td-select" value={league} onChange={(e) => setLeague(e.target.value)}>
+            <option value="" disabled>Pick the league</option>
+            {(leagues ?? []).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+            {ev.league_id && !current && leagues && <option value={ev.league_id}>(a league you don't run)</option>}
           </select>
         </Field>
       )}
+      {k === 'league' && leagues && !leagues.length && <div className="td-hint">You don't run a league yet. Ask Mike to add you as a league TD.</div>}
       {k === 'league' && (ev.rounds === 2 || ev.waves === 2 || ev.ends_on !== ev.starts_on) && (
         <div className="td-hint">Saving the Event section below sets this to one day, one round, one wave.</div>
       )}
       <div className="td-actions">
-        <button className="td-btn cta" disabled={busy || !dirty} onClick={() => void run(() => api.setLeague(ev.id, k, k === 'league' ? pool || null : null), k === 'league' ? 'League mode on.' : 'Event mode on.')}>
+        <button className="td-btn cta" disabled={busy || !dirty || (k === 'league' && !league)} onClick={() => void save()}>
           {busy ? 'SAVING…' : 'SAVE'}</button>
       </div>
     </Section>

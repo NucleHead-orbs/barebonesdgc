@@ -103,7 +103,7 @@ export default function EventWorkspace({ eventId, email, admin, onSignOut, onBac
       {current === 'early' && <EarlyPanel eventId={ev.id} slug={ev.slug} eventName={ev.name} />}
       {current === 'tags' && (ev.tag_pool_id
         ? <Suspense fallback={<p className="td-empty">Loading tags…</p>}><TagsPanel admin={admin} onlyPool={ev.tag_pool_id} eventId={ev.id} /></Suspense>
-        : <main className="td-main"><div className="td-warn soft">Pick this league's tag set in <b>SETUP → Event or league</b>, then its tags show here.</div></main>)}
+        : <main className="td-main"><div className="td-warn soft">Attach this week to its league in <b>SETUP → Event or league week</b>, then the league's tags show here.</div></main>)}
       {current === 'players' && <PlayersPanel setup={setup} players={players} sponsors={sponsors} priv={priv}
         onPlayers={setPlayers} onReload={async () => { await Promise.all([loadPlayers(), loadRequests(), loadPrivate()]); }} onSponsors={setSponsors} onPrivate={loadPrivate} />}
       {current === 'requests' && <RequestsPanel setup={setup} players={players} requests={requests} onReload={loadRequests} />}

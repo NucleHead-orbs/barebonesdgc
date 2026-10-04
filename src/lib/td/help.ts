@@ -18,7 +18,7 @@ export const HELP: HelpSection[] = [
   {
     id: 'setup', title: 'Set up your event (SETUP tab)',
     steps: [
-      '**Event or league:** a tournament keeps **PREP**, **CREW** and **EARLY ACCESS**. A **LEAGUE** night drops those, is one day and one round, and gets a **TAGS** tab for its tag set: pick the set (e.g. Lazy Boners) under **LEAGUE TAG SET**, tap **SAVE**.',
+      '**Event or league week:** a tournament keeps **PREP**, **CREW** and **EARLY ACCESS**. A **LEAGUE WEEK** drops those, is one day and one round, and gets a **TAGS** tab for its league\'s tag set. Weeks made from **LEAGUES → + NEW WEEK** are set already; to attach an older event, pick **LEAGUE WEEK** and the league, tap **SAVE**.',
       '**Event:** name, club, dates, colors, rounds (1 or 2), waves (single or AM/PM), check-in on/off. Tap **SAVE EVENT**.',
       '**Course:** pick your course from the **library** list and tap **LOAD**: par, feet, OB and mandos fill in. Not listed? Type the holes, tap **SAVE COURSE**, then **SAVE TO LIBRARY** so every TD can use it next time.',
       'Loading copies the holes into your event. Fixing the library later never changes an event you already ran.',
@@ -146,19 +146,22 @@ export const HELP: HelpSection[] = [
     ],
   },
   {
-    id: 'week2', title: 'Next week (leagues)',
+    id: 'week2', title: 'Run a league (LEAGUES)',
     steps: [
-      'Go back to your events, tap **DUPLICATE** on last week, pick the new date.',
-      'Leave **"Copy the player list"** on. Everyone starts not checked in.',
-      'Course, divisions, card rules, private tags, keep-apart, payout tables and the prep checklist carry over. Requests, cards, scores, results, designs, shirt orders, the vest and the group photo don\'t.',
+      'From your events list tap **LEAGUES**, then **OPEN** your league. Mike creates leagues and adds their TDs; a league TD runs every week of it without being added to each one.',
+      '**WEEKS → + NEW WEEK**: pick the date (the name fills itself in), leave **Copy the player list** on, tap **CREATE WEEK**. It copies the newest week: course, CTP holes, divisions, payouts and players (nobody checked in). Never cards, scores, the vest or the photo.',
+      'The very first week asks for the course and divisions instead. Every week after copies the one before.',
+      'The week opens like any event: **PLAYERS**, **CARDS & QR** (PUBLISH & START), **WINNERS** (vest + photo), **TAGS**. **‹ BACK** returns to the league.',
+      '**SETUP** is what the Leagues page shows: name, tagline, who runs it, when, where, cost, the weekly award, and a banner or logo. Saves go live right away. **Show on the site** hides or shows the whole league.',
+      '**TAGS** is the league\'s own tag set. **TDS** lists who runs it (Mike adds or removes them).',
     ],
   },
   {
     id: 'leagues', title: 'Leagues and Pop Ups on the website',
     steps: [
-      'The Leagues page finds your events by **name**. Start a Lazy Boners night with **Lazy Boners** and an RBFL night with **RBFL** or **Root Beer Float**. Its **This week\'s scores** button opens the newest one that has started.',
+      'Each league on the Leagues page comes from its **LEAGUES → SETUP**. Its **This week\'s scores** button opens the newest week that has started.',
       'Put **Pop Up** anywhere in a Pop Up\'s name and it shows as **Next Pop Up** (date and a link) until it\'s over.',
-      'Archive an event to take it off the page.',
+      'Archive a week or event to take it off the page.',
     ],
   },
   {

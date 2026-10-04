@@ -14,9 +14,10 @@ import { findLayout, sortLibrary, type LibCourse } from '../../lib/courses/cours
 const GalleryPanel = lazy(() => import('./GalleryPanel'));
 const BandPanel = lazy(() => import('./BandPanel'));
 const TagsPanel = lazy(() => import('./TagsPanel'));
+const LeaguesPanel = lazy(() => import('./LeaguesPanel'));
 
 /**
- * Home of /td: the events this account runs. ?e=<id> opens one. ?view=gallery (super admin) curates the club gallery. ?view=band (super admin) runs Meet the Band. ?view=tags runs bag tags (league admins).
+ * Home of /td: the events this account runs. ?e=<id> opens one (with &l=<league>: back goes to that league). ?view=leagues runs leagues (?l=<id> opens one). ?view=gallery (super admin) curates the club gallery. ?view=band (super admin) runs Meet the Band. ?view=tags runs bag tags (league admins).
  * Super admin creates events from scratch; any TD of an event can duplicate it (league week 2).
  */
 export default function EventHub({ email, admin, onSignOut }: { email: string; admin: boolean; onSignOut: () => void }) {
@@ -47,6 +48,14 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
     );
   }
 
+  if (tagAdmin && params.get('view') === 'leagues') {
+    return (
+      <HubShell email={email} onSignOut={onSignOut} admin={admin}>
+        <Suspense fallback={<p className="td-empty">Loading leagues…</p>}><LeaguesPanel admin={admin} onBack={() => setParams({})} /></Suspense>
+      </HubShell>
+    );
+  }
+
   if (admin && params.get('view') === 'gallery') {
     return (
       <HubShell email={email} onSignOut={onSignOut} admin={admin}>
@@ -65,7 +74,7 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
 
   if (openId) {
     return <EventWorkspace key={openId} eventId={openId} email={email} admin={admin} onSignOut={onSignOut}
-      onBack={() => { open(null); void reload(); }} />;
+      onBack={() => { const l = params.get('l'); if (l) setParams({ view: 'leagues', l }); else open(null); void reload(); }} />;
   }
 
   const shown = (events ?? []).filter((e) => showArchived || !e.archived);
@@ -80,6 +89,7 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
           {events?.some((e) => e.archived) && (
             <button className="td-btn quiet" onClick={() => setShowArchived(!showArchived)}>{showArchived ? 'HIDE ARCHIVED' : 'SHOW ARCHIVED'}</button>
           )}
+          {tagAdmin && <button className="td-btn" onClick={() => setParams({ view: 'leagues' })}>LEAGUES</button>}
           {tagAdmin && <button className="td-btn" onClick={() => setParams({ view: 'tags' })}>BAG TAGS</button>}
           {admin && <button className="td-btn" onClick={() => setParams({ view: 'gallery' })}>CLUB GALLERY</button>}
           {admin && <button className="td-btn" onClick={() => setParams({ view: 'band' })}>THE BAND</button>}
@@ -100,7 +110,7 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
               <button className="td-event-open" onClick={() => open(e.id)}>
                 <span className="td-event-name">{e.name}</span>
                 <span className="td-event-meta">{[e.club_name, dateRange(e)].filter(Boolean).join(' · ')}</span>
-                <span className="td-event-meta">{e.rounds} round{e.rounds === 2 ? 's' : ''} · {e.waves === 2 ? 'AM/PM' : 'single wave'}{e.use_checkin ? ' · check-in' : ''}{e.use_sponsors ? ' · sponsors' : ''}{e.archived ? ' · archived' : ''}</span>
+                <span className="td-event-meta">{e.rounds} round{e.rounds === 2 ? 's' : ''} · {e.waves === 2 ? 'AM/PM' : 'single wave'}{e.use_checkin ? ' · check-in' : ''}{e.use_sponsors ? ' · sponsors' : ''}{e.league_id ? ' · league week' : ''}{e.archived ? ' · archived' : ''}</span>
               </button>
               <div className="td-actions">
                 <button className="td-btn" onClick={() => open(e.id)}>OPEN</button>

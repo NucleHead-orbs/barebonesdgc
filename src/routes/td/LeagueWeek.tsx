@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ExistingPlayer } from '../../lib/td/builder';
 import type { LbRow } from '../../lib/jewel/leaderboard';
-import { leagueByPool, weekLeader } from '../../lib/leagues/leagues';
+import { weekLeader } from '../../lib/leagues/leagues';
 import { clearGroupPhoto, loadWeekState, photoUrl, setVest, uploadGroupPhoto, type WeekState } from '../../lib/leagues/api';
 
 const why = (e: unknown): string => {
@@ -38,7 +38,7 @@ export default function LeagueWeek({ eventId, players, board }: { eventId: strin
   useEffect(() => { if (!ok) return; const t = setTimeout(() => setOk(''), 4000); return () => clearTimeout(t); }, [ok]);
 
   if (!st) return err ? <div className="td-warn" role="alert">{err}</div> : null;
-  const award = leagueByPool(st.pool_slug)?.award ?? 'Weekly award';
+  const award = st.award ?? 'Weekly award';
   const sorted = [...players].sort((a, b) => a.name.localeCompare(b.name));
   const leaderId = weekLeader(board);
   const leader = leaderId ? players.find((p) => p.id === leaderId) : undefined;

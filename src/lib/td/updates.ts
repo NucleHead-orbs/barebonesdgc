@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'leagues', date: '2026-10-04', help: 'week2', who: 'tags',
+    title: 'Leagues have a home: LEAGUES',
+    body: 'Tap **LEAGUES** on your events list. Each league has **WEEKS** (**+ NEW WEEK** copies last week), **SETUP** (everything the Leagues page shows, live), **TAGS** and **TDS**. League TDs run every week of their league automatically.',
+  },
+  {
     id: 'publish-start', date: '2026-10-04', help: 'cards', who: 'all',
     title: 'PUBLISH is now PUBLISH & START',
     body: 'On **CARDS & QR**, the button that opens the round is now **PUBLISH & START**. Until you tap it the cards are a draft: no scoring, no QR codes. After that it reads **REPUBLISH** for late changes.',

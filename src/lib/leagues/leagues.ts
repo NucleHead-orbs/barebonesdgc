@@ -1,34 +1,47 @@
 /**
  * Leagues & Pop Ups (/leagues). Source of truth:
- *   - League facts (who runs it, when, where): LEAGUES below (Mike, 2026-09-28/29). Retired leagues stay off the site.
- *   - Scores / next Pop Up: the `events` table. A league's "This week's scores" = its newest non-archived event that
- *     has started; the next Pop Up = the soonest non-archived event with "Pop Up" in its name that hasn't ended.
+ *   - Leagues: the `leagues` table (migration 20261024). The league's TDs edit name, tagline, who runs it, when, where, cost,
+ *     award and banner/logo in the TD Builder (LEAGUES), and /leagues shows them live. Hidden leagues stay off the site.
+ *   - Weeks: events with league_id = the league. "This week's scores" = its newest non-archived week that has started.
+ *   - Next Pop Up = the soonest non-archived event with "Pop Up" in its name that hasn't ended.
  *     Nothing to show -> the button/card falls back (never a dead link).
  */
 export interface League {
-  id: string; name: string; tag: string; title: string; scrawl: string;
-  runBy: string; startedBy?: string; when: string; where: string; whereNote?: string;
-  buyIn: string | null; // null = hidden until the TD supplies it
-  eventPrefixes: string[]; // lowercase; an event whose name starts with one of these belongs to this league
-  tagPool: string; // tag_pools.slug: this league's bag tag set
-  award?: string; // the weekly award the TD hands out (WINNERS tab of a league week); shown on the vest wall
-  banner?: string; logos?: Array<{ src: string; alt: string }>;
+  id: string; slug: string; name: string;
+  subtitle: string | null; title: string | null; scrawl: string | null;
+  run_by: string | null; started_by: string | null; when_text: string | null; where_text: string | null; where_note: string | null;
+  buy_in: string | null; award: string | null;
+  banner: string | null; logo: string | null; // '/assets/...' (built in) or '<league_id>/...' in the league-photos bucket
+  tag_pool_id: string; hidden: boolean; sort: number;
 }
+export const LEAGUE_COLS = 'id, slug, name, subtitle, title, scrawl, run_by, started_by, when_text, where_text, where_note, buy_in, award, banner, logo, tag_pool_id, hidden, sort';
 
-export const LEAGUES: League[] = [
-  {
-    id: 'lazy', name: 'Lazy Boners', tag: 'Club league', title: 'Lazy Boners', scrawl: 'Minimum effort. Maximum Boner.',
-    runBy: 'T-Bone', startedBy: 'T-Bone & Fixer', when: 'Sundays · 7:30 AM',
-    where: 'Traveling league', whereNote: 'Course rotates. The group posts where.',
-    buyIn: null, eventPrefixes: ['lazy boners'], tagPool: 'lazy-boners', award: 'Lazy Boner Safety Vest', banner: '/assets/leagues/lazy-boners-banner.webp',
-  },
-  {
-    id: 'rbfl', name: 'RBFL', tag: 'Root Beer Float League', title: 'Root Beer Float League', scrawl: 'Float on, Boners.',
-    runBy: 'George', when: 'Thursdays · 4:30 PM', where: 'Emerald Park',
-    buyIn: null, eventPrefixes: ['rbfl', 'root beer float'], tagPool: 'rbfl',
-    logos: [{ src: '/assets/leagues/rbfl-logo.webp', alt: 'Bare Bones Root Beer Float League logo' }],
-  },
+/** Text fields a league TD edits (League setup), in screen order. */
+export const LEAGUE_FIELDS: Array<{ key: keyof League; label: string; max: number; hint?: string }> = [
+  { key: 'name', label: 'NAME', max: 40, hint: 'Short: the chip + card header (and the tag set\'s name)' },
+  { key: 'subtitle', label: 'TAGLINE', max: 60, hint: 'e.g. Club league' },
+  { key: 'title', label: 'BIG TITLE', max: 80 },
+  { key: 'scrawl', label: 'SCRAWL', max: 80, hint: 'The handwritten line' },
+  { key: 'run_by', label: 'RUNS IT', max: 60 },
+  { key: 'started_by', label: 'STARTED BY', max: 60 },
+  { key: 'when_text', label: 'WHEN', max: 60, hint: 'e.g. Sundays · 7:30 AM' },
+  { key: 'where_text', label: 'WHERE', max: 80 },
+  { key: 'where_note', label: 'WHERE NOTE', max: 120 },
+  { key: 'buy_in', label: 'COST', max: 60, hint: 'Blank hides it' },
+  { key: 'award', label: 'WEEKLY AWARD', max: 60, hint: 'e.g. Lazy Boner Safety Vest. Blank = no award or vest wall' },
 ];
+
+/** "Thursday Thumpers!" -> "thursday-thumpers" (the league + tag set slug; fixed once created). */
+export function leagueSlug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
+}
+export const validSlug = (s: string) => /^[a-z0-9][a-z0-9-]{1,39}$/.test(s);
+
+/** Default name for a new week: "Lazy Boners · Oct 11" (matches the database default). */
+export function weekName(league: Pick<League, 'name'>, iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${league.name} · ${new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+}
 
 /** How a Pop Up runs (the club's standing format). */
 export const POPUP_FORMAT: Array<{ date: string; title: string }> = [
@@ -47,7 +60,7 @@ export const POPUPS_PAST: Array<{ src: string; date: string; title: string; alt:
   { src: '/assets/leagues/popup-2018-12-tag-battle-finale.webp', date: 'Dec 15, 2018', title: 'Tag Battle Finale · Fiesta Lakes', alt: '2018 Tag Battle Finale flier' },
 ];
 
-export interface PublicEvent { slug: string; name: string; starts_on: string; ends_on: string | null; archived: boolean }
+export interface PublicEvent { slug: string; name: string; starts_on: string; ends_on: string | null; archived: boolean; league_id?: string | null }
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
@@ -57,10 +70,9 @@ export function localDate(d = new Date()): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-/** Newest non-archived event of this league that has started (by starts_on, then name). null = hide the button. */
-export function leagueEvent(league: Pick<League, 'eventPrefixes'>, events: PublicEvent[], today: string): PublicEvent | null {
-  const prefixes = league.eventPrefixes.map(norm);
-  const mine = events.filter((e) => !e.archived && e.starts_on <= today && prefixes.some((p) => norm(e.name).startsWith(p)));
+/** Newest non-archived week of this league that has started (by starts_on, then name). null = hide the button. */
+export function leagueEvent(leagueId: string, events: PublicEvent[], today: string): PublicEvent | null {
+  const mine = events.filter((e) => !e.archived && e.starts_on <= today && e.league_id === leagueId);
   mine.sort((a, b) => b.starts_on.localeCompare(a.starts_on) || a.name.localeCompare(b.name));
   return mine[0] ?? null;
 }
@@ -80,9 +92,6 @@ export function niceDate(iso: string): string {
 
 /** One league week on the wall (league_weeks RPC): who got the award, the shout-out, the group photo (storage path). */
 export interface LeagueWeek { slug: string; name: string; starts_on: string; vest: string | null; vest_note: string | null; photo: string | null }
-
-/** The league whose tag set this is (events.tag_pool_id -> tag_pools.slug). */
-export const leagueByPool = (slug: string | null | undefined): League | null => LEAGUES.find((l) => l.tagPool === slug) ?? null;
 
 /** This week's award holder: the newest week that has one. */
 export const currentHolder = (weeks: LeagueWeek[]): LeagueWeek | null => weeks.find((w) => w.vest) ?? null;
