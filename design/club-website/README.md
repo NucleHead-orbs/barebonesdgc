@@ -196,7 +196,7 @@ All pages share a sticky header, the page body, and a footer.
 ## Assets (`assets/`)
 - `brand/logo-skeleton.png`, `logo-skeleton-moon.png`, `logo-skeleton-moon-wide.png`: club mascot lockups (user-supplied). Never redraw.
 - `brand/wordmark-bare-bones-cut.png`: chrome wordmark, Jewel XI skin (from the repo `public/assets`).
-- `art/*`: seasonal mascot art. `leagues/*`: RBFL marks.
+- `art/*`: seasonal mascot art. `leagues/*`: league marks. RBFL's mark (2026-10-04, Mike): `public/assets/leagues/rbfl-logo.webp`, the green skeleton with the root beer float and cash, "I ♥ ACES", BARE BONES / ROOT BEER FLOAT LEAGUE. Transparent cut-out of Mike's art (never redraw); the older mug marks are retired.
 - `events/jewel-xi/coursemap-thumb.png`: course map (repo).
 - `sponsors/mohave-lowres.png`: **low-res, get the final file.** Innova logo: **missing.**
 - Still missing from the original handoff: `skull-clean.png`, the Jewel XI skull knockouts, character art, flier and shirts.

@@ -26,10 +26,7 @@ export const LEAGUES: League[] = [
     id: 'rbfl', name: 'RBFL', tag: 'Root Beer Float League', title: 'Root Beer Float League', scrawl: 'Float on, Boners.',
     runBy: 'George', when: 'Thursdays · 4:30 PM', where: 'Emerald Park',
     buyIn: null, eventPrefixes: ['rbfl', 'root beer float'], tagPool: 'rbfl',
-    logos: [
-      { src: '/assets/leagues/rbfl-logo.webp', alt: 'RBFL logo' },
-      { src: '/assets/leagues/root-beer-float-league-logo.webp', alt: 'Root Beer Float League logo' },
-    ],
+    logos: [{ src: '/assets/leagues/rbfl-logo.webp', alt: 'Bare Bones Root Beer Float League logo' }],
   },
 ];
 
