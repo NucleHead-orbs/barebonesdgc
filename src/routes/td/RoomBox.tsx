@@ -122,7 +122,8 @@ function Unlock({ poolId, at, busy, run }: { poolId: string; at: string | null; 
   const toLocal = (iso: string) => { const d = new Date(iso); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
   const [v, setV] = useState(at ? toLocal(at) : '');
   const label = at ? new Date(at).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
-  const future = at ? Date.parse(at) > Date.now() : false;
+  const [mounted] = useState(() => Date.now());
+  const future = at ? Date.parse(at) > mounted : false;
   return (
     <div className="td-row">
       <span className="td-label">UNLOCKS</span>
