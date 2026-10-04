@@ -115,6 +115,8 @@ export interface TagArt {
   shape?: 'tall' | 'square'; numStroke?: string; numSize?: number;
   /** Optional CSS gradient for the number's fill (drawn over a numStroke outline), e.g. the Lazy Boners drip colours. */
   numFill?: string;
+  /** Font size (cqw) for 3-digit numbers; default numSize * 0.68. */
+  numSize3?: number;
 }
 export const TAG_ART: Record<string, TagArt> = {
   // Art 2026-10-04 (Mike): number side = the psychedelic leaf with the medallion, art side = Safety Sundays.
@@ -123,6 +125,13 @@ export const TAG_ART: Record<string, TagArt> = {
     front: '/assets/tags/lazy-boners/front.svg', back: '/assets/tags/lazy-boners/back.svg', shape: 'square',
     numColor: '#f2ff3a', numStroke: '#0b0710', numSize: 30, cx: 0.502, cy: 0.59, // medallion centre on the 1000x1000 back
     numFill: 'linear-gradient(180deg, #f2ff3a 0%, #e6ff2e 38%, #ff9a1f 62%, #ff3fa8 88%)',
+  },
+  // Jewel XI Early Access (Mike, 2026-10-04): number side = the All Access pass, the number on the stage marquee
+  // (chasing bulbs); art side = the skull laminate. Skulls bounce, gems light up, the skull's eyes spin.
+  'jewel-xi-ea': {
+    front: '/assets/tags/jewel-xi-ea/front.svg', back: '/assets/tags/jewel-xi-ea/back.svg', shape: 'square',
+    numColor: '#ffa62b', numStroke: '#0b0710', numSize: 13.5, numSize3: 11, cx: 0.5, cy: 0.542, // marquee centre on the 1000x1000 back
+    numFill: 'linear-gradient(180deg, #ffe14a 0%, #ffa62b 45%, #ff3fa8 90%)',
   },
   // Invite-only set (admins + core members). Art: Mike's Golden Boners tag; number side drawn to match (public/assets/tags/golden-boners).
   'golden-boners': {

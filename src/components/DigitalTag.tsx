@@ -8,7 +8,7 @@ export function DigitalTag({ art, number, label }: { art: TagArt; number: number
   const digits = String(number).length;
   const pos = {
     left: `${art.cx * 100}%`, top: `${art.cy * 100}%`,
-    ...(art.numSize ? { fontSize: `${digits >= 3 ? art.numSize * 0.68 : art.numSize}cqw` } : {}),
+    ...(art.numSize ? { fontSize: `${digits >= 3 ? art.numSize3 ?? art.numSize * 0.68 : art.numSize}cqw` } : {}),
   };
   return (
     <button type="button" className={`dt${art.shape === 'square' ? ' dt-sq' : ''}`} aria-pressed={flipped} onClick={() => setFlipped(!flipped)}
