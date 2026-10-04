@@ -427,3 +427,9 @@ button.td-vote-opt:disabled { cursor: default; }
 .td-ctps li { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .td-ctps li b { min-width: 64px; }
 .td-ctps li .td-input { flex: 1 1 160px; min-width: 0; }
+
+/* League week (WINNERS on a league): weekly award + group photo */
+.lw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.lw-block { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.lw-block .td-hint { margin: 0; }
+.lw-photo { display: block; width: 100%; max-height: 320px; object-fit: cover; border-radius: 8px; border: 2px solid var(--border); }

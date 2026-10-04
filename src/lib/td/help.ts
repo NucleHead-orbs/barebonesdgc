@@ -141,6 +141,8 @@ export const HELP: HelpSection[] = [
       'Pros are paid cash. Ams get prize credit, rounded to $1 or $5.',
       'Events with a dubs round show each round on its own. Divisions are paid from the singles round; each dubs round gets its own **DUBS** card (entry fee per player, payback %, places). Team payouts split between the two partners; a Cali takes the whole spot.',
       'Happy with it? Tap **POST RESULTS**. The public Winners page shows exactly what you posted. Post again after any change.',
+      'League nights: **LEAGUE WEEK** sits at the top. Pick who gets the **Lazy Boner Safety Vest** (tap **LEADER · PICK** for the low score, or choose anyone on a tie), add an optional shout-out, tap **AWARD IT**.',
+      'Then **LOAD PHOTO**: snap the group photo on your phone and pick it. It shrinks itself and goes up with the week. Both show on the **Vest Wall** on the Leagues page, newest week first, and the vest holder shows on the league\'s card.',
     ],
   },
   {
@@ -148,7 +150,7 @@ export const HELP: HelpSection[] = [
     steps: [
       'Go back to your events, tap **DUPLICATE** on last week, pick the new date.',
       'Leave **"Copy the player list"** on. Everyone starts not checked in.',
-      'Course, divisions, card rules, private tags, keep-apart, payout tables and the prep checklist carry over. Requests, cards, scores, results, designs and shirt orders don\'t.',
+      'Course, divisions, card rules, private tags, keep-apart, payout tables and the prep checklist carry over. Requests, cards, scores, results, designs, shirt orders, the vest and the group photo don\'t.',
     ],
   },
   {

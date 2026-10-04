@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'league-week', date: '2026-10-04', help: 'winners', who: 'all',
+    title: 'Safety Vest + group photo',
+    body: 'On a league night, **WINNERS → LEAGUE WEEK**: award the **Lazy Boner Safety Vest** and load the group photo. Every week lands on the **Vest Wall** on the Leagues page, and the current holder shows on the Lazy Boners card.',
+  },
+  {
     id: 'league-mode', date: '2026-10-04', help: 'setup', who: 'all',
     title: 'League mode + CTP holes',
     body: '**SETUP → Event or league**: a league drops PREP, CREW and EARLY ACCESS, runs one day and one round, and gets a **TAGS** tab for its tag set that opens on tonight\'s round. **CTP holes**: pick the hole and the prize; players get a gold **CTP HOLE** flash on their scorecard when they reach it.',

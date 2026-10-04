@@ -3,13 +3,14 @@ import { useRef, useState } from 'react';
 import { CLUB } from '../../lib/jewel/content';
 import { Banner, Button, SectionHeading } from '../../components/ui';
 import { useLoad } from '../../lib/useLoad';
-import { loadPublicEvents } from '../../lib/leagues/api';
-import { LEAGUES, POPUPS_PAST, POPUP_FORMAT, leagueEvent, localDate, nextPopUp, niceDate, type League, type PublicEvent } from '../../lib/leagues/leagues';
+import { loadAllWeeks, loadPublicEvents, photoUrl } from '../../lib/leagues/api';
+import { LEAGUES, POPUPS_PAST, POPUP_FORMAT, currentHolder, leagueEvent, localDate, nextPopUp, niceDate, type League, type LeagueWeek, type PublicEvent } from '../../lib/leagues/leagues';
 import '../../components/gallery.css';
 import './leagues.css';
 
 export default function LeaguesPage() {
   const { data: events } = useLoad(loadPublicEvents); // a failed load just means no live buttons, never a broken page
+  const { data: weeks } = useLoad(loadAllWeeks); // same: no wall, never a broken page
   const today = localDate();
   const next = events ? nextPopUp(events, today) : null;
   const group = CLUB.facebookUrl;
@@ -32,12 +33,14 @@ export default function LeaguesPage() {
         <div className="sec-inner" style={{ gap: 24 }}>
           <SectionHeading kicker="Weekly damage" title="The Leagues" size="l" aside={`${LEAGUES.length} leagues`} />
           <div className="lg-grid">
-            {LEAGUES.map((l) => <LeagueCard key={l.id} league={l} event={events ? leagueEvent(l, events, today) : null} group={group} />)}
+            {LEAGUES.map((l) => <LeagueCard key={l.id} league={l} event={events ? leagueEvent(l, events, today) : null} group={group} weeks={weeks?.[l.id] ?? []} />)}
           </div>
           <span className="lg-scrawl lg-gold">I'll put you down for a 4 there...</span>
           <Banner>Scores run on our own scorecard: scan the QR on your card, score every hole, everybody signs, submit. Only signed &amp; submitted rounds count.</Banner>
         </div>
       </section>
+
+      {weeks && LEAGUES.some((l) => l.award && weeks[l.id]?.length) && <VestWall weeks={weeks} />}
 
       <section id="popups" className="lg-pop">
         <div className="sec-inner" style={{ gap: 28 }}>
@@ -74,7 +77,8 @@ export default function LeaguesPage() {
   );
 }
 
-function LeagueCard({ league: l, event, group }: { league: League; event: PublicEvent | null; group: string | undefined }) {
+function LeagueCard({ league: l, event, group, weeks }: { league: League; event: PublicEvent | null; group: string | undefined; weeks: LeagueWeek[] }) {
+  const holder = l.award ? currentHolder(weeks) : null;
   return (
     <article id={l.id} className="ds-card lg-card">
       {l.banner && <img className="lg-banner" src={l.banner} alt="" loading="lazy" />}
@@ -92,6 +96,13 @@ function LeagueCard({ league: l, event, group }: { league: League; event: Public
           <Row k="Where" v={l.where} note={l.whereNote} />
           {l.buyIn && <Row k="Cost" v={l.buyIn} />}
         </div>
+        {holder && (
+          <a className="lg-vest" href="#vest-wall">
+            <span className="lg-vest-k">{l.award} · {niceDate(holder.starts_on)}</span>
+            <b>{holder.vest}</b>
+            {holder.vest_note && <span className="lg-vest-note">{holder.vest_note}</span>}
+          </a>
+        )}
         <div className="row lg-card-actions">
           {event && <Button to={`/e/${event.slug}`}>This week's scores</Button>}
           <Button to={`/tags/${l.tagPool}`} variant="outline-accent">Tag board</Button>
@@ -162,5 +173,48 @@ function PopUpsPast() {
         <button type="button" className="gal-x" onClick={close} aria-label="Close">×</button>
       </dialog>
     </>
+  );
+}
+
+/** Every league week with a vest or a group photo, newest first (league_weeks). Photos enlarge on tap. */
+function VestWall({ weeks }: { weeks: Record<string, LeagueWeek[]> }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const [open, setOpen] = useState<{ src: string; alt: string } | null>(null);
+  const close = () => ref.current?.close();
+  const leagues = LEAGUES.filter((l) => l.award && weeks[l.id]?.length);
+  return (
+    <section id="vest-wall" className="sec lg-wall">
+      <div className="sec-inner" style={{ gap: 24 }}>
+        {leagues.map((l) => (
+          <div key={l.id} className="lg-wall-league">
+            <SectionHeading kicker={`${l.name} · every week`} title={`The ${l.award} Wall`} size="m" as="h2" aside={`${weeks[l.id].length} weeks`} />
+            <div className="lg-wall-grid">
+              {weeks[l.id].map((w) => {
+                const alt = `${l.name} group photo, ${niceDate(w.starts_on)}`;
+                return (
+                  <figure key={w.slug} className="ds-card lg-week">
+                    {w.photo
+                      ? <button type="button" className="lg-week-pic" onClick={() => { setOpen({ src: photoUrl(w.photo!), alt }); ref.current?.showModal(); }} aria-label={`View: ${alt}`}>
+                          <img src={photoUrl(w.photo)} alt="" loading="lazy" />
+                        </button>
+                      : <div className="lg-week-pic lg-week-nopic">No group photo this week</div>}
+                    <figcaption>
+                      <span className="lg-vest-k">{niceDate(w.starts_on)}</span>
+                      {w.vest ? <b>{w.vest}</b> : <span className="lg-muted">Vest not awarded</span>}
+                      {w.vest_note && <span className="lg-vest-note">{w.vest_note}</span>}
+                      <a href={`/e/${w.slug}`}>Scores ›</a>
+                    </figcaption>
+                  </figure>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <dialog ref={ref} className="gal-dlg" onClose={() => setOpen(null)} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
+        {open && <img src={open.src} alt={open.alt} />}
+        <button type="button" className="gal-x" onClick={close} aria-label="Close">×</button>
+      </dialog>
+    </section>
   );
 }

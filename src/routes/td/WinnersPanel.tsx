@@ -8,6 +8,7 @@ import { defaultPcts, money, type DivisionConfig, type FinishStatus, type Mode, 
 import { computeTeamWinners, computeWinners, defaultTeamConfig, teamPayload, toPayload, type DivisionResult, type TeamPayoutConfig, type TeamResult } from '../../lib/prizes/winners';
 import { hasDoubles, roundFormat } from '../../lib/td/setup';
 import { raffleTotals } from '../../lib/crew/crew';
+import LeagueWeek from './LeagueWeek';
 
 const REFRESH_MS = 30_000;
 const STATUS: Array<[FinishStatus, string]> = [['dnf', 'DNF'], ['dq', 'DQ'], ['ns', 'NO-SHOW']];
@@ -138,6 +139,7 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
         <a className="td-btn quiet" href={`/e/${ev.slug}/winners`} target="_blank" rel="noreferrer">PUBLIC PAGE ↗</a>
         <button className="td-btn cta" onClick={() => void post()} disabled={busy || (!changed && !!posted)}>{busy ? 'POSTING…' : 'POST RESULTS'}</button>
       </div>
+      {ev.kind === 'league' && <LeagueWeek eventId={ev.id} players={players} board={board} />}
       {mode === 'live' && <div className="td-warn soft">Live preview counts unsigned scores. Post from OFFICIAL once cards are signed.</div>}
 
       <section className="td-panel td-money">

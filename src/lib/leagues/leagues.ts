@@ -11,6 +11,7 @@ export interface League {
   buyIn: string | null; // null = hidden until the TD supplies it
   eventPrefixes: string[]; // lowercase; an event whose name starts with one of these belongs to this league
   tagPool: string; // tag_pools.slug: this league's bag tag set
+  award?: string; // the weekly award the TD hands out (WINNERS tab of a league week); shown on the vest wall
   banner?: string; logos?: Array<{ src: string; alt: string }>;
 }
 
@@ -19,7 +20,7 @@ export const LEAGUES: League[] = [
     id: 'lazy', name: 'Lazy Boners', tag: 'Club league', title: 'Lazy Boners', scrawl: 'Minimum effort. Maximum Boner.',
     runBy: 'T-Bone', startedBy: 'T-Bone & Fixer', when: 'Sundays · 7:30 AM',
     where: 'Traveling league', whereNote: 'Course rotates. The group posts where.',
-    buyIn: null, eventPrefixes: ['lazy boners'], tagPool: 'lazy-boners', banner: '/assets/leagues/lazy-boners-banner.webp',
+    buyIn: null, eventPrefixes: ['lazy boners'], tagPool: 'lazy-boners', award: 'Lazy Boner Safety Vest', banner: '/assets/leagues/lazy-boners-banner.webp',
   },
   {
     id: 'rbfl', name: 'RBFL', tag: 'Root Beer Float League', title: 'Root Beer Float League', scrawl: 'Float on, Boners.',
@@ -78,4 +79,22 @@ export function nextPopUp(events: PublicEvent[], today: string): PublicEvent | n
 export function niceDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+/** One league week on the wall (league_weeks RPC): who got the award, the shout-out, the group photo (storage path). */
+export interface LeagueWeek { slug: string; name: string; starts_on: string; vest: string | null; vest_note: string | null; photo: string | null }
+
+/** The league whose tag set this is (events.tag_pool_id -> tag_pools.slug). */
+export const leagueByPool = (slug: string | null | undefined): League | null => LEAGUES.find((l) => l.tagPool === slug) ?? null;
+
+/** This week's award holder: the newest week that has one. */
+export const currentHolder = (weeks: LeagueWeek[]): LeagueWeek | null => weeks.find((w) => w.vest) ?? null;
+
+/** Who's winning the week (lowest to-par with holes in). null = nobody's in yet, or 1st is tied (the TD picks). */
+export function weekLeader(rows: Array<{ player_id: string; r1_to_par: number | null; hole_count: number }>): string | null {
+  const scored = rows.filter((r) => r.r1_to_par !== null && r.hole_count > 0);
+  if (!scored.length) return null;
+  const best = Math.min(...scored.map((r) => r.r1_to_par as number));
+  const top = scored.filter((r) => r.r1_to_par === best);
+  return top.length === 1 ? top[0].player_id : null;
 }

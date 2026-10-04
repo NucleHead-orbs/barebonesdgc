@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LEAGUES, leagueEvent, nextPopUp, niceDate, type PublicEvent } from './leagues';
+import { LEAGUES, currentHolder, leagueByPool, leagueEvent, nextPopUp, niceDate, weekLeader, type LeagueWeek, type PublicEvent } from './leagues';
 
 const ev = (slug: string, name: string, starts_on: string, archived = false, ends_on: string | null = null): PublicEvent => ({ slug, name, starts_on, ends_on, archived });
 const lazy = LEAGUES.find((l) => l.id === 'lazy')!;
@@ -44,4 +44,24 @@ describe('nextPopUp', () => {
 
 describe('niceDate', () => {
   it('formats without shifting the day', () => expect(niceDate('2026-11-07')).toBe('Sat, Nov 7'));
+});
+
+describe('league week', () => {
+  it('finds the league by tag set and its award', () => {
+    expect(leagueByPool('lazy-boners')?.award).toBe('Lazy Boner Safety Vest');
+    expect(leagueByPool('nope')).toBeNull();
+    expect(leagueByPool(null)).toBeNull();
+  });
+  it('leader is the lone low score; ties and empty boards pick nobody', () => {
+    const r = (player_id: string, r1_to_par: number | null, hole_count = 18) => ({ player_id, r1_to_par, hole_count });
+    expect(weekLeader([])).toBeNull();
+    expect(weekLeader([r('a', null, 0)])).toBeNull();
+    expect(weekLeader([r('a', 2), r('b', -3), r('c', 0)])).toBe('b');
+    expect(weekLeader([r('a', -3), r('b', -3)])).toBeNull();
+  });
+  it('current holder = newest week with a vest', () => {
+    const w = (slug: string, vest: string | null): LeagueWeek => ({ slug, name: slug, starts_on: '2026-10-04', vest, vest_note: null, photo: null });
+    expect(currentHolder([w('wk3', null), w('wk2', 'Hayden'), w('wk1', 'YT')])?.vest).toBe('Hayden');
+    expect(currentHolder([w('wk3', null)])).toBeNull();
+  });
 });
