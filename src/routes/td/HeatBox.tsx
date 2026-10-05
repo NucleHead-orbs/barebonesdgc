@@ -58,7 +58,7 @@ export default function HeatBox({ pool }: { pool: TagPool }) {
           {!chat.length && <li>No messages yet.</li>}
           {chat.slice(0, 60).map((l) => (
             <li key={l.id} style={l.hidden ? { opacity: .5 } : undefined}>
-              <span><b>{l.name ? display({ name: l.name, nickname: l.nickname }) : '?'}</b>: {l.body}</span>
+              <span><b>{l.kind === 'system' ? 'THE HOUSE' : l.name ? display({ name: l.name, nickname: l.nickname }) : '?'}</b>: {l.body}</span>
               <button className="td-btn quiet" onClick={() => void hide(l)}>{l.hidden ? 'UNHIDE' : 'HIDE'}</button>
             </li>
           ))}

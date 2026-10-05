@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'tag-board', date: '2026-10-05', help: 'tags', who: 'tags',
+    title: 'My Tag: BOARD and MATCHUPS tabs',
+    body: 'My Tag now has three tabs. **BOARD**: one message board per tag set (pick the set up top), reactions, and the house posts challenges, results, explosions and penalties on its own. **MATCHUPS**: players share their days and favorite courses; the Matchmaker suggests their best opponents with one-tap **CHALLENGE**, and posts the week\'s hottest matchups every Monday.',
+  },
+  {
     id: 'skull', date: '2026-10-05', help: 'trouble', who: 'all',
     title: 'The skull: report bugs and ideas from any page',
     body: 'Every page has a little **skull** (bottom left; top right on phone scorecards and My Tag). Tap it to send a **bug**, an **idea** or **feedback**, with a screenshot if you like. Your name, the page and the device go with it. Fixes show up under **Dev reports** below and on the club home.',

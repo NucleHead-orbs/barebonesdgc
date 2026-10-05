@@ -1,6 +1,6 @@
 /** /tag/:token: one player's bag tags. Log a round, confirm or dispute rounds you're on. Everything is a tag_* RPC checked against the link. */
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import * as tagApi from '../../lib/tags/api';
 import * as roundsApi from '../../lib/rounds/api';
 import { ME_KEY } from '../../lib/rounds/rounds';
@@ -9,6 +9,9 @@ import { TAG_ART, display, parseScore, swap, tagMessage } from '../../lib/tags/t
 import { DigitalTag } from '../../components/DigitalTag';
 import { EarlyMyTag } from '../../components/early/EarlyMyTag';
 import { HeatBell, TagHeat } from '../../components/tags/TagHeat';
+import { TagBoard } from '../../components/tags/TagBoard';
+import { Matchups } from '../../components/tags/Matchups';
+import { asTab, type MyTagTab } from '../../lib/tags/board';
 import { chatSeenKey, readSeen, useHeat, type HeatFocus } from '../../lib/tags/useHeat';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
@@ -29,6 +32,10 @@ export default function MyTagApp() {
   useTheme('event', 'bone');
   const heatRows = useHeat(token, rev);
   const [focus, setFocus] = useState<HeatFocus | null>(null);
+  const [params, setParams] = useSearchParams();
+  const tab = asTab(params.get('tab'));
+  const go = useCallback((t: MyTagTab) => { setParams(t === 'tags' ? {} : { tab: t }, { replace: true }); window.scrollTo(0, 0); }, [setParams]);
+  const [boardPool, setBoardPool] = useState<string | null>(null);
   const [unread, setUnread] = useState<Record<string, number>>({});
   const meIdForSeen = home?.me.id ?? '';
   const seenKey = useCallback((pool: string) => chatSeenKey(pool, meIdForSeen), [meIdForSeen]);
@@ -81,6 +88,7 @@ export default function MyTagApp() {
   const meId = home.me.id;
   const needsMe = home.open.filter((m) => m.status === 'pending' && !m.expired && !m.players.find((p) => p.member_id === meId)?.confirmed);
   const waiting = home.open.filter((m) => !needsMe.includes(m));
+  const names = Object.fromEntries(home.holdings.map((h) => [h.pool, h.pool_name]));
 
   return (
     <div className="td">
@@ -90,15 +98,25 @@ export default function MyTagApp() {
           <div className="td-sub">BARE BONES BAG TAGS · {display(home.me).toUpperCase()}</div>
         </div>
         <HeatBell rows={heatRows} unread={unread}
-          onChat={(pool) => setFocus((f) => ({ kind: 'chat', pool, n: (f?.n ?? 0) + 1 }))}
-          onChallenge={(pool) => setFocus((f) => ({ kind: 'challenge', pool, n: (f?.n ?? 0) + 1 }))} />
+          onChat={(pool) => { setBoardPool(pool); go('board'); }}
+          onChallenge={(pool) => { go('tags'); setFocus((f) => ({ kind: 'challenge', pool, n: (f?.n ?? 0) + 1 })); }} />
       </header>
+      <nav className="td-tabs mt-tabs" aria-label="My Tag">
+        {([['tags', 'MY TAGS'], ['board', 'BOARD'], ['matchups', 'MATCHUPS']] as Array<[MyTagTab, string]>).map(([t, label]) => {
+          const n = t === 'board' ? Object.values(unread).reduce((a, b) => a + b, 0) : 0;
+          return <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => go(t)}>{label}{n > 0 && <b>{n > 99 ? '99+' : n}</b>}</button>;
+        })}
+      </nav>
       <main className="td-main mt-app">
         <NewVersionNote />
         {toast && <div className="td-ok" role="status">{toast}</div>}
         {err && <div className="td-warn" role="alert">{err} <button className="td-btn quiet" onClick={() => setErr('')}>OK</button></div>}
 
         {!home.holdings.length && <div className="td-warn soft">You don't hold a tag right now. Ask your league TD to issue you one.</div>}
+        {tab === 'board' && <TagBoard token={token} meId={meId} rows={heatRows} names={names} pool={boardPool} onPool={setBoardPool}
+          unread={unread} seenKey={seenKey} onSeen={onSeen} />}
+        {tab === 'matchups' && <Matchups token={token} act={act} rev={rev} />}
+        {tab === 'tags' && <>
         <div className="mt-tags">
           {home.holdings.map((h) => TAG_ART[h.pool] ? (
             <div key={h.pool} className="mt-dtag">
@@ -118,8 +136,7 @@ export default function MyTagApp() {
           ))}
         </div>
 
-        <TagHeat rows={heatRows} token={token} names={Object.fromEntries(home.holdings.map((h) => [h.pool, h.pool_name]))} act={act}
-          focus={focus} seenKey={seenKey} onSeen={onSeen} />
+        <TagHeat rows={heatRows} token={token} names={names} act={act} focus={focus} onMatchups={() => go('matchups')} />
 
         <EarlyMyTag token={token} rev={rev} />
 
@@ -179,6 +196,8 @@ export default function MyTagApp() {
             {home.recent.map((m) => <RoundCard key={m.id} m={m} meId={meId} />)}
           </section>
         )}
+
+        </>}
 
         <p className="td-hint mt-foot">This page is yours: bookmark it or add it to your home screen. Don't share the link. Lost it? Your league TD can send a new one. <Link to="/tags">See the boards ›</Link></p>
       </main>

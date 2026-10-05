@@ -14,7 +14,11 @@ export interface HeatRow {
   fuse_at: string | null; declines: number; targets: HeatTarget[]; list: HeatChallenge[]; last_chat: number | null;
 }
 
-export interface ChatLine { id: number; member_id: string | null; name: string | null; nickname: string | null; body: string; at: string; number: number | null; hidden: boolean }
+/** One Board line. kind 'system' = the house posting news (event says what); member_id is null then. */
+export interface ChatLine {
+  id: number; member_id: string | null; name: string | null; nickname: string | null; body: string; at: string; number: number | null; hidden: boolean;
+  kind?: 'chat' | 'system'; event?: string | null;
+}
 export interface BoardHeat {
   bombs: boolean; challenges: boolean; chat: boolean;
   fuses: Array<{ number: number; fuse_at: string }>;
@@ -57,5 +61,9 @@ export function heatMessage(m: string): string | null {
   if (/chat_off/.test(m)) return 'The chat is off for this tag set.';
   if (/slow_down/.test(m)) return 'Easy, tiger. One message every few seconds.';
   if (/invalid_message/.test(m)) return 'Messages are 1 to 500 characters.';
+  if (/invalid_days/.test(m)) return 'Pick days of the week.';
+  if (/too_many_courses/.test(m)) return 'Three favorite courses max.';
+  if (/unknown_course/.test(m)) return "That course isn't in the library anymore. Pick another.";
+  if (/invalid_reaction/.test(m)) return "That reaction isn't on the menu.";
   return null;
 }

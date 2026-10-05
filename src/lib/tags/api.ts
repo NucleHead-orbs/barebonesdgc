@@ -5,6 +5,7 @@
 import { supabase } from '../supabase';
 import type { MatchStatus, PendingSwap, Tag, TagMember, TagPool } from './tags';
 import type { BoardHeat, ChatLine, HeatRow } from './heat';
+import type { BoardRead, MatchupSet, Profile, ReactionKind } from './board';
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
 const wrap = async <T>(fn: () => Promise<T>): Promise<Result<T>> => {
@@ -167,3 +168,13 @@ export const tdHeatSet = (poolId: string, bombs: boolean, challenges: boolean, c
   wrap(async () => { must(await supabase.rpc('td_tag_heat_set', { p_pool: poolId, p_bombs: bombs, p_challenges: challenges, p_chat: chat })); });
 export const tdChat = (poolId: string) => wrap(async (): Promise<ChatLine[]> => (must(await supabase.rpc('td_tag_chat', { p_pool: poolId })) ?? []) as ChatLine[]);
 export const tdChatHide = (id: number, hide: boolean) => wrap(async () => { must(await supabase.rpc('td_tag_chat_hide', { p_id: id, p_hide: hide })); });
+
+// ---------- the Board, profiles, Matchups (migration 20261031) ----------
+export const boardRead = (token: string, poolId: string, after: number) =>
+  wrap(async (): Promise<BoardRead> => must(await supabase.rpc('tag_board_read', { p_token: token, p_pool: poolId, p_after: after })) as BoardRead);
+export const react = (token: string, chatId: number, kind: ReactionKind) =>
+  wrap(async (): Promise<boolean> => !!must(await supabase.rpc('tag_chat_react', { p_token: token, p_chat: chatId, p_kind: kind })));
+export const profileGet = (token: string) => wrap(async (): Promise<Profile> => must(await supabase.rpc('tag_profile_get', { p_token: token })) as Profile);
+export const profileSave = (token: string, am: number, pm: number, courses: string[]) =>
+  wrap(async () => { must(await supabase.rpc('tag_profile_save', { p_token: token, p_am: am, p_pm: pm, p_courses: courses })); });
+export const matchups = (token: string) => wrap(async (): Promise<MatchupSet[]> => (must(await supabase.rpc('tag_matchups', { p_token: token })) ?? []) as MatchupSet[]);

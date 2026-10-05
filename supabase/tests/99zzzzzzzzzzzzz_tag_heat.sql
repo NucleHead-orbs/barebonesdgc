@@ -102,13 +102,13 @@ select pg_temp.ok(tag_chat_post(pg_temp.tok('Ace Heat'), pg_temp.pool(), '  who 
 select pg_temp.ok(pg_temp.refused(format('select tag_chat_post(%L, %L, %L)', pg_temp.tok('Ace Heat'), pg_temp.pool(), 'again'), 'slow_down'), 'no spamming');
 select pg_temp.ok(pg_temp.refused(format('select tag_chat_post(%L, %L, %L)', pg_temp.tok('Zed Outsider'), pg_temp.pool(), 'hi'), 'no_tag_in_pool'), 'outsiders can''t post');
 select pg_temp.ok(pg_temp.refused(format('select tag_chat_read(%L, %L, 0)', pg_temp.tok('Zed Outsider'), pg_temp.pool()), 'no_tag_in_pool'), 'or read');
-select pg_temp.ok((tag_chat_read(pg_temp.tok('Bo Heat'), pg_temp.pool(), 0) -> 0 ->> 'body') = 'who wants some', 'members read it (trimmed)');
+select pg_temp.ok((select x ->> 'body' from jsonb_array_elements(tag_chat_read(pg_temp.tok('Bo Heat'), pg_temp.pool(), 0)) x where x ->> 'kind' = 'chat' limit 1) = 'who wants some', 'members read it (trimmed)');
 reset role;
 select pg_temp.claims('00000000-0000-4000-8000-000000000dd1', true); set role authenticated;
-select td_tag_chat_hide((select (x ->> 'id')::bigint from jsonb_array_elements(td_tag_chat(pg_temp.pool())) x limit 1), true);
+select td_tag_chat_hide((select (x ->> 'id')::bigint from jsonb_array_elements(td_tag_chat(pg_temp.pool())) x where x ->> 'kind' = 'chat' limit 1), true);
 reset role;
 select set_config('request.jwt.claims', '', false); set role anon;
-select pg_temp.ok(jsonb_array_length(tag_chat_read(pg_temp.tok('Bo Heat'), pg_temp.pool(), 0)) = 0, 'TDs can hide a message');
+select pg_temp.ok(not exists (select 1 from jsonb_array_elements(tag_chat_read(pg_temp.tok('Bo Heat'), pg_temp.pool(), 0)) x where x ->> 'kind' = 'chat'), 'TDs can hide a message');
 reset role;
 select pg_temp.claims('00000000-0000-4000-8000-000000000dd1', true); set role authenticated;
 select td_tag_heat_set(pg_temp.pool(), false, false, false);

@@ -1,13 +1,13 @@
 /**
  * My Tag: the heat for each tag set this player holds (migration 20261028). Time bomb fuse on a top-5 tag, challenges
- * (send up to 5 spots up; accept or decline what comes in), the decline count, and the set's group chat.
+ * (send up to 5 spots up; accept or decline what comes in) and the decline count. The chat lives on the BOARD tab.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as tagApi from '../../lib/tags/api';
-import { DROP_PLACES, FREE_DECLINES, declineNote, timeLeft, type ChatLine, type HeatChallenge, type HeatRow } from '../../lib/tags/heat';
-import { readSeen, writeSeen, type HeatFocus } from '../../lib/tags/useHeat';
-import { display, tagMessage } from '../../lib/tags/tags';
+import { DROP_PLACES, FREE_DECLINES, declineNote, timeLeft, type HeatChallenge, type HeatRow } from '../../lib/tags/heat';
+import type { HeatFocus } from '../../lib/tags/useHeat';
+import { display } from '../../lib/tags/tags';
 import { niceDate } from '../../lib/leagues/leagues';
 import './heat.css';
 
@@ -20,20 +20,19 @@ function useNow(stepMs = 60_000) {
   return now;
 }
 
-export function TagHeat({ rows, token, names, act, focus, seenKey, onSeen }: {
-  rows: HeatRow[] | null; token: string; names: Record<string, string>; act: Act;
-  focus: HeatFocus | null; seenKey: (pool: string) => string; onSeen: (pool: string, id: number) => void;
+export function TagHeat({ rows, token, names, act, focus, onMatchups }: {
+  rows: HeatRow[] | null; token: string; names: Record<string, string>; act: Act; focus: HeatFocus | null; onMatchups: () => void;
 }) {
   const now = useNow();
   if (!rows) return null;
-  const on = rows.filter((r) => r.bombs || r.challenges || r.chat);
+  const on = rows.filter((r) => r.bombs || r.challenges);
   if (!on.length) return null;
   return <>{on.map((r) => <HeatCard key={r.pool_id} row={r} name={names[r.pool] ?? r.pool} token={token} now={now} act={act}
-    focus={focus?.pool === r.pool ? focus : null} seenKey={seenKey(r.pool)} onSeen={(id) => onSeen(r.pool, id)} />)}</>;
+    focus={focus?.pool === r.pool ? focus : null} onMatchups={onMatchups} />)}</>;
 }
 
-function HeatCard({ row, name, token, now, act, focus, seenKey, onSeen }: {
-  row: HeatRow; name: string; token: string; now: number; act: Act; focus: HeatFocus | null; seenKey: string; onSeen: (id: number) => void;
+function HeatCard({ row, name, token, now, act, focus, onMatchups }: {
+  row: HeatRow; name: string; token: string; now: number; act: Act; focus: HeatFocus | null; onMatchups: () => void;
 }) {
   const [picking, setPicking] = useState(false);
   const card = useRef<HTMLElement>(null);
@@ -90,7 +89,7 @@ function HeatCard({ row, name, token, now, act, focus, seenKey, onSeen }: {
           ))}
           <div className="ht-foot">
             <span className="td-hint">Declines: {row.declines} of {FREE_DECLINES} free. The 4th drops you {DROP_PLACES} spots, then the count starts over.</span>
-            {!busy && row.targets.length > 0 && !picking && <button className="td-btn" onClick={() => setPicking(true)}>CHALLENGE SOMEONE</button>}
+            {!busy && row.targets.length > 0 && !picking && <><button className="td-btn" onClick={() => setPicking(true)}>CHALLENGE SOMEONE</button><button className="td-btn quiet" onClick={onMatchups}>BEST MATCHUPS ›</button></>}
             {busy && <span className="td-hint">One challenge at a time.</span>}
             {!row.targets.length && <span className="td-hint">You're on top. Nobody to challenge; everyone's coming for you.</span>}
           </div>
@@ -112,7 +111,6 @@ function HeatCard({ row, name, token, now, act, focus, seenKey, onSeen }: {
         </>
       )}
 
-      {row.chat && <Chat token={token} poolId={row.pool_id} seenKey={seenKey} lastId={row.last_chat ?? 0} openN={focus?.kind === 'chat' ? focus.n : 0} onSeen={onSeen} />}
     </section>
   );
 }
@@ -122,80 +120,6 @@ function doneLine(c: HeatChallenge): string {
   const s = { declined: 'declined', expired: 'ran out the clock', cancelled: 'cancelled', played: 'played it', lapsed: 'never played it' } as Record<string, string>;
   return c.mine ? `You challenged ${who}: ${c.status === 'declined' || c.status === 'expired' ? `they ${s[c.status]}` : s[c.status]}.`
     : `${who} challenged you: ${c.status === 'declined' ? 'you declined' : c.status === 'expired' ? 'you ran out the clock' : s[c.status]}.`;
-}
-
-const POLL_CHAT = 8000;
-function Chat({ token, poolId, seenKey, lastId, openN, onSeen }: {
-  token: string; poolId: string; seenKey: string; lastId: number; openN: number; onSeen: (id: number) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [lines, setLines] = useState<ChatLine[]>([]);
-  const [text, setText] = useState('');
-  const [err, setErr] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [seen, setSeen] = useState(() => readSeen(seenKey));
-  const after = useRef(0);
-  const box = useRef<HTMLDivElement>(null);
-  const wrap = useRef<HTMLDivElement>(null);
-  const seenCb = useRef(onSeen);
-  useEffect(() => { seenCb.current = onSeen; }, [onSeen]);
-  const [openedFor, setOpenedFor] = useState(0);
-  if (openN && openN !== openedFor) { setOpenedFor(openN); setOpen(true); }  // the header's chat icon opens it
-  useEffect(() => {
-    if (openN) window.setTimeout(() => wrap.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
-  }, [openN]);
-  const unread = !open && lastId > seen;
-
-  const pull = useCallback(async () => {
-    const r = await tagApi.chatRead(token, poolId, after.current);
-    if (r.error) { setErr(tagMessage(r.error)); return; }
-    const got = r.data ?? [];
-    if (got.length) {
-      after.current = got[got.length - 1].id;
-      setLines((l) => [...l, ...got].slice(-200));
-      setSeen(after.current); writeSeen(seenKey, after.current); seenCb.current(after.current);
-      window.setTimeout(() => box.current?.scrollTo({ top: box.current.scrollHeight }), 30);
-    }
-  }, [token, poolId, seenKey]);
-
-  useEffect(() => {
-    if (!open) return;
-    void (async () => { await pull(); })();
-    const t = window.setInterval(() => { if (document.visibilityState === 'visible') void pull(); }, POLL_CHAT);
-    return () => window.clearInterval(t);
-  }, [open, pull]);
-
-  const send = async () => {
-    const b = text.trim();
-    if (!b) return;
-    setBusy(true); setErr('');
-    const r = await tagApi.chatPost(token, poolId, b);
-    setBusy(false);
-    if (r.error) return setErr(tagMessage(r.error));
-    setText(''); await pull();
-  };
-
-  if (!open) return <div ref={wrap}><button className={`td-btn${unread ? ' cta' : ''}`} onClick={() => setOpen(true)}>GROUP CHAT{unread ? ' · NEW' : ''}</button></div>;
-  return (
-    <div className="ht-chat" ref={wrap}>
-      <div className="td-row"><span className="td-label">GROUP CHAT · EVERYONE WITH A TAG IN THIS SET</span><div style={{ flex: 1 }} /><button className="td-btn quiet" onClick={() => setOpen(false)}>CLOSE</button></div>
-      <div className="ht-lines" ref={box}>
-        {!lines.length && <p className="td-hint">Quiet in here. Talk some trash, set up a round.</p>}
-        {lines.map((l) => (
-          <div key={l.id} className="ht-line">
-            <b>{l.name ? display({ name: l.name, nickname: l.nickname }) : 'Former member'}{l.number ? <span> #{l.number}</span> : null}</b>
-            <p>{l.body}</p>
-            <time>{new Date(l.at).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</time>
-          </div>
-        ))}
-      </div>
-      <form className="ht-send" onSubmit={(e) => { e.preventDefault(); void send(); }}>
-        <input className="td-input" value={text} maxLength={500} placeholder="Say something…" onChange={(e) => setText(e.target.value)} aria-label="Message" />
-        <button className="td-btn cta" type="submit" disabled={busy || !text.trim()}>SEND</button>
-      </form>
-      {err && <div className="td-warn" role="alert">{err}</div>}
-    </div>
-  );
 }
 
 export function BombIcon({ small }: { small?: boolean }) {

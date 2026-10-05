@@ -14,8 +14,8 @@ export function useHeat(token: string, rev: number): HeatRow[] | null {
   return rows;
 }
 
-/** What the header icons asked to show: a set's chat or its challenges. n changes on every tap so it re-triggers. */
-export interface HeatFocus { kind: 'chat' | 'challenge'; pool: string; n: number }
+/** What the challenge icon asked to show: a set's challenges. n changes on every tap so it re-triggers. */
+export interface HeatFocus { kind: 'challenge'; pool: string; n: number }
 
 /** Last chat message this member has seen in a set, on this device. */
 export const chatSeenKey = (pool: string, member: string) => `bb-chat-seen-${pool}-${member}`;
