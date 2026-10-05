@@ -28,3 +28,10 @@
 .ht-send { display: flex; gap: 8px; }
 .ht-send .td-input { flex: 1; min-width: 0; }
 @media (prefers-reduced-motion: reduce) { .ht-bomb.is-hot, .ht-spark { animation: none; } }
+.ht-bell { display: flex; gap: 8px; margin-left: auto; }
+.ht-icon { position: relative; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; border: 2px solid var(--border); background: var(--surface); color: #fff; cursor: pointer; }
+.ht-icon svg { width: 24px; height: 24px; }
+.ht-icon.is-on { border-color: var(--cyan); color: var(--cyan); }
+.ht-icon.is-hot { border-color: #ff4f6e; color: #ff4f6e; animation: ht-pulse 1.1s ease-in-out infinite; }
+.ht-icon b { position: absolute; top: -7px; right: -7px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #ff4f6e; color: #fff; font-size: 12px; line-height: 20px; text-align: center; }
+@media (prefers-reduced-motion: reduce) { .ht-icon.is-hot { animation: none; } }

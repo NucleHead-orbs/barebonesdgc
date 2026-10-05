@@ -8,7 +8,8 @@ import type { Match, TagHome } from '../../lib/tags/api';
 import { TAG_ART, display, parseScore, swap, tagMessage } from '../../lib/tags/tags';
 import { DigitalTag } from '../../components/DigitalTag';
 import { EarlyMyTag } from '../../components/early/EarlyMyTag';
-import { TagHeat } from '../../components/tags/TagHeat';
+import { HeatBell, TagHeat } from '../../components/tags/TagHeat';
+import { chatSeenKey, readSeen, useHeat, type HeatFocus } from '../../lib/tags/useHeat';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
 import '../td/td.css';
@@ -25,6 +26,29 @@ export default function MyTagApp() {
   const [rev, setRev] = useState(0);
   const [toConfirm, setToConfirm] = useState<Array<{ id: string; course: string; played_on: string }>>([]);
   useTheme('event', 'bone');
+  const heatRows = useHeat(token, rev);
+  const [focus, setFocus] = useState<HeatFocus | null>(null);
+  const [unread, setUnread] = useState<Record<string, number>>({});
+  const meIdForSeen = home?.me.id ?? '';
+  const seenKey = useCallback((pool: string) => chatSeenKey(pool, meIdForSeen), [meIdForSeen]);
+  // unread chat per set: messages from others newer than the last one this member saw here
+  useEffect(() => {
+    if (!heatRows || !meIdForSeen) return;
+    let live = true;
+    void (async () => {
+      const next: Record<string, number> = {};
+      for (const r of heatRows) {
+        if (!r.chat || !r.last_chat) continue;
+        const seen = readSeen(chatSeenKey(r.pool, meIdForSeen));
+        if (r.last_chat <= seen) continue;
+        const got = await tagApi.chatRead(token, r.pool_id, seen);
+        next[r.pool] = (got.data ?? []).filter((l) => l.member_id !== meIdForSeen).length;
+      }
+      if (live) setUnread(next);
+    })();
+    return () => { live = false; };
+  }, [heatRows, token, meIdForSeen]);
+  const onSeen = useCallback((pool: string) => setUnread((u) => (u[pool] ? { ...u, [pool]: 0 } : u)), []);
 
   const load = useCallback(async () => {
     const r = await tagApi.me(token);
@@ -64,6 +88,9 @@ export default function MyTagApp() {
           <div className="td-title">My Tag</div>
           <div className="td-sub">BARE BONES BAG TAGS · {display(home.me).toUpperCase()}</div>
         </div>
+        <HeatBell rows={heatRows} unread={unread}
+          onChat={(pool) => setFocus((f) => ({ kind: 'chat', pool, n: (f?.n ?? 0) + 1 }))}
+          onChallenge={(pool) => setFocus((f) => ({ kind: 'challenge', pool, n: (f?.n ?? 0) + 1 }))} />
       </header>
       <main className="td-main mt-app">
         {toast && <div className="td-ok" role="status">{toast}</div>}
@@ -89,7 +116,8 @@ export default function MyTagApp() {
           ))}
         </div>
 
-        <TagHeat token={token} rev={rev} names={Object.fromEntries(home.holdings.map((h) => [h.pool, h.pool_name]))} act={act} />
+        <TagHeat rows={heatRows} token={token} names={Object.fromEntries(home.holdings.map((h) => [h.pool, h.pool_name]))} act={act}
+          focus={focus} seenKey={seenKey} onSeen={onSeen} />
 
         <EarlyMyTag token={token} rev={rev} />
 

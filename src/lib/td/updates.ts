@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'heat-bell', date: '2026-10-05', help: 'tags', who: 'tags',
+    title: 'My Tag: chat + challenge icons',
+    body: 'Top right of My Tag: a **chat** icon with the number of new messages and a **challenge** icon (red, pulsing) when someone has called you out. Tap either to jump straight there.',
+  },
+  {
     id: 'tag-heat', date: '2026-10-04', help: 'tags', who: 'tags',
     title: 'Heat: time bombs, challenges, group chat',
     body: '**BAG TAGS → Heat** has three switches per tag set. **Time bombs** blow up idle top-5 tags after 7 days. **Challenges** let players call out anyone up to 5 spots above them (the 4th decline costs 5 spots). **Group chat** lives on My Tag. All three are on for Jewel XI Early Access.',
