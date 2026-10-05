@@ -9,7 +9,7 @@ export const UPDATES: Update[] = [
   {
     id: 'tag-board', date: '2026-10-05', help: 'tags', who: 'tags',
     title: 'My Tag: BOARD and MATCHUPS tabs',
-    body: 'My Tag now has three tabs. **BOARD**: one message board per tag set (pick the set up top), reactions, and the house posts challenges, results, explosions and penalties on its own. **MATCHUPS**: players share their days and favorite courses; the Matchmaker suggests their best opponents with one-tap **CHALLENGE**, and posts the week\'s hottest matchups every Monday.',
+    body: 'My Tag now has three tabs. **BOARD**: one message board per tag set (pick the set up top), reactions (tap a count to see who), and the house posts challenges, results, explosions and penalties on its own. **MATCHUPS**: players share their days and favorite courses; the Matchmaker suggests their best opponents with one-tap **CHALLENGE**, and posts the week\'s hottest matchups every Monday.',
   },
   {
     id: 'skull', date: '2026-10-05', help: 'trouble', who: 'all',

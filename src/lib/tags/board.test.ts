@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { asTab, daysSummary, hasDay, mergeLines, newsTone, pickReasons, toggleDay, type Pick } from './board';
+import { asTab, whoLine, daysSummary, hasDay, mergeLines, newsTone, pickReasons, toggleDay, type Pick } from './board';
 import type { ChatLine } from './heat';
 
 const line = (id: number): ChatLine => ({ id, member_id: null, name: null, nickname: null, body: String(id), at: '', number: null, hidden: false });
@@ -23,6 +23,15 @@ describe('matchups', () => {
     expect(pickReasons(pick({ days: ['Sat'], courses: ['Papago'], idle: 9, their_days: ['Sat'] }))).toEqual(['Both free Sat', 'Both love Papago', "#3 hasn't moved in 9 days"]);
     expect(pickReasons(pick({ their_days: ['Wed', 'Thu'] }))).toEqual(["They're free Wed/Thu"]);
     expect(pickReasons(pick({ busy: true }))).toEqual(['No schedule shared yet', 'Busy with another challenge']);
+  });
+});
+
+describe('who reacted', () => {
+  it('lists names', () => {
+    expect(whoLine(['Dave'])).toBe('Dave');
+    expect(whoLine(['Dave', 'Sam', 'Whitey'])).toBe('Dave, Sam and Whitey');
+    expect(whoLine(['a', 'b', 'c', 'd'], 2)).toBe('a, b and 2 more');
+    expect(whoLine([])).toBe('');
   });
 });
 

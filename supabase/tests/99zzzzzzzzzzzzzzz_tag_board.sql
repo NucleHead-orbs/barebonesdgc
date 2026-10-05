@@ -113,3 +113,12 @@ select pg_temp.ok(tag_matchmaker() = 0 and pg_temp.news('matchmaker') = 1, 'once
 set role anon;
 select pg_temp.ok(pg_temp.refused('select tag_matchmaker()', 'permission denied'), 'only the clock runs the Matchmaker');
 reset role;
+
+-- ---------- who reacted (20261101) ----------
+set role anon;
+insert into b_ctx select 'msg2', tag_chat_post(pg_temp.tok('Di Board'), pg_temp.pool(), 'Names please')::text;
+select tag_chat_react(pg_temp.tok('Cy Board'), pg_temp.v('msg2')::bigint, 'flex');
+select tag_chat_react(pg_temp.tok('Ed Board'), pg_temp.v('msg2')::bigint, 'flex');
+select pg_temp.ok((select b->'reactions'->(pg_temp.v('msg2'))->'who'->'flex' = '["Cyclops", "Ed Board"]'
+  from (select tag_board_read(pg_temp.tok('Bo Board'), pg_temp.pool(), 999999) b) x), 'everyone on the Board sees who reacted (nicknames win, first first)');
+reset role;

@@ -8,7 +8,14 @@ export type ReactionKind = 'skull' | 'fire' | 'trash' | 'flex';
 export const REACTIONS: Array<{ kind: ReactionKind; label: string }> = [
   { kind: 'skull', label: 'Dead' }, { kind: 'fire', label: 'Fire' }, { kind: 'trash', label: 'Trash talk' }, { kind: 'flex', label: 'Flex' },
 ];
-export interface Reactions { counts: Partial<Record<ReactionKind, number>>; mine: ReactionKind[] }
+/** counts per reaction, which ones I tapped, and who tapped each (names, first first). */
+export interface Reactions { counts: Partial<Record<ReactionKind, number>>; mine: ReactionKind[]; who?: Partial<Record<ReactionKind, string[]>> }
+
+/** "Dave, Sam and 3 more" */
+export function whoLine(names: string[], max = 6): string {
+  if (names.length <= max) return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0] ?? '';
+  return `${names.slice(0, max).join(', ')} and ${names.length - max} more`;
+}
 export interface BoardRead { lines: ChatLine[]; reactions: Record<string, Reactions> }
 
 export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;

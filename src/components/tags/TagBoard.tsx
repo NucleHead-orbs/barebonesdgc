@@ -4,7 +4,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as tagApi from '../../lib/tags/api';
-import { REACTIONS, mergeLines, newsTone, type ReactionKind, type Reactions } from '../../lib/tags/board';
+import { REACTIONS, mergeLines, newsTone, whoLine, type ReactionKind, type Reactions } from '../../lib/tags/board';
 import type { ChatLine, HeatRow } from '../../lib/tags/heat';
 import { readSeen, writeSeen } from '../../lib/tags/useHeat';
 import { display, tagMessage } from '../../lib/tags/tags';
@@ -57,6 +57,7 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen }: { token: stri
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [firstNew] = useState(() => readSeen(seenKey));
+  const [who, setWho] = useState<{ id: number; kind: ReactionKind } | null>(null); // whose names are showing (tap a count)
   const after = useRef(0);
   const box = useRef<HTMLDivElement>(null);
   const stick = useRef(true); // follow new lines only while scrolled to the bottom
@@ -99,7 +100,7 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen }: { token: stri
       const cur = all[id] ?? { counts: {}, mine: [] };
       const on = r.data;
       const n = Math.max(0, (cur.counts[kind] ?? 0) + (on ? 1 : -1));
-      return { ...all, [id]: { counts: { ...cur.counts, [kind]: n }, mine: on ? [...cur.mine.filter((k) => k !== kind), kind] : cur.mine.filter((k) => k !== kind) } };
+      return { ...all, [id]: { ...cur, counts: { ...cur.counts, [kind]: n }, mine: on ? [...cur.mine.filter((k) => k !== kind), kind] : cur.mine.filter((k) => k !== kind) } };
     });
   };
 
@@ -129,14 +130,20 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen }: { token: stri
                   {REACTIONS.map((x) => {
                     const n = r?.counts[x.kind] ?? 0;
                     const on = r?.mine.includes(x.kind) ?? false;
+                    const showing = who?.id === l.id && who.kind === x.kind;
                     return (
-                      <button key={x.kind} type="button" className={`bd-rxb${on ? ' on' : ''}${n ? ' has' : ''}`} aria-pressed={on}
-                        aria-label={`${x.label}${n ? `, ${n}` : ''}`} title={x.label} onClick={() => void react(l.id, x.kind)}>
-                        <ReactionIcon kind={x.kind} />{n > 0 && <span>{n}</span>}
-                      </button>
+                      <span key={x.kind} className={`bd-rxw${on ? ' on' : ''}${n ? ' has' : ''}`}>
+                        <button type="button" className="bd-rxb" aria-pressed={on} aria-label={on ? `Remove ${x.label}` : x.label} title={x.label}
+                          onClick={() => void react(l.id, x.kind)}><ReactionIcon kind={x.kind} /></button>
+                        {n > 0 && <button type="button" className={`bd-rxn${showing ? ' open' : ''}`} aria-expanded={showing} aria-label={`${n} ${x.label}: who?`}
+                          onClick={() => setWho(showing ? null : { id: l.id, kind: x.kind })}>{n}</button>}
+                      </span>
                     );
                   })}
                 </div>
+                {who?.id === l.id && (r?.who?.[who.kind]?.length ?? 0) > 0 && (
+                  <p className="bd-who" role="status"><ReactionIcon kind={who.kind} /> {whoLine(r!.who![who.kind]!)}</p>
+                )}
               </article>
             </div>
           );
