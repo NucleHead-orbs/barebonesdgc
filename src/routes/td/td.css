@@ -434,3 +434,24 @@ button.td-vote-opt:disabled { cursor: default; }
 .lw-block .td-hint { margin: 0; }
 .lw-photo { display: block; width: 100%; max-height: 320px; object-fit: cover; border-radius: 8px; border: 2px solid var(--border); }
 .lg-td-logo { display: block; max-width: 100%; height: 120px; object-fit: contain; background: #000; border-radius: 8px; padding: 8px; }
+
+/* EARLY ACCESS → Invites + the printed invite card */
+.ea-inv-form { flex-wrap: wrap; }
+.ea-inv-form .td-input { flex: 1 1 180px; min-width: 0; }
+.ea-inv { padding: 10px 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.ea-inv-text { white-space: pre-wrap; font-size: 13px; margin: 6px 0 0; }
+.ea-print { display: none; }
+@media print {
+  body > *:not(.ea-print) { display: none !important; }
+  .ea-print { display: block; color: #000; background: #fff; }
+  .ea-card { max-width: 6.5in; margin: 0.4in auto; padding: 0.4in; border: 4px solid #000; border-radius: 18px; font-family: Georgia, 'Times New Roman', serif; text-align: center; }
+  .ea-card-kick { font: 700 12pt/1.2 Arial, sans-serif; letter-spacing: 1.5px; }
+  .ea-card h1 { font-size: 40pt; margin: 14pt 0 4pt; }
+  .ea-card-tag { font-size: 20pt; margin: 0 0 12pt; }
+  .ea-card-qr { width: 3.2in; margin: 0 auto 14pt; }
+  .ea-card-qr svg { width: 100%; height: auto; display: block; }
+  .ea-card ol { text-align: left; font-size: 17pt; line-height: 1.4; margin: 0 0 14pt; padding-left: 0.4in; }
+  .ea-card ol li { margin-bottom: 6pt; }
+  .ea-card-foot { font: 12pt/1.4 Arial, sans-serif; }
+  .ea-card-foot span { font-size: 9pt; word-break: break-all; }
+}

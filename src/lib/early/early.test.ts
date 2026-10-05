@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { claimKey, daysLeft, earlyPath, earlyMessage, rankOf, rulesText, tickets, windowState } from './early';
+import { inviteText, smsHref, claimKey, daysLeft, earlyPath, earlyMessage, rankOf, rulesText, tickets, windowState } from './early';
 
 describe('early access helpers', () => {
   it('window state by date', () => {
@@ -41,5 +41,14 @@ describe('early access helpers', () => {
     expect(earlyMessage({ message: 'nobody_left' })).toMatch(/already won/);
     expect(earlyMessage({ code: '42501', message: 'x' })).toMatch(/isn't a TD/);
     expect(earlyMessage('weird')).toMatch(/went wrong/);
+  });
+});
+
+describe('invites', () => {
+  it('writes the text with the first name and the link on its own line', () => {
+    const t = inviteText('  Greg Wood ', 'Jewel XI', 'https://x/tag/abc');
+    expect(t.startsWith("Greg, you're in!")).toBe(true);
+    expect(t).toContain('\n\nhttps://x/tag/abc\n\n');
+    expect(smsHref('a b&c')).toBe('sms:?&body=a%20b%26c');
   });
 });

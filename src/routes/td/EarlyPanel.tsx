@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import * as ea from '../../lib/early/api';
 import { earlyMessage, earlyPath, rulesText, windowState, type EaStanding, type EaTd } from '../../lib/early/early';
 import { niceDate } from '../../lib/leagues/leagues';
+import { EaInvites } from './EaInvites';
 
 const POLL_MS = 20_000; // new requests show up without a reload
 
@@ -70,7 +71,7 @@ export default function EarlyPanel({ eventId, slug, eventName }: { eventId: stri
           <a className="td-btn quiet" href={`/tags/${d.pool}`} target="_blank" rel="noreferrer">TAG BOARD ↗</a>
         </div>
         <p className="td-hint">
-          <b>{linked.length}</b> of {d.players} registrants joined · window {niceDate(d.opens_on ?? '')} – {niceDate(d.closes_on ?? '')}
+          <b>{linked.filter((l) => l.via !== 'invite').length}</b> of {d.players} registrants joined{linked.some((l) => l.via === 'invite') ? ` + ${linked.filter((l) => l.via === 'invite').length} invited` : ''} · window {niceDate(d.opens_on ?? '')} – {niceDate(d.closes_on ?? '')}
           {' '}({win === 'open' ? 'open' : win === 'before' ? 'not open yet' : 'closed'}). Share the public page link with registrants.
         </p>
       </section>
@@ -131,16 +132,18 @@ export default function EarlyPanel({ eventId, slug, eventName }: { eventId: stri
         )}
       </section>
 
+      <EaInvites eventId={eventId} eventName={eventName} linked={linked} busy={busy} run={run} />
+
       <section className="td-panel">
         <h2>Joined</h2>
         {!linked.length && <p className="td-hint">Nobody yet.</p>}
         {linked.length > 0 && (
           <table className="td-table">
-            <thead><tr><th>Registrant</th><th>Club member</th><th>Tag</th><th /></tr></thead>
+            <thead><tr><th>Registrant / invite</th><th>Club member</th><th>Tag</th><th /></tr></thead>
             <tbody>
               {linked.map((l) => (
                 <tr key={l.claim_id}>
-                  <td>{l.player}</td>
+                  <td>{l.player}{l.via === 'invite' ? <span className="td-hint"> · invited</span> : ''}</td>
                   <td>{l.member}{l.nickname ? ` "${l.nickname}"` : ''}</td>
                   <td>{l.tag ? `#${l.tag}` : '–'}</td>
                   <td style={{ textAlign: 'right' }}>

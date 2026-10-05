@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'ea-invites', date: '2026-10-05', help: 'early', who: 'all',
+    title: 'Early Access invites + a welcome tour',
+    body: '**EARLY ACCESS → Invites**: give early access to people who aren\'t registered. Type the name, tap **INVITE**, then **TEXT IT** (opens your messages with the note and link written), **COPY LINK** or **PRINT CARD** (a big QR they scan with their camera). Invites get tickets, count as Jewel players, and don\'t use registrant spots. New players also get a 3-step welcome on My Tag (**HOW IT WORKS** brings it back).',
+  },
+  {
     id: 'challenge-rounds', date: '2026-10-05', help: 'tags', who: 'tags',
     title: 'Challenge rounds: time, course, jump-ins',
     body: 'An accepted challenge now gets a **time and course**: the challenged player picks, the challenger OKs (or counters). Once locked it posts to the Board and anyone with a tag in the set can **JUMP IN** from MATCHUPS (2 max, their tags on the line). Jump-ins close 2 hours before tee time.',

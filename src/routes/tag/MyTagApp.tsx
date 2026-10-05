@@ -12,10 +12,11 @@ import { HeatBell, TagHeat } from '../../components/tags/TagHeat';
 import { TagBoard } from '../../components/tags/TagBoard';
 import { Matchups } from '../../components/tags/Matchups';
 import { asTab, type MyTagTab } from '../../lib/tags/board';
-import { chatSeenKey, readSeen, useHeat, useRounds, type HeatFocus } from '../../lib/tags/useHeat';
+import { chatSeenKey, readSeen, useHeat, useRounds, welcomeSeen, type HeatFocus } from '../../lib/tags/useHeat';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
 import { NewVersionNote } from '../../components/dev/DevReports';
+import { WelcomeTour } from '../../components/tags/WelcomeTour';
 import '../td/td.css';
 import './mytag.css';
 
@@ -37,6 +38,7 @@ export default function MyTagApp() {
   const tab = asTab(params.get('tab'));
   const go = useCallback((t: MyTagTab) => { setParams(t === 'tags' ? {} : { tab: t }, { replace: true }); window.scrollTo(0, 0); }, [setParams]);
   const [boardPool, setBoardPool] = useState<string | null>(null);
+  const [tour, setTour] = useState<boolean | null>(null); // null = not decided yet (decided once we know who this is)
   const [unread, setUnread] = useState<Record<string, number>>({});
   const meIdForSeen = home?.me.id ?? '';
   const seenKey = useCallback((pool: string) => chatSeenKey(pool, meIdForSeen), [meIdForSeen]);
@@ -87,6 +89,7 @@ export default function MyTagApp() {
   if (!home) return <div className="td"><main className="td-main mt-app"><p className="td-empty">{err || 'Loading your tags…'}</p></main></div>;
 
   const meId = home.me.id;
+  const showTour = tour ?? !welcomeSeen(meId);
   const needsMe = home.open.filter((m) => m.status === 'pending' && !m.expired && !m.players.find((p) => p.member_id === meId)?.confirmed);
   const waiting = home.open.filter((m) => !needsMe.includes(m));
   const names = Object.fromEntries(home.holdings.map((h) => [h.pool, h.pool_name]));
@@ -200,8 +203,10 @@ export default function MyTagApp() {
 
         </>}
 
+        <p className="td-hint mt-foot"><button className="td-btn quiet" onClick={() => setTour(true)}>HOW IT WORKS</button></p>
         <p className="td-hint mt-foot">This page is yours: bookmark it or add it to your home screen. Don't share the link. Lost it? Your league TD can send a new one. <Link to="/tags">See the boards ›</Link></p>
       </main>
+      {showTour && <WelcomeTour memberId={meId} first={(home.me.nickname || home.me.name).split(/\s+/)[0]} tag={home.holdings[0] ? `#${home.holdings[0].number} in ${home.holdings[0].pool_name}` : null} onClose={() => setTour(false)} />}
     </div>
   );
 }

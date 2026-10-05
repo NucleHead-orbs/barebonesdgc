@@ -24,7 +24,17 @@ export interface EaClaim {
   id: string; player_id: string; player: string; nickname: string | null; via: 'page' | 'mytag'; created_at: string;
   member: { id: string; name: string } | null; others: number;
 }
-export interface EaLinked { claim_id: string; player: string; member_id: string; member: string; nickname: string | null; via: 'page' | 'mytag'; at: string; tag: number | null }
+/** A joined player. via 'invite' = invited by a TD (not a registrant); token = their My Tag link, for re-sending (invites only). */
+export interface EaLinked { claim_id: string; player: string; member_id: string; member: string; nickname: string | null; via: 'page' | 'mytag' | 'invite'; at: string; tag: number | null; token?: string | null }
+export interface EaInvite { member_id: string; name: string; number: number; token: string }
+
+/** The text message a TD sends with an invite. First name only, plain words, the link on its own line. */
+export function inviteText(name: string, eventName: string, url: string): string {
+  const first = name.trim().split(/\s+/)[0] || 'Hey';
+  return `${first}, you're in! This is your own Bare Bones bag tag link for ${eventName} Early Access:\n\n${url}\n\nTap it and your tag opens. Then save it to your home screen so it's one tap next time (the page shows you how). It's yours, don't share it.`;
+}
+/** Opens the phone's messages app with the text filled in (works on iPhone and Android). */
+export const smsHref = (body: string) => `sms:?&body=${encodeURIComponent(body)}`;
 export interface EaBonus { id: number; member_id: string; name: string; tickets: number; reason: string; by: string | null; at: string }
 export interface EaDraw { id: number; member_id: string; name: string; nickname: string | null; tickets: number; at: string }
 export interface EaTd {
@@ -88,7 +98,8 @@ export function earlyMessage(err: unknown): string {
   if (/invalid_nickname/.test(m)) return 'Nickname: 40 characters max.';
   if (/invalid_claim/.test(m)) return "We can't find that request anymore. Pick your name again.";
   if (/invalid_link/.test(m)) return "This link doesn't work anymore. Ask your league TD for a new one.";
-  if (/member_already_joined/.test(m)) return 'That club member is already linked to another registrant.';
+  if (/member_already_joined/.test(m)) return 'That person is already in early access.';
+  if (/name_required/.test(m)) return 'Type their name.';
   if (/member_mismatch/.test(m)) return 'This request came from a My Tag link, so it can only link that member.';
   if (/already_(approved|declined|removed)/.test(m)) return 'Somebody already answered that request. Reload.';
   if (/not_joined/.test(m)) return "That player hasn't joined early access.";

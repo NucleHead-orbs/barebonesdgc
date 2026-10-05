@@ -41,3 +41,8 @@ export const chatSeenKey = (pool: string, member: string) => `bb-chat-seen-${poo
 export const readSeen = (key: string) => { try { return Number(localStorage.getItem(key) ?? 0); } catch { return 0; } };
 export const writeSeen = (key: string, id: number) => { try { localStorage.setItem(key, String(id)); } catch { /* not remembered: the badge may come back */ } };
 
+
+/** My Tag welcome tour: shown once per member per device. Storage blocked = treat as seen (never nag). */
+const WELCOME = (memberId: string) => `bb-welcome-${memberId}`;
+export const welcomeSeen = (memberId: string) => { try { return localStorage.getItem(WELCOME(memberId)) === '1'; } catch { return true; } };
+export const markWelcomeSeen = (memberId: string) => { try { localStorage.setItem(WELCOME(memberId), '1'); } catch { /* shows again next time */ } };
