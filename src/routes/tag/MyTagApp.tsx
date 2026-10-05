@@ -12,6 +12,7 @@ import { HeatBell, TagHeat } from '../../components/tags/TagHeat';
 import { chatSeenKey, readSeen, useHeat, type HeatFocus } from '../../lib/tags/useHeat';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
+import { NewVersionNote } from '../../components/dev/DevReports';
 import '../td/td.css';
 import './mytag.css';
 
@@ -93,6 +94,7 @@ export default function MyTagApp() {
           onChallenge={(pool) => setFocus((f) => ({ kind: 'challenge', pool, n: (f?.n ?? 0) + 1 }))} />
       </header>
       <main className="td-main mt-app">
+        <NewVersionNote />
         {toast && <div className="td-ok" role="status">{toast}</div>}
         {err && <div className="td-warn" role="alert">{err} <button className="td-btn quiet" onClick={() => setErr('')}>OK</button></div>}
 

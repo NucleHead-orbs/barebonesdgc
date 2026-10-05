@@ -2,6 +2,7 @@ import { Component, lazy, Suspense, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Placeholder from './routes/Placeholder';
 import { MasterLayout, JewelLayout } from './components/site';
+import SkullFab from './components/dev/SkullFab';
 const pages = () => import('./routes/site/pages');
 const Home = lazy(() => pages().then((m) => ({ default: m.Home })));
 const JewelOverview = lazy(() => pages().then((m) => ({ default: m.JewelOverview })));
@@ -12,6 +13,7 @@ const MusicPage = lazy(() => pages().then((m) => ({ default: m.Music })));
 const GalleryPage = lazy(() => import('./routes/site/GalleryPage'));
 const LeaguesPage = lazy(() => import('./routes/site/LeaguesPage'));
 const VestPage = lazy(() => import('./routes/site/VestPage'));
+const DevReportsPage = lazy(() => import('./components/dev/DevReports').then((m) => ({ default: m.DevReportsPage })));
 const tagPages = () => import('./routes/site/TagsPages');
 const TagsBoard = lazy(() => tagPages().then((m) => ({ default: m.TagsBoard })));
 const TagPage = lazy(() => tagPages().then((m) => ({ default: m.TagPage })));
@@ -60,6 +62,7 @@ export default function App() {
           <Route path="/rounds" element={<RoundsList />} />
           <Route path="/rounds/:id" element={<RoundDetail />} />
           <Route path="/e/:slug/early-access" element={<EarlyAccessBySlug />} />
+          <Route path="/dev-reports" element={<DevReportsPage />} />
         </Route>
         <Route path="/jewel-xi" element={<JewelLayout />}>
           <Route index element={<JewelOverview />} />
@@ -81,6 +84,7 @@ export default function App() {
         <Route path="/td" element={<RouteGuard><Suspense fallback={null}><TdRoute /></Suspense></RouteGuard>} />
         <Route path="*" element={<Placeholder title="Not here" note="That page doesn't exist. Head back to barebonesdiscgolf.club." />} />
       </Routes>
+      <SkullFab />
     </BrowserRouter>
   );
 }

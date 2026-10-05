@@ -2,6 +2,8 @@ import { lazy, Suspense, useCallback, useEffect, useState, type FormEvent, type 
 import { useSearchParams } from 'react-router-dom';
 import * as api from '../../lib/td/api';
 import { isTagAdmin } from '../../lib/tags/api';
+import { isOwner, ownerReports } from '../../lib/dev/api';
+import { useAppVersion } from '../../lib/dev/useAppVersion';
 import { rpcError } from '../../lib/td/builder';
 import { DIVISION_PRESETS, addDays, dateRange, daysBetween, divisionsProblem, isoDate, normalizeDivCode, type DivisionRow, type EventConfig } from '../../lib/td/setup';
 import { useTheme } from '../../lib/theme';
@@ -15,6 +17,7 @@ const GalleryPanel = lazy(() => import('./GalleryPanel'));
 const BandPanel = lazy(() => import('./BandPanel'));
 const TagsPanel = lazy(() => import('./TagsPanel'));
 const LeaguesPanel = lazy(() => import('./LeaguesPanel'));
+const BugSquasher = lazy(() => import('./BugSquasher'));
 
 /**
  * Home of /td: the events this account runs. ?e=<id> opens one (with &l=<league>: back goes to that league). ?view=leagues runs leagues (?l=<id> opens one). ?view=gallery (super admin) curates the club gallery. ?view=band (super admin) runs Meet the Band. ?view=tags runs bag tags (league admins).
@@ -30,6 +33,16 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
   const [showArchived, setShowArchived] = useState(false);
   const [tagAdmin, setTagAdmin] = useState(admin);
   useEffect(() => { if (!admin) void (async () => { const r = await isTagAdmin(); setTagAdmin(!!r.data); })(); }, [admin]);
+  const [owner, setOwner] = useState<{ open: number } | null>(null); // the Bug Squasher: owner only (the database decides)
+  const view = params.get('view');
+  useEffect(() => {
+    void (async () => {
+      const o = await isOwner();
+      if (!o.data) return setOwner(null);
+      const r = await ownerReports();
+      setOwner({ open: (r.data ?? []).filter((x) => x.status === 'new').length });
+    })();
+  }, [view]);
 
   const reload = useCallback(async () => {
     const r = await api.myEvents();
@@ -52,6 +65,14 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
     return (
       <HubShell email={email} onSignOut={onSignOut} admin={admin}>
         <Suspense fallback={<p className="td-empty">Loading leagues…</p>}><LeaguesPanel admin={admin} onBack={() => setParams({})} /></Suspense>
+      </HubShell>
+    );
+  }
+
+  if (owner && params.get('view') === 'squasher') {
+    return (
+      <HubShell email={email} onSignOut={onSignOut} admin={admin}>
+        <Suspense fallback={<p className="td-empty">Loading the Bug Squasher…</p>}><BugSquasher onBack={() => setParams({})} /></Suspense>
       </HubShell>
     );
   }
@@ -93,6 +114,7 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
           {tagAdmin && <button className="td-btn" onClick={() => setParams({ view: 'tags' })}>BAG TAGS</button>}
           {admin && <button className="td-btn" onClick={() => setParams({ view: 'gallery' })}>CLUB GALLERY</button>}
           {admin && <button className="td-btn" onClick={() => setParams({ view: 'band' })}>THE BAND</button>}
+          {owner && <button className="td-btn" onClick={() => setParams({ view: 'squasher' })}>BUG SQUASHER{owner.open ? ` · ${owner.open}` : ''}</button>}
           {admin && <button className="td-btn cta" onClick={() => setCreating(true)}>+ NEW EVENT</button>}
         </div>
         {creating && <NewEventForm onCancel={() => setCreating(false)} onCreated={(id) => { setCreating(false); open(id); }} />}
@@ -127,12 +149,13 @@ export default function EventHub({ email, admin, onSignOut }: { email: string; a
 /** Theme lives in the leaf screens (list / workspace), never a parent: layout effects run child-first. */
 function HubShell({ email, admin, onSignOut, children }: { email: string; admin: boolean; onSignOut: () => void; children: ReactNode }) {
   useTheme('event');
+  const version = useAppVersion();
   return (
     <div className="td">
       <header className="td-top">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <div className="td-title">TD Builder</div>
-          <div className="td-sub">{admin ? 'SUPER ADMIN' : 'EVENT TD'} · {email}</div>
+          <div className="td-sub">{admin ? 'SUPER ADMIN' : 'EVENT TD'} · {email}{version ? ` · v${version}` : ''}</div>
         </div>
         <div style={{ flex: 1 }} />
         <div className="td-actions">

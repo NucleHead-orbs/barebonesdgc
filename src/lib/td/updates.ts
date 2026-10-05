@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'skull', date: '2026-10-05', help: 'trouble', who: 'all',
+    title: 'The skull: report bugs and ideas from any page',
+    body: 'Every page has a little **skull** (bottom left; top right on phone scorecards and My Tag). Tap it to send a **bug**, an **idea** or **feedback**, with a screenshot if you like. Your name, the page and the device go with it. Fixes show up under **Dev reports** below and on the club home.',
+  },
+  {
     id: 'heat-bell', date: '2026-10-05', help: 'tags', who: 'tags',
     title: 'My Tag: chat + challenge icons',
     body: 'Top right of My Tag: a **chat** icon with the number of new messages and a **challenge** icon (red, pulsing) when someone has called you out. Tap either to jump straight there.',

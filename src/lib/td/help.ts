@@ -220,13 +220,10 @@ export const HELP: HelpSection[] = [
     id: 'trouble', title: 'Something went wrong',
     steps: [
       'A red message tells you what to do. It never loses your work silently.',
-      'Stuck? Take a screenshot and send it to your organizer.',
+      'Stuck? Tap the **skull** (bottom left of every page, top right on phone scorecards and My Tag). Pick **Bug**, say what happened, add a screenshot, tap **SEND TO THE SKULL**. It lands straight in Mike\'s Bug Squasher with the page and your device attached.',
+      'When it\'s fixed it shows up in **Dev reports** on the TD home and the club home, with the new version number.',
     ],
   },
 ];
 
-/** "**X**" -> segments for rendering bold without HTML injection. */
-export function boldParts(text: string): Array<{ text: string; bold: boolean }> {
-  return text.split(/(\*\*[^*]+\*\*)/).filter(Boolean).map((t) =>
-    t.startsWith('**') && t.endsWith('**') ? { text: t.slice(2, -2), bold: true } : { text: t, bold: false });
-}
+export { boldParts } from '../text';

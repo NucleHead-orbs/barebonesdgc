@@ -14,6 +14,7 @@ import { loadDivisions } from '../../lib/jewel/api';
 import { Banner, Button, Card, Chip, InsetFrame, SectionHeading, TourList } from '../../components/ui';
 import { CourseGuide, SponsorGrid, SponsorPanel } from '../../components/event';
 import { useLoad } from '../../lib/useLoad';
+import { BoneLabCard } from '../../components/dev/DevReports';
 
 /** 1. Home (master brand) */
 export function Home() {
@@ -64,6 +65,8 @@ export function Home() {
           <div className="sec-inner" style={{ marginTop: 32 }}><Gallery items={GALLERY} /></div>
         </section>
       )}
+
+      <BoneLabCard />
 
       <section className="sec">
         <div className="sec-inner"><SponsorPanel tagline={`${EVENT.tagline}.`} /></div>

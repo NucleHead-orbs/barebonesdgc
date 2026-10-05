@@ -1,0 +1,30 @@
+/* Dev reports: club home card, /dev-reports, TD home, My Tag note. Uses each surface's own tokens. */
+.dev-body h4 { margin: 10px 0 4px; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; opacity: .8; }
+.dev-body ul { margin: 4px 0 8px; padding-left: 20px; }
+.dev-body li { margin: 3px 0; }
+.dev-body p { margin: 6px 0; }
+.dev-rel { padding: 14px 0; border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent); }
+.dev-rel:first-of-type { border-top: 0; }
+.dev-rel-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+.dev-rel-head b { font-size: 17px; }
+.dev-ver { font-family: ui-monospace, Menlo, monospace; font-size: 13px; padding: 2px 8px; border-radius: 999px; border: 2px solid currentColor; opacity: .75; }
+.dev-ver.is-latest { opacity: 1; background: #c6ff3d; color: #1b1424; border-color: #1b1424; }
+.dev-date { font-size: 13px; opacity: .65; }
+.dev-list { max-width: 760px; }
+
+.dev-card { display: flex; gap: 18px; align-items: flex-start; padding: 20px; border-radius: 16px; border: 4px solid var(--ink, #1b1424);
+  background: var(--bg-surface, #fff); color: var(--fg-1, inherit); box-shadow: 6px 6px 0 var(--ink, #1b1424); }
+.dev-card h3 { margin: 4px 0 6px; font-family: var(--font-display, inherit); font-size: 26px; line-height: 1.1; }
+.dev-card ul { margin: 6px 0; padding-left: 20px; }
+.dev-card li { margin: 3px 0; }
+.dev-card-main { min-width: 0; }
+.dev-card-foot { margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
+.dev-card-foot a { font-weight: 700; }
+.dev-card-foot span { opacity: .7; }
+@media (max-width: 560px) { .dev-card { flex-direction: column; gap: 8px; padding: 16px; } }
+
+.dev-td .dev-rel { padding: 10px 0; }
+.dev-note { border: 2px solid #c6ff3d; border-radius: 12px; padding: 8px 10px; margin-bottom: 12px; background: color-mix(in srgb, #c6ff3d 10%, transparent); }
+.dev-note-row { display: flex; align-items: center; gap: 10px; }
+.dev-note-main { flex: 1; min-width: 0; font-size: 14px; }
+.dev-note-x { width: 36px; height: 36px; border: 0; background: none; color: inherit; font-size: 24px; cursor: pointer; }

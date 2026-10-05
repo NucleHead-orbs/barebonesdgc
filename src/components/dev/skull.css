@@ -1,0 +1,76 @@
+/* The skull button + its form. Self-skinned (same look on every theme). Motion: transform + opacity only. */
+.skull-fab {
+  position: fixed; z-index: 45; left: calc(14px + env(safe-area-inset-left, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; padding: 0; cursor: pointer;
+  background: #2a1f3a; border: 3px solid #1b1424; box-shadow: 0 0 0 2px #c6ff3d55, 0 6px 18px rgba(0, 0, 0, .45);
+  transition: transform .18s ease;
+}
+.skull-fab:hover { transform: rotate(-8deg) scale(1.06); }
+.skull-fab:active { transform: scale(.92); }
+.skull-fab:focus-visible { outline: 3px solid #c6ff3d; outline-offset: 3px; }
+.skull-fab.is-top {
+  left: auto; bottom: auto; right: calc(6px + env(safe-area-inset-right, 0px)); top: calc(6px + env(safe-area-inset-top, 0px));
+  width: 38px; height: 38px; border-width: 2px; box-shadow: 0 0 0 1px #c6ff3d55, 0 3px 10px rgba(0, 0, 0, .4);
+}
+/* keep the phone apps' headers clear of the small skull */
+html[data-skull='top'] .sc-top, html[data-skull='top'] .td-top, html[data-skull='top'] .jw-head { padding-right: 50px; }
+/* the music mini player spans the bottom on phones: hop over it */
+@media (max-width: 760px) { body:has(.mp-mini) .skull-fab:not(.is-top) { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); } }
+@media print { .skull-fab { display: none; } }
+
+.skm-head { transform-origin: 32px 50px; animation: skm-bob 3.2s ease-in-out infinite; }
+.skm-ant { transform-origin: 32px 14px; animation: skm-ant 1.6s ease-in-out infinite; }
+.skm-eyes { transform-origin: 32px 33px; animation: skm-blink 5s infinite; }
+.skm-happy .skm-head { animation: skm-hop .7s ease-in-out infinite; }
+@keyframes skm-bob { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-5deg) translateY(-1px); } }
+@keyframes skm-ant { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(4deg); } }
+@keyframes skm-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+@keyframes skm-hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px) rotate(4deg); } }
+
+.skr-back { position: fixed; inset: 0; z-index: 60; background: rgba(10, 6, 16, .7); display: flex; align-items: flex-end; justify-content: center; padding: 12px; overflow: auto; }
+@media (min-width: 640px) { .skr-back { align-items: center; } }
+.skr {
+  position: relative; width: min(460px, 100%); max-height: calc(100dvh - 24px); overflow: auto; border-radius: 18px; padding: 18px 16px 16px;
+  background: #1f1630; color: #f6efdc; border: 3px solid #c6ff3d; box-shadow: 0 18px 50px rgba(0, 0, 0, .6);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 15px; line-height: 1.4;
+  animation: skr-in .22s ease-out;
+}
+@keyframes skr-in { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.skr * { box-sizing: border-box; }
+.skr-x { position: absolute; top: 6px; right: 8px; width: 40px; height: 40px; border: 0; background: none; color: #f6efdc; font-size: 28px; cursor: pointer; }
+.skr-head { display: flex; gap: 12px; align-items: center; margin: 0 36px 14px 0; }
+.skr-head h2 { margin: 0; font-size: 22px; letter-spacing: .02em; color: #c6ff3d; }
+.skr-head p { margin: 2px 0 0; font-size: 13px; opacity: .8; }
+.skr-kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.skr-kind { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; text-align: left; padding: 9px 10px; border-radius: 12px; cursor: pointer;
+  background: #2a1f3a; color: #f6efdc; border: 2px solid #3d2f52; font: inherit; }
+.skr-kind b { font-size: 15px; }
+.skr-kind span { font-size: 11.5px; opacity: .75; line-height: 1.25; }
+.skr-kind.on.k-bug { border-color: #ff5a6e; background: #3a1c2c; }
+.skr-kind.on.k-idea { border-color: #ffd23d; background: #3a3018; }
+.skr-kind.on.k-feedback { border-color: #5ad1ff; background: #17304a; }
+.skr-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.skr-label { display: flex; justify-content: space-between; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+.skr-label i { font-style: normal; opacity: .7; text-transform: none; letter-spacing: 0; }
+.skr textarea, .skr input:not([type=file]) { width: 100%; font: inherit; font-size: 16px; color: #f6efdc; background: #140e1f; border: 2px solid #3d2f52; border-radius: 10px; padding: 10px; }
+.skr textarea:focus, .skr input:focus { outline: none; border-color: #c6ff3d; }
+.skr textarea { resize: vertical; min-height: 110px; }
+.skr-photo { margin-bottom: 12px; }
+.skr-add { width: 100%; padding: 12px; border-radius: 10px; border: 2px dashed #3d2f52; background: none; color: #f6efdc; font: inherit; cursor: pointer; }
+.skr-add span { opacity: .65; }
+.skr-thumb { display: flex; gap: 10px; align-items: center; }
+.skr-thumb img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; border: 2px solid #3d2f52; }
+.skr-thumb button { background: none; border: 0; color: #ff8a98; font: inherit; font-size: 13px; letter-spacing: .06em; cursor: pointer; padding: 8px; }
+.skr-who { margin: 0 0 8px; font-size: 14px; }
+.skr-meta { margin: 0 0 12px; font-size: 12px; opacity: .6; overflow-wrap: anywhere; }
+.skr-err { background: #4a1826; border: 2px solid #ff5a6e; border-radius: 10px; padding: 8px 10px; margin-bottom: 12px; font-size: 14px; }
+.skr-send { width: 100%; padding: 14px; border-radius: 12px; border: 3px solid #1b1424; background: #c6ff3d; color: #1b1424; font: inherit; font-weight: 800; letter-spacing: .06em; cursor: pointer; }
+.skr-send:disabled { opacity: .6; cursor: default; }
+.skr-done { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 8px 18px; text-align: center; }
+.skr-done b { font-size: 24px; color: #c6ff3d; }
+.skr-done span { opacity: .85; }
+
+@media (prefers-reduced-motion: reduce) {
+  .skm-head, .skm-ant, .skm-eyes, .skr { animation: none; }
+  .skull-fab, .skull-fab:hover { transition: none; transform: none; }
+}

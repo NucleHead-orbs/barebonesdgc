@@ -5,6 +5,7 @@ import { CLUB, EVENT } from '../lib/jewel/content';
 import { useTheme } from '../lib/theme';
 import { YOUTUBE_CHANNEL } from '../lib/gallery/gallery';
 import { Button } from './ui';
+import { useAppVersion } from '../lib/dev/useAppVersion';
 import './site.css';
 
 function ScrollTop() {
@@ -73,6 +74,7 @@ export function JewelLayout() {
 }
 
 export function Footer({ jewel }: { jewel?: boolean }) {
+  const version = useAppVersion();
   return (
     <footer className="ft">
       <div className="ft-row">
@@ -81,6 +83,7 @@ export function Footer({ jewel }: { jewel?: boolean }) {
           {CLUB.facebookUrl && <a href={CLUB.facebookUrl} target="_blank" rel="noreferrer">Facebook group</a>}
           <a href={YOUTUBE_CHANNEL} target="_blank" rel="noreferrer">YouTube</a>
           <a href={EVENT.registerUrl} target="_blank" rel="noreferrer">Disc Golf Scene</a>
+          <Link to="/dev-reports" className="ft-muted">{version ? `v${version} · ` : ''}Dev reports</Link>
           <Link to="/td" className="ft-muted">TD login</Link>
         </nav>
         <div className="ft-small">{CLUB.name} · {CLUB.place}{jewel ? ' · Jewel XI presented by Innova' : ''}</div>

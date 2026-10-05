@@ -7,6 +7,7 @@ import { HELP, boldParts } from '../../lib/td/help';
 import { UPDATES, unseenCount, updatesFor } from '../../lib/td/updates';
 import { niceDate } from '../../lib/leagues/leagues';
 import { HelpPanel } from './Help';
+import { TdDevReports } from '../../components/dev/DevReports';
 
 const SEEN_KEY = 'bb-td-updates-seen';
 const readSeen = () => { try { return localStorage.getItem(SEEN_KEY); } catch { return null; } };
@@ -61,6 +62,8 @@ export default function TdHome({ admin, tagAdmin }: { admin: boolean; tagAdmin: 
         </ul>
         {list.length > shown.length && <button className="td-btn quiet" onClick={() => setAll(true)}>SHOW ALL {list.length}</button>}
       </section>
+
+      <TdDevReports />
 
       <section className="td-panel">
         <h2>Help topics</h2>
