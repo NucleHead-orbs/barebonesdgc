@@ -72,3 +72,29 @@ export function newsTone(event: string | null | undefined): { label: string; ton
 
 export type MyTagTab = 'tags' | 'board' | 'matchups';
 export const asTab = (s: string | null): MyTagTab => (s === 'board' || s === 'matchups' ? s : 'tags');
+
+// ---------- challenge rounds (migration 20261103): a slot (time + course) and up to 2 jump-ins ----------
+export interface RoundPerson { id: string; name: string; nickname: string | null; number: number | null }
+export interface ChallengeRound {
+  id: string; pool_id: string; pool: string; pool_name: string; challenger: RoundPerson; challenged: RoundPerson;
+  role: 'challenger' | 'challenged' | 'joined' | null; tee_at: string | null; course_id: string | null; course: string | null;
+  slot_mine: boolean; locked: boolean; closes_at: string | null; due_at: string | null; joins: RoundPerson[];
+}
+export const MAX_JUMP_INS = 2;
+/** Where a challenge round stands for the player looking at it. */
+export type RoundStep = 'pick' | 'wait_pick' | 'ok' | 'wait_ok' | 'open' | 'closed';
+export function roundStep(r: ChallengeRound, now: number): RoundStep {
+  if (!r.tee_at) return r.role === 'challenged' ? 'pick' : 'wait_pick';
+  if (r.closes_at && now >= new Date(r.closes_at).getTime()) return 'closed';
+  if (!r.locked) return r.slot_mine ? 'wait_ok' : r.role === 'challenger' || r.role === 'challenged' ? 'ok' : 'wait_ok';
+  return 'open';
+}
+/** "Sat Oct 10, 9:00 AM at Papago" in the device's time. */
+export function slotLabel(tee: string | null, course: string | null): string {
+  if (!tee) return '';
+  const d = new Date(tee).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  return course ? `${d} at ${course}` : d;
+}
+/** datetime-local value <-> ISO (device time zone). */
+export const toLocalInput = (ms: number) => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
+export const canJumpIn = (r: ChallengeRound, now: number) => r.role === null && roundStep(r, now) === 'open' && r.joins.length < MAX_JUMP_INS;

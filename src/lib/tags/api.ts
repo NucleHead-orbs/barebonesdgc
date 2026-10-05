@@ -5,7 +5,7 @@
 import { supabase } from '../supabase';
 import type { MatchStatus, PendingSwap, Tag, TagMember, TagPool } from './tags';
 import type { BoardHeat, ChatLine, HeatRow } from './heat';
-import type { BoardRead, MatchupSet, Profile, ReactionKind } from './board';
+import type { BoardRead, ChallengeRound, MatchupSet, Profile, ReactionKind } from './board';
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
 const wrap = async <T>(fn: () => Promise<T>): Promise<Result<T>> => {
@@ -178,3 +178,11 @@ export const profileGet = (token: string) => wrap(async (): Promise<Profile> => 
 export const profileSave = (token: string, am: number, pm: number, courses: string[]) =>
   wrap(async () => { must(await supabase.rpc('tag_profile_save', { p_token: token, p_am: am, p_pm: pm, p_courses: courses })); });
 export const matchups = (token: string) => wrap(async (): Promise<MatchupSet[]> => (must(await supabase.rpc('tag_matchups', { p_token: token })) ?? []) as MatchupSet[]);
+
+// ---------- challenge rounds (migration 20261103) ----------
+export const rounds = (token: string) => wrap(async (): Promise<ChallengeRound[]> => (must(await supabase.rpc('tag_rounds', { p_token: token })) ?? []) as ChallengeRound[]);
+export const setSlot = (token: string, id: string, teeIso: string, courseId: string) =>
+  wrap(async () => { must(await supabase.rpc('tag_challenge_slot', { p_token: token, p_challenge: id, p_tee: teeIso, p_course: courseId })); });
+export const okSlot = (token: string, id: string) => wrap(async () => { must(await supabase.rpc('tag_challenge_slot_ok', { p_token: token, p_challenge: id })); });
+export const jumpIn = (token: string, id: string) => wrap(async () => { must(await supabase.rpc('tag_challenge_join', { p_token: token, p_challenge: id })); });
+export const dropOut = (token: string, id: string) => wrap(async () => { must(await supabase.rpc('tag_challenge_leave', { p_token: token, p_challenge: id })); });

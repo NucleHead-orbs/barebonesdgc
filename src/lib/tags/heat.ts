@@ -62,6 +62,16 @@ export function heatMessage(m: string): string | null {
   if (/slow_down/.test(m)) return 'Easy, tiger. One message every few seconds.';
   if (/invalid_message/.test(m)) return 'Messages are 1 to 500 characters.';
   if (/needs_challenge/.test(m)) return 'Early Access tag rounds need 3 Jewel players, or 2 with a challenge you\'ve accepted.';
+  if (/defender_picks/.test(m)) return 'The challenged player picks the time and course first.';
+  if (/slot_too_soon/.test(m)) return 'Pick a time at least 2 hours out.';
+  if (/slot_after_due/.test(m)) return 'Pick a time before the 7-day play-by date.';
+  if (/slot_closed/.test(m)) return 'Too late: it locks 2 hours before tee time.';
+  if (/other_player_oks/.test(m)) return 'The other player has to OK your pick.';
+  if (/no_slot/.test(m)) return 'No time picked yet.';
+  if (/not_open/.test(m)) return "That round isn't open for jump-ins (it needs a locked time first).";
+  if (/round_full/.test(m)) return 'Card is full: 2 jump-ins max.';
+  if (/already_in/.test(m)) return "You're already on that round.";
+  if (/not_in/.test(m)) return "You're not on that round.";
   if (/invalid_days/.test(m)) return 'Pick days of the week.';
   if (/too_many_courses/.test(m)) return 'Three favorite courses max.';
   if (/unknown_course/.test(m)) return "That course isn't in the library anymore. Pick another.";

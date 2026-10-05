@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { asTab, whoLine, daysSummary, hasDay, mergeLines, newsTone, pickReasons, toggleDay, type Pick } from './board';
+import { asTab, canJumpIn, roundStep, slotLabel, whoLine, daysSummary, type ChallengeRound, hasDay, mergeLines, newsTone, pickReasons, toggleDay, type Pick } from './board';
 import type { ChatLine } from './heat';
 
 const line = (id: number): ChatLine => ({ id, member_id: null, name: null, nickname: null, body: String(id), at: '', number: null, hidden: false });
@@ -46,5 +46,32 @@ describe('board', () => {
     expect(newsTone(null).tone).toBe('meh');
     expect(asTab('board')).toBe('board');
     expect(asTab('nope')).toBe('tags');
+  });
+});
+
+describe('challenge rounds', () => {
+  const p = { id: 'x', name: 'X', nickname: null, number: 2 };
+  const base: ChallengeRound = { id: 'c', pool_id: 'p', pool: 'p', pool_name: 'P', challenger: p, challenged: p, role: 'challenged', tee_at: null, course_id: null, course: null,
+    slot_mine: false, locked: false, closes_at: null, due_at: null, joins: [] };
+  const now = Date.parse('2026-10-05T12:00:00Z');
+  const tee = '2026-10-07T16:00:00Z', closes = '2026-10-07T14:00:00Z';
+  it('walks pick -> ok -> open -> closed', () => {
+    expect(roundStep(base, now)).toBe('pick');
+    expect(roundStep({ ...base, role: 'challenger' }, now)).toBe('wait_pick');
+    expect(roundStep({ ...base, role: 'challenger', tee_at: tee, closes_at: closes }, now)).toBe('ok');
+    expect(roundStep({ ...base, tee_at: tee, closes_at: closes, slot_mine: true }, now)).toBe('wait_ok');
+    expect(roundStep({ ...base, tee_at: tee, closes_at: closes, locked: true }, now)).toBe('open');
+    expect(roundStep({ ...base, tee_at: tee, closes_at: closes, locked: true }, Date.parse(closes))).toBe('closed');
+  });
+  it('jump in only when open with a spot, and not already on it', () => {
+    const open = { ...base, role: null, tee_at: tee, closes_at: closes, locked: true };
+    expect(canJumpIn(open, now)).toBe(true);
+    expect(canJumpIn({ ...open, joins: [p, p] }, now)).toBe(false);
+    expect(canJumpIn({ ...open, role: 'joined' as const }, now)).toBe(false);
+    expect(canJumpIn({ ...open, locked: false }, now)).toBe(false);
+  });
+  it('labels the slot', () => {
+    expect(slotLabel(null, 'X')).toBe('');
+    expect(slotLabel(tee, 'Papago')).toMatch(/ at Papago$/);
   });
 });

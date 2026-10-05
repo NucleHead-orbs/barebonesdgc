@@ -62,3 +62,13 @@
 .mu-foot { margin-top: 8px; }
 
 @media (prefers-reduced-motion: reduce) { .bd-rxb, .bd-rxw { transition: none; } .bd-rxb:active { transform: none; } }
+
+/* challenge rounds */
+.cr-slot { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; padding: 10px; border-radius: 10px; border: 1px dashed var(--border); }
+.cr-slot p { margin: 0; font-size: 14px; }
+.cr-form .td-input { font-size: 16px; }
+.cr-jump h2 { margin-bottom: 4px; }
+.cr-round { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--border); }
+.cr-round.is-in .cr-round-main b { color: var(--under, #c6ff3d); }
+.cr-round-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cr-round-main span { font-size: 13px; }

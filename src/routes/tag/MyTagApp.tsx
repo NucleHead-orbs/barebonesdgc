@@ -12,7 +12,7 @@ import { HeatBell, TagHeat } from '../../components/tags/TagHeat';
 import { TagBoard } from '../../components/tags/TagBoard';
 import { Matchups } from '../../components/tags/Matchups';
 import { asTab, type MyTagTab } from '../../lib/tags/board';
-import { chatSeenKey, readSeen, useHeat, type HeatFocus } from '../../lib/tags/useHeat';
+import { chatSeenKey, readSeen, useHeat, useRounds, type HeatFocus } from '../../lib/tags/useHeat';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
 import { NewVersionNote } from '../../components/dev/DevReports';
@@ -31,6 +31,7 @@ export default function MyTagApp() {
   const [toConfirm, setToConfirm] = useState<Array<{ id: string; course: string; played_on: string }>>([]);
   useTheme('event', 'bone');
   const heatRows = useHeat(token, rev);
+  const rounds = useRounds(token, rev);
   const [focus, setFocus] = useState<HeatFocus | null>(null);
   const [params, setParams] = useSearchParams();
   const tab = asTab(params.get('tab'));
@@ -115,7 +116,7 @@ export default function MyTagApp() {
         {!home.holdings.length && <div className="td-warn soft">You don't hold a tag right now. Ask your league TD to issue you one.</div>}
         {tab === 'board' && <TagBoard token={token} meId={meId} rows={heatRows} names={names} pool={boardPool} onPool={setBoardPool}
           unread={unread} seenKey={seenKey} onSeen={onSeen} />}
-        {tab === 'matchups' && <Matchups token={token} act={act} rev={rev} />}
+        {tab === 'matchups' && <Matchups token={token} act={act} rev={rev} rounds={rounds} />}
         {tab === 'tags' && <>
         <div className="mt-tags">
           {home.holdings.map((h) => TAG_ART[h.pool] ? (
@@ -136,7 +137,7 @@ export default function MyTagApp() {
           ))}
         </div>
 
-        <TagHeat rows={heatRows} token={token} names={names} act={act} focus={focus} onMatchups={() => go('matchups')} />
+        <TagHeat rows={heatRows} rounds={rounds} token={token} names={names} act={act} focus={focus} onMatchups={() => go('matchups')} />
 
         <EarlyMyTag token={token} rev={rev} />
 

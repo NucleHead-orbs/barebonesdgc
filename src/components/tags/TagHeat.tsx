@@ -6,33 +6,28 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as tagApi from '../../lib/tags/api';
 import { DROP_PLACES, FREE_DECLINES, declineNote, timeLeft, type HeatChallenge, type HeatRow } from '../../lib/tags/heat';
-import type { HeatFocus } from '../../lib/tags/useHeat';
+import { useNow, type HeatFocus } from '../../lib/tags/useHeat';
+import type { ChallengeRound } from '../../lib/tags/board';
+import { SlotBox } from './ChallengeRounds';
 import { display } from '../../lib/tags/tags';
 import { niceDate } from '../../lib/leagues/leagues';
 import './heat.css';
 
 type Act = (p: Promise<{ error?: unknown }>, ok?: string) => Promise<boolean>;
 
-/** A clock that ticks once a minute (keeps countdowns honest without re-rendering every second). */
-function useNow(stepMs = 60_000) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), stepMs); return () => window.clearInterval(t); }, [stepMs]);
-  return now;
-}
-
-export function TagHeat({ rows, token, names, act, focus, onMatchups }: {
-  rows: HeatRow[] | null; token: string; names: Record<string, string>; act: Act; focus: HeatFocus | null; onMatchups: () => void;
+export function TagHeat({ rows, rounds, token, names, act, focus, onMatchups }: {
+  rows: HeatRow[] | null; rounds: ChallengeRound[]; token: string; names: Record<string, string>; act: Act; focus: HeatFocus | null; onMatchups: () => void;
 }) {
   const now = useNow();
   if (!rows) return null;
   const on = rows.filter((r) => r.bombs || r.challenges);
   if (!on.length) return null;
   return <>{on.map((r) => <HeatCard key={r.pool_id} row={r} name={names[r.pool] ?? r.pool} token={token} now={now} act={act}
-    focus={focus?.pool === r.pool ? focus : null} onMatchups={onMatchups} />)}</>;
+    focus={focus?.pool === r.pool ? focus : null} onMatchups={onMatchups} rounds={rounds} />)}</>;
 }
 
-function HeatCard({ row, name, token, now, act, focus, onMatchups }: {
-  row: HeatRow; name: string; token: string; now: number; act: Act; focus: HeatFocus | null; onMatchups: () => void;
+function HeatCard({ row, name, token, now, act, focus, onMatchups, rounds }: {
+  row: HeatRow; name: string; token: string; now: number; act: Act; focus: HeatFocus | null; onMatchups: () => void; rounds: ChallengeRound[];
 }) {
   const [picking, setPicking] = useState(false);
   const card = useRef<HTMLElement>(null);
@@ -73,13 +68,19 @@ function HeatCard({ row, name, token, now, act, focus, onMatchups }: {
               </div>
             </div>
           ))}
-          {accepted.map((c) => (
-            <div key={c.id} className="ht-ch is-on">
-              <div><b>You vs {c.other ? display(c.other) : '?'}{c.other?.number ? ` (#${c.other.number})` : ''}: it's on</b>
-                <span>Play a tag round together by {c.due_at ? niceDate(c.due_at.slice(0, 10)) : 'next week'} ({timeLeft(c.due_at, now)?.label ?? '0m'} left). Save it with tags on the line.</span></div>
-              <Link className="td-btn cyan" to="/scorecard">OPEN THE SCORECARD</Link>
-            </div>
-          ))}
+          {accepted.map((c) => {
+            const round = rounds.find((r) => r.id === c.id);
+            return (
+              <div key={c.id}>
+                <div className="ht-ch is-on">
+                  <div><b>You vs {c.other ? display(c.other) : '?'}{c.other?.number ? ` (#${c.other.number})` : ''}: it's on</b>
+                    <span>Play a tag round together by {c.due_at ? niceDate(c.due_at.slice(0, 10)) : 'next week'} ({timeLeft(c.due_at, now)?.label ?? '0m'} left). Save it with tags on the line.</span></div>
+                  <Link className="td-btn cyan" to="/scorecard">OPEN THE SCORECARD</Link>
+                </div>
+                {round && <SlotBox round={round} token={token} act={act} now={now} />}
+              </div>
+            );
+          })}
           {outgoing.map((c) => (
             <div key={c.id} className="ht-ch">
               <div><b>Waiting on {c.other ? display(c.other) : '?'}{c.other?.number ? ` (#${c.other.number})` : ''}</b>

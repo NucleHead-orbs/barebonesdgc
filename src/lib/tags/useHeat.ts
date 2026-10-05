@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import * as tagApi from './api';
 import type { HeatRow } from './heat';
+import type { ChallengeRound } from './board';
 
 /** Loads tag_heat for this link (again whenever `rev` changes). */
 export function useHeat(token: string, rev: number): HeatRow[] | null {
@@ -9,6 +10,24 @@ export function useHeat(token: string, rev: number): HeatRow[] | null {
   useEffect(() => {
     let live = true;
     void (async () => { const r = await tagApi.heat(token); if (live && r.data) setRows(r.data); })();
+    return () => { live = false; };
+  }, [token, rev]);
+  return rows;
+}
+
+/** A clock that ticks once a minute (keeps countdowns honest without re-rendering every second). */
+export function useNow(stepMs = 60_000) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), stepMs); return () => window.clearInterval(t); }, [stepMs]);
+  return now;
+}
+
+/** Challenge rounds this player can see (tag_rounds), again whenever `rev` changes. */
+export function useRounds(token: string, rev: number): ChallengeRound[] {
+  const [rows, setRows] = useState<ChallengeRound[]>([]);
+  useEffect(() => {
+    let live = true;
+    void (async () => { const r = await tagApi.rounds(token); if (live && r.data) setRows(r.data); })();
     return () => { live = false; };
   }, [token, rev]);
   return rows;

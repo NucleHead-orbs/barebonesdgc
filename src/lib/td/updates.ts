@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'challenge-rounds', date: '2026-10-05', help: 'tags', who: 'tags',
+    title: 'Challenge rounds: time, course, jump-ins',
+    body: 'An accepted challenge now gets a **time and course**: the challenged player picks, the challenger OKs (or counters). Once locked it posts to the Board and anyone with a tag in the set can **JUMP IN** from MATCHUPS (2 max, their tags on the line). Jump-ins close 2 hours before tee time.',
+  },
+  {
     id: 'ea-challenge-rounds', date: '2026-10-05', help: 'early', who: 'all',
     title: 'Early Access: 3 players, or an accepted challenge',
     body: 'Early Access rounds still need **3 Jewel players** to move tags or earn tickets. New: **2 players count when it\'s an accepted challenge** between them. Any other 2-player round can\'t put Early Access tags on the line. Other tag sets are unchanged.',
