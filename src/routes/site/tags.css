@@ -4,7 +4,7 @@
 .tg-cols { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); gap: 32px; align-items: start; }
 .tg-main, .tg-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .tg-board { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.tg-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px 14px; border: 2px solid var(--border); border-radius: var(--r-card); background: var(--bg-surface); color: var(--fg-1); text-decoration: none; transition: transform .15s var(--ease), border-color .15s; }
+.tg-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; padding: 10px 14px; border: 2px solid var(--border); border-radius: var(--r-card); background: var(--bg-surface); color: var(--fg-1); text-decoration: none; transition: transform .15s var(--ease), border-color .15s; }
 .tg-row:hover { transform: translateX(2px); border-color: var(--accent-a); }
 .tg-top { border-color: var(--accent-gold); }
 .tg-num { font-family: var(--font-display); font-size: 30px; line-height: 1; color: var(--accent-a); }
@@ -44,3 +44,11 @@
   border: 1px solid var(--accent-gold); color: var(--accent-gold); }
 .tg-link { display: inline-block; margin-top: 6px; color: var(--accent-a); font-weight: 700; }
 .tg-note { display: inline-block; margin-top: 6px; color: var(--fg-3); font-size: 13px; }
+
+/* heat: fuse + declines on board rows */
+.tg-heat { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.tg-fuse { color: #ff4f6e; }
+.tg-fuse.is-hot { animation: tg-blink 1s steps(2) infinite; }
+.tg-decl { color: var(--accent-gold); }
+@keyframes tg-blink { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .tg-fuse.is-hot { animation: none; } }

@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'tag-heat', date: '2026-10-04', help: 'tags', who: 'tags',
+    title: 'Heat: time bombs, challenges, group chat',
+    body: '**BAG TAGS → Heat** has three switches per tag set. **Time bombs** blow up idle top-5 tags after 7 days. **Challenges** let players call out anyone up to 5 spots above them (the 4th decline costs 5 spots). **Group chat** lives on My Tag. All three are on for Jewel XI Early Access.',
+  },
+  {
     id: 'ea-spots', date: '2026-10-04', help: 'early', who: 'all',
     title: 'Early access: first 50 registrants',
     body: '**EARLY ACCESS → Rules → SPOTS** limits early access to the first N registrants by registration order (Jewel XI: 50). The public page shows how many spots are left. Re-import the DGS CSV so the newest registrants appear.',

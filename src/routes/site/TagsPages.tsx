@@ -1,5 +1,5 @@
 /** Bag tags, public side: /tags (board per league) and /tags/:pool/:n (one tag: the QR on a physical tag lands here). */
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router-dom';
 import { CLUB } from '../../lib/jewel/content';
 import { Banner, Button, SectionHeading, Skeleton } from '../../components/ui';
@@ -7,6 +7,9 @@ import { useLoad } from '../../lib/useLoad';
 import * as tagApi from '../../lib/tags/api';
 import { TAG_ART, display, projectPending, type TagMember } from '../../lib/tags/tags';
 import { DigitalTag } from '../../components/DigitalTag';
+import { BombIcon } from '../../components/tags/TagHeat';
+import { FREE_DECLINES, timeLeft } from '../../lib/tags/heat';
+import '../../components/tags/heat.css';
 import { niceDate } from '../../lib/leagues/leagues';
 import './tags.css';
 
@@ -18,6 +21,11 @@ export function TagsBoard() {
   const pools = useLoad(useCallback(() => unwrap(tagApi.loadPools()), []));
   const current = slug ?? pools.data?.[0]?.slug;
   const board = useLoad(useCallback(() => (current ? unwrap(tagApi.loadBoard(current)) : new Promise<never>(() => {})), [current]));
+  const heatLoad = useLoad(useCallback(() => (current ? unwrap(tagApi.boardHeat(current)) : new Promise<never>(() => {})), [current]));
+  const heat = heatLoad.data ?? null;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 60_000); return () => window.clearInterval(t); }, []);
+  const fuseOf = (n: number) => heat?.fuses.find((f) => f.number === n) ?? null;
 
   return (
     <>
@@ -63,6 +71,16 @@ export function TagsBoard() {
                               ? <><span className="tg-pend">pending</span> {row.was > row.number ? '▲' : '▼'} from #{row.was}</>
                               : row.swaps.length ? <><span className="tg-pend">on a pending round</span> {t.moved_at ? `· won ${when(t.moved_at)}` : ''}</>
                               : <>{t.moved_at ? `Won ${when(t.moved_at)}` : `Issued ${when(t.issued_at)}`}{t.moves ? ` · moved ${t.moves}×` : ''}</>}</span></span>
+                          {(() => {
+                            const f = fuseOf(t.number); const left = f ? timeLeft(f.fuse_at, now) : null;
+                            const d = heat?.declines[String(t.number)] ?? 0;
+                            return (left || d > 0) ? (
+                              <span className="tg-heat">
+                                {left && <span className={`tg-fuse${left.hot ? ' is-hot' : ''}`} title="Time bomb: no tag round in 7 days and this tag explodes to the bottom"><BombIcon small /> {left.gone ? 'boom soon' : left.label}</span>}
+                                {d > 0 && <span className="tg-decl" title="Challenges declined. The 4th drops them 5 spots.">{d}/{FREE_DECLINES} declines</span>}
+                              </span>
+                            ) : null;
+                          })()}
                           <span className="tg-go" aria-hidden>›</span>
                         </Link>
                       </li>
@@ -73,6 +91,32 @@ export function TagsBoard() {
             )}
           </div>
           <aside className="tg-side">
+            {heat && heat.live.length > 0 && (
+              <>
+                <SectionHeading kicker="Put up or shut up" title="Challenges" size="s" as="h3" />
+                <ul className="tg-rounds">
+                  {heat.live.map((c, i) => (
+                    <li key={i} className="tg-round">
+                      <div className="tg-round-head"><b>{c.from}{c.from_number ? ` #${c.from_number}` : ''} → {c.to}{c.to_number ? ` #${c.to_number}` : ''}</b></div>
+                      <span className="tg-note">{c.status === 'open' ? `Waiting on ${c.to}: ${timeLeft(c.expires_at, now)?.label ?? '0m'} to answer.` : `Accepted. Playing by ${c.due_at ? niceDate(c.due_at.slice(0, 10)) : 'next week'}.`}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {heat && heat.drops.length > 0 && (
+              <>
+                <SectionHeading kicker="Kaboom" title="Explosions" size="s" as="h3" />
+                <ul className="tg-rounds">
+                  {heat.drops.map((d, i) => (
+                    <li key={i} className="tg-round">
+                      <div className="tg-round-head"><b>{d.name ?? '?'}</b><span>{niceDate(d.at.slice(0, 10))}</span></div>
+                      <span className="tg-note">{d.kind === 'bomb' ? `Time bomb went off: #${d.from} → #${d.to}` : `4th declined challenge: #${d.from} → #${d.to}`}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
             {board.data && board.data.pending.length > 0 && (
               <>
                 <SectionHeading kicker="Not official yet" title="Waiting on confirmation" size="s" as="h3" />
@@ -119,6 +163,9 @@ export function TagsBoard() {
                   <li>Play anyone with a tag in the same set. League nights count once the TD records them from the scorecard.</li>
                   <li>Log the round from your <b>My Tag</b> link. Everyone on it confirms, then the tags swap.</li>
                   <li>Best score takes the lowest number. Ties keep the order they had.</li>
+                  {heat?.bombs && <li><b>Time bombs:</b> the top 5 tags explode after 7 days without a tag round. Boom: that holder goes to the bottom and everyone below moves up.</li>}
+                  {heat?.challenges && <li><b>Challenges:</b> challenge anyone up to 5 spots above you from your My Tag. 3 declines are free; the 4th drops you 5 spots. 48 hours of silence counts as a decline.</li>}
+                  {heat?.chat && <li><b>Group chat:</b> everyone with a tag in this set, on your My Tag.</li>}
                 </ol>
                 {CLUB.facebookUrl && !board.data?.pool.invite_only && <Button href={CLUB.facebookUrl} external variant="outline" size="sm">Get a tag · ask the group ↗</Button>}
               </div>
@@ -130,7 +177,7 @@ export function TagsBoard() {
   );
 }
 
-const KIND: Record<string, string> = { issued: 'Issued to', moved: 'Won by', released: 'Handed back by', retired: 'Retired from', undo: 'Given back to' };
+const KIND: Record<string, string> = { issued: 'Issued to', moved: 'Won by', released: 'Handed back by', retired: 'Retired from', undo: 'Given back to', bomb: 'Time bomb: now held by', penalty: 'Decline penalty: now held by' };
 
 export function TagPage() {
   const { pool = '', number = '' } = useParams();

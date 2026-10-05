@@ -8,6 +8,7 @@ import type { Match, TagHome } from '../../lib/tags/api';
 import { TAG_ART, display, parseScore, swap, tagMessage } from '../../lib/tags/tags';
 import { DigitalTag } from '../../components/DigitalTag';
 import { EarlyMyTag } from '../../components/early/EarlyMyTag';
+import { TagHeat } from '../../components/tags/TagHeat';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
 import '../td/td.css';
@@ -87,6 +88,8 @@ export default function MyTagApp() {
             </Link>
           ))}
         </div>
+
+        <TagHeat token={token} rev={rev} names={Object.fromEntries(home.holdings.map((h) => [h.pool, h.pool_name]))} act={act} />
 
         <EarlyMyTag token={token} rev={rev} />
 

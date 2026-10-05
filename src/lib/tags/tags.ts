@@ -4,6 +4,7 @@
  * in that pool: best score takes the lowest of their numbers; ties keep their order from before.
  * The database does the real swap (_tag_apply); swap() here is the same rule for previews.
  */
+import { heatMessage } from './heat';
 export interface TagPool { id: string; slug: string; name: string; sort: number; invite_only: boolean }
 export interface Tag { pool_id: string; number: number; holder_id: string | null; status: 'held' | 'available' | 'retired'; issued_at: string; moved_at: string | null; moves: number }
 export interface TagMember { id: string; name: string; nickname: string | null }
@@ -77,6 +78,8 @@ export function parseScore(v: string): number | null {
 export function tagMessage(err: unknown): string {
   const e = (err && typeof err === 'object' ? err : {}) as { message?: string; code?: string };
   const m = e.message ?? String(err);
+  const h = heatMessage(m);
+  if (h) return h;
   if (/invalid_link/.test(m)) return "This link doesn't work anymore. Ask your league TD for a new one.";
   if (/no_tag_in_pool/.test(m)) return "Everyone on the round needs a tag in this league. Someone doesn't have one.";
   if (/must_include_you/.test(m)) return 'You can only log rounds you played in.';

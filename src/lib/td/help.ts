@@ -168,6 +168,7 @@ export const HELP: HelpSection[] = [
   {
     id: 'tags', title: 'Bag tags (league admins)',
     steps: [
+      '**HEAT** (per tag set): **Time bombs** — a top-5 tag with no tag round in 7 days explodes: that holder goes to the bottom and everyone below moves up. Playing or confirming a tag round resets the fuse; moving into the top 5 starts a fresh one. **Challenges** — players challenge up to 5 spots above them from My Tag; 3 declines are free, the 4th drops them 5 spots (48 hours of silence counts as a decline). **Group chat** — everyone with a tag in the set, on My Tag; **MODERATE CHAT** lets you hide a message.',
       'From your events list tap **BAG TAGS**. You see the leagues you run; the super admin adds league admins at the bottom.',
       '**Issue a tag:** take the buy-in, type the player\'s name, tap **ISSUE TAG**. They get the next number at the bottom. Type a number only to hand back a freed tag or load someone\'s existing physical tag.',
       'Right after issuing, have them scan the **My Tag** QR and save the page. That page is how they log casual rounds and confirm the ones they\'re on.',

@@ -4,6 +4,7 @@
  */
 import { supabase } from '../supabase';
 import type { MatchStatus, PendingSwap, Tag, TagMember, TagPool } from './tags';
+import type { BoardHeat, ChatLine, HeatRow } from './heat';
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
 const wrap = async <T>(fn: () => Promise<T>): Promise<Result<T>> => {
@@ -23,7 +24,7 @@ export interface Match {
   played_on: string; created_at: string; applied_at: string | null; expired?: boolean; created_by: string | null; mine?: boolean;
   players: MatchPlayer[];
 }
-export interface HistoryLine { id: number; number: number; kind: 'issued' | 'moved' | 'released' | 'retired' | 'undo'; member_id: string | null; prev_id: string | null; match_id: string | null; at: string }
+export interface HistoryLine { id: number; number: number; kind: 'issued' | 'moved' | 'released' | 'retired' | 'undo' | 'bomb' | 'penalty'; member_id: string | null; prev_id: string | null; match_id: string | null; at: string }
 
 // ---------- public ----------
 export const loadPools = () => wrap(async (): Promise<TagPool[]> =>
@@ -148,3 +149,21 @@ export const addPoolAdmin = (poolId: string, email: string) =>
   wrap(async () => { must(await supabase.from('tag_pool_admins').insert({ pool_id: poolId, email: email.trim().toLowerCase() })); });
 export const removePoolAdmin = (poolId: string, email: string) =>
   wrap(async () => { must(await supabase.from('tag_pool_admins').delete().eq('pool_id', poolId).eq('email', email)); });
+
+// ---------- heat: time bombs, challenges, chat (migration 20261028) ----------
+export const heat = (token: string) => wrap(async (): Promise<HeatRow[]> => (must(await supabase.rpc('tag_heat', { p_token: token })) ?? []) as HeatRow[]);
+export const challenge = (token: string, poolId: string, target: string) =>
+  wrap(async () => { must(await supabase.rpc('tag_challenge', { p_token: token, p_pool: poolId, p_target: target })); });
+export const respondChallenge = (token: string, id: string, accept: boolean) =>
+  wrap(async (): Promise<string> => must(await supabase.rpc('tag_challenge_respond', { p_token: token, p_challenge: id, p_accept: accept })) as string);
+export const cancelChallenge = (token: string, id: string) =>
+  wrap(async () => { must(await supabase.rpc('tag_challenge_cancel', { p_token: token, p_challenge: id })); });
+export const chatRead = (token: string, poolId: string, after: number) =>
+  wrap(async (): Promise<ChatLine[]> => (must(await supabase.rpc('tag_chat_read', { p_token: token, p_pool: poolId, p_after: after })) ?? []) as ChatLine[]);
+export const chatPost = (token: string, poolId: string, body: string) =>
+  wrap(async () => { must(await supabase.rpc('tag_chat_post', { p_token: token, p_pool: poolId, p_body: body })); });
+export const boardHeat = (slug: string) => wrap(async (): Promise<BoardHeat | null> => (must(await supabase.rpc('tag_board_heat', { p_slug: slug })) ?? null) as BoardHeat | null);
+export const tdHeatSet = (poolId: string, bombs: boolean, challenges: boolean, chat: boolean) =>
+  wrap(async () => { must(await supabase.rpc('td_tag_heat_set', { p_pool: poolId, p_bombs: bombs, p_challenges: challenges, p_chat: chat })); });
+export const tdChat = (poolId: string) => wrap(async (): Promise<ChatLine[]> => (must(await supabase.rpc('td_tag_chat', { p_pool: poolId })) ?? []) as ChatLine[]);
+export const tdChatHide = (id: number, hide: boolean) => wrap(async () => { must(await supabase.rpc('td_tag_chat_hide', { p_id: id, p_hide: hide })); });
