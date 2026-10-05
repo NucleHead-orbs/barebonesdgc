@@ -5,9 +5,10 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
-  DISC_COMBOS, FOILS, INKS, KNOBS, MAP_H, MAP_W, PALETTES, PLASTICS, SHIRTS, SIGN_BGS, art, cleanOpts, knobAngle,
+  DISC_COMBOS, FOILS, INKS, MAP_H, MAP_W, PALETTES, PLASTICS, SHIRTS, SIGN_BGS, art, cleanOpts,
   optsLabel, QUOTE_MAX, sameOpts, signs, type Opts, type Pal, type ProofKind,
 } from '../../lib/proofs/proofs';
+import { TOUR_MIN_FONT, tourFit, tourLines, type TourLine, type TourPad, type TourSponsor } from '../../lib/proofs/tour';
 import { MAX_PER_SIGN, signList, signShort, sponsorsOn, tierLabel, type HoleTee } from '../../lib/proofs/teeSigns';
 import './proofs.css';
 
@@ -36,8 +37,8 @@ export function ProofView({ kind, eventId, saved, onSave }: {
         {dirty && <button type="button" className="pf-reset" onClick={() => setO(savedOpts)}>RESET</button>}
       </div>
       {kind === 'disc' && <Disc o={o} pick={pick} setO={setO} />}
-      {kind === 'shirt' && <Shirt o={o} pick={pick} />}
-      {kind === 'screen_print' && <ScreenPrint o={o} pick={pick} />}
+      {kind === 'shirt' && <Shirt o={o} pick={pick} eventId={eventId} />}
+      {kind === 'screen_print' && <ScreenPrint o={o} pick={pick} eventId={eventId} />}
       {kind === 'tee_signs' && <TeeSigns o={o} pick={pick} eventId={eventId} editable={!!onSave} />}
     </div>
   );
@@ -155,66 +156,101 @@ function ShirtFront({ bg, g, bb, bl, pal }: { bg: string; g: string; bb: string;
     </div>
   );
 }
-function ShirtBack({ bg, pal, spot }: { bg: string; pal: Pal; spot: boolean }) {
+/** Visible sponsors as tour lines (live from Sponsors: hole, pad, sort). */
+function useTourLines(eventId: string): TourLine[] | null {
+  const [lines, setLines] = useState<TourLine[] | null>(null);
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      const [sp, tees] = await Promise.all([
+        supabase.from('sponsors').select('hole, tee_id, name, sort').eq('event_id', eventId).eq('hidden', false),
+        supabase.from('hole_tees').select('id, label, sort').eq('event_id', eventId),
+      ]);
+      if (live) setLines(tourLines((sp.data ?? []) as TourSponsor[], (tees.data ?? []) as TourPad[]));
+    })();
+    return () => { live = false; };
+  }, [eventId]);
+  return lines;
+}
+
+/** The lightning-bolt "11" + skull with the year and dates, drawn on a 1000×1000 box. */
+function SkullBolts({ bg, pal, spot }: { bg: string; pal: Pal; spot: boolean }) {
   const one = 'M240,160 330,92 424,92 424,420 440,440 424,460 424,612 386,712 330,640 330,460 314,440 330,420 330,228 262,250Z';
   const inner = 'M270,166 338,112 406,112 406,428 414,440 406,452 406,606 384,668 348,628 348,452 340,440 348,428 348,202 276,224Z';
   const gid = spot ? 'sp' : 'fc';
   return (
-    <div className="pf-print pf-back" style={{ width: 1200, height: 1600, background: bg }}>
-      <div className="pf-b-crank">Crank Up Your Boners!</div>
-      <div className={`pf-b-amp${spot ? ' is-spot' : ''}`}>
-        {KNOBS.map(([label, v]) => {
-          const ring = spot ? (v === 11 ? pal.b : '#fff') : '#111';
-          return (
-            <div key={label} className="pf-b-knob">
-              <div className="pf-b-dial" style={spot ? { border: `5px solid ${ring}`, background: 'none' } : undefined}>
-                {!spot && <div className="pf-b-cap" />}
-                <div className="pf-b-needle" style={{ transform: `rotate(${knobAngle(v)}deg)`, background: spot ? ring : '#fff' }} />
+    <>
+      <svg width="1000" height="1000" viewBox="0 0 1000 1000" style={{ position: 'absolute', inset: 0 }}>
+        <defs>
+          <linearGradient id={`${gid}B`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={pal.a} /><stop offset="0.5" stopColor={pal.b} /><stop offset="1" stopColor={pal.c} /></linearGradient>
+          <linearGradient id={`${gid}Bev`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ffffff" /><stop offset="0.45" stopColor="#b9bcc4" /><stop offset="1" stopColor="#5d6068" /></linearGradient>
+        </defs>
+        {[-20, 300].map((dx) => (
+          <g key={dx} transform={`translate(${dx} 0)`}>
+            <path d={one} fill={spot ? '#ffffff' : `url(#${gid}Bev)`} stroke={spot ? undefined : '#111'} strokeWidth={spot ? undefined : 6} />
+            <path d={inner} fill={spot ? pal.b : `url(#${gid}B)`} />
+          </g>
+        ))}
+      </svg>
+      <div className="pf-b-skull">
+        <img src={art('skull-clean.webp')} alt="Bare Bones skull" />
+        <span style={{ left: 221, top: 337, color: spot ? bg : '#161616' }} className="pf-b-yr">20</span>
+        <span style={{ left: 411, top: 337, color: spot ? bg : '#161616' }} className="pf-b-yr">26</span>
+        <span style={{ left: 248, top: 267, transform: 'translate(-50%,-50%) rotate(-4deg)' }} className="pf-b-dt">11·21</span>
+        <span style={{ left: 317, top: 297, fontSize: 26 }} className="pf-b-dt">&amp;</span>
+        <span style={{ left: 388, top: 267, transform: 'translate(-50%,-50%) rotate(4deg)' }} className="pf-b-dt">11·22</span>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Back: a classic rock tour back. Band name (the BARE BONES wordmark), the tour, the skull, the headliners,
+ * then every sponsor as a tour stop: HOLE 07 ……… SPONSOR. The list is live from Sponsors and refits as it grows.
+ */
+function ShirtBack({ bg, pal, spot, wm, lines }: { bg: string; pal: Pal; spot: boolean; wm: string; lines: TourLine[] | null }) {
+  const list = lines ?? [];
+  const fit = tourFit(list.length);
+  const per = Math.ceil(list.length / fit.cols) || 1;
+  const box = useRef<HTMLDivElement>(null);
+  const key = `${list.map((l) => l.when + l.name).join('|')}`;
+  // Shrink until every name fits its column (never cut a sponsor off); a new list starts again from the fit.
+  const [shrunk, setShrunk] = useState<{ key: string; font: number } | null>(null);
+  const font = shrunk && shrunk.key === key ? shrunk.font : fit.font;
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const over = [...el.querySelectorAll<HTMLElement>('.pf-t-name')].some((n) => n.scrollWidth > n.clientWidth + 1);
+    if (over && font > TOUR_MIN_FONT) setShrunk({ key, font: font - 1 });
+  }, [font, key]);
+  const cols = fit.cols === 2 ? [list.slice(0, per), list.slice(per)] : [list];
+  return (
+    <div className="pf-print pf-back pf-tour" style={{ width: 1200, height: 1600, background: bg }}>
+      <img src={wm} alt="Bare Bones wordmark" style={{ left: 220, top: 26, width: 760, height: 323 }} />
+      <div className="pf-t-tour" style={{ color: pal.a }}>★ THE JEWEL XI WORLD TOUR ★</div>
+      <div className="pf-b-skullwrap" style={{ left: 435, top: 404, transform: 'scale(.33)', transformOrigin: '0 0' }}>
+        <SkullBolts bg={bg} pal={pal} spot={spot} />
+      </div>
+      <div className="pf-t-head" style={{ borderColor: pal.b }}>
+        <span style={{ color: pal.c }}>HEADLINERS</span><b>INNOVA</b><i style={{ background: pal.b }} /><b>MOHAVE CANNABIS CO.</b>
+      </div>
+      <div ref={box} className="pf-t-list" style={{ gridTemplateColumns: `repeat(${fit.cols}, minmax(0, 1fr))`, fontSize: font }}>
+        {cols.map((col, ci) => (
+          <div key={ci} className="pf-t-col" style={{ gridAutoRows: fit.rowH, ...(ci ? { borderLeft: `3px solid ${pal.b}` } : {}) }}>
+            {col.map((l, i) => (
+              <div key={i} className="pf-t-row">
+                <span className="pf-t-when" style={{ color: pal.a }}>{l.when}</span>
+                <span className="pf-t-name">{l.name}</span>
               </div>
-              <div className="pf-b-klabel" style={{ color: spot ? ring : '#1a1a1a' }}>{label}</div>
-            </div>
-          );
-        })}
+            ))}
+          </div>
+        ))}
+        {lines && !list.length && <div className="pf-t-empty">Sponsors show up here as they're added in SPONSORS.</div>}
       </div>
-      <div className="pf-b-skullwrap">
-        <svg width="1000" height="1000" viewBox="0 0 1000 1000" style={{ position: 'absolute', inset: 0 }}>
-          <defs>
-            <linearGradient id={`${gid}B`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={pal.a} /><stop offset="0.5" stopColor={pal.b} /><stop offset="1" stopColor={pal.c} /></linearGradient>
-            <linearGradient id={`${gid}Bev`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ffffff" /><stop offset="0.45" stopColor="#b9bcc4" /><stop offset="1" stopColor="#5d6068" /></linearGradient>
-          </defs>
-          {[-20, 300].map((dx) => (
-            <g key={dx} transform={`translate(${dx} 0)`}>
-              <path d={one} fill={spot ? '#ffffff' : `url(#${gid}Bev)`} stroke={spot ? undefined : '#111'} strokeWidth={spot ? undefined : 6} />
-              <path d={inner} fill={spot ? pal.b : `url(#${gid}B)`} />
-            </g>
-          ))}
-        </svg>
-        <div className="pf-b-skull">
-          <img src={art('skull-clean.webp')} alt="Bare Bones skull" />
-          <span style={{ left: 221, top: 337, color: spot ? bg : '#161616' }} className="pf-b-yr">20</span>
-          <span style={{ left: 411, top: 337, color: spot ? bg : '#161616' }} className="pf-b-yr">26</span>
-          <span style={{ left: 248, top: 267, transform: 'translate(-50%,-50%) rotate(-4deg)' }} className="pf-b-dt">11·21</span>
-          <span style={{ left: 317, top: 297, fontSize: 26 }} className="pf-b-dt">&amp;</span>
-          <span style={{ left: 388, top: 267, transform: 'translate(-50%,-50%) rotate(4deg)' }} className="pf-b-dt">11·22</span>
-        </div>
+      <div className="pf-t-foot">
+        <div className="pf-b-dick" style={{ color: pal.c }}>Don't be a Dick, Be a Boner</div>
+        <div className="pf-t-club">BARE BONES DISC GOLF CLUB · MESA, AZ · NOV 21–22, 2026</div>
       </div>
-      <div className="pf-b-body">
-        <div className="pf-b-tour">THE JEWEL XI WORLD TOUR</div>
-        <div className="pf-b-dates">
-          {[['NOV 21', 'The Course Formerly Known As…'], ['NOV 22', "Freedom's Final Jewel"]].map(([d, note]) => (
-            <div key={d} className="pf-b-date" style={{ borderTopColor: pal.b }}>
-              <div style={{ color: pal.a }} className="pf-b-d">{d}</div>
-              <div><div className="pf-b-venue">MESA, AZ · FIESTA LAKES</div><div className="pf-b-note" style={{ color: pal.c }}>{note}</div></div>
-            </div>
-          ))}
-          <div style={{ borderTop: `3px solid ${pal.b}` }} />
-        </div>
-        <div className="pf-b-fans">Our Greatest Fans</div>
-        <div className="pf-b-fanrow" style={{ color: pal.a }}><div>INNOVA</div><div>MOHAVE CANNABIS CO.</div></div>
-        <div className="pf-b-two">Two Nights Only!</div>
-        <div className="pf-b-dick" style={{ color: pal.a }}>Don't be a Dick, Be a Boner</div>
-      </div>
-      <div className="pf-b-club">BARE BONES DISC GOLF CLUB · MESA, AZ</div>
     </div>
   );
 }
@@ -226,25 +262,28 @@ function Prints({ front, back }: { front: ReactNode; back: ReactNode }) {
     </div>
   );
 }
-function Shirt({ o, pick }: { o: Opts; pick: (k: string, v: string) => void }) {
+function Shirt({ o, pick, eventId }: { o: Opts; pick: (k: string, v: string) => void; eventId: string }) {
   const pal = PALETTES[o.palette];
+  const lines = useTourLines(eventId);
   return (
     <>
       <Chips label="PALETTE" items={Object.keys(PALETTES)} cur={o.palette} onPick={(v) => pick('palette', v)} swatch={(v) => tri(PALETTES[v])} />
       <Prints front={<ShirtFront bg="#000" pal={pal} g={art('guitar-skeleton.webp')} bb={art('wordmark-bare-bones-cut.webp')} bl={art('wordmark-bend-cut.webp')} />}
-        back={<ShirtBack bg="#000" pal={pal} spot={false} />} />
+        back={<ShirtBack bg="#000" pal={pal} spot={false} wm={art('wordmark-bare-bones-cut.webp')} lines={lines} />} />
       <ol className="pf-list pf-wide">
         <li className="pf-label pf-hot">PREFLIGHT</li>
         <li>Chrome wordmarks are full color: DTG or sim-process, not 3-spot. Cheaper route: the screen print version.</li>
         <li>Black shirt: no black ink. Black in the art is the shirt.</li>
         <li>Send 300 dpi PNG or vector at 12×14 (front) and 12×16 (back).</li>
         <li>Sizes and count come from PREP → Shirts.</li>
+        <li>The back's sponsor list is live from SPONSORS (hole order). Lock sponsors before you export the art.</li>
       </ol>
     </>
   );
 }
-function ScreenPrint({ o, pick }: { o: Opts; pick: (k: string, v: string) => void }) {
+function ScreenPrint({ o, pick, eventId }: { o: Opts; pick: (k: string, v: string) => void; eventId: string }) {
   const k = INKS[o.inks];
+  const lines = useTourLines(eventId);
   const pal = { a: k.a, b: k.b, c: k.b };
   const bg = SHIRTS[o.shirt];
   return (
@@ -254,7 +293,7 @@ function ScreenPrint({ o, pick }: { o: Opts; pick: (k: string, v: string) => voi
         <Chips label="SHIRT" items={Object.keys(SHIRTS)} cur={o.shirt} onPick={(v) => pick('shirt', v)} swatch={(v) => <span className="pf-sw" style={{ background: SHIRTS[v] }} />} />
       </div>
       <Prints front={<ShirtFront bg={bg} pal={pal} g={art(`sp-guitar-skeleton${k.sfx}.png`)} bb={art(`sp-wordmark-bare-bones${k.sfx}.png`)} bl={art(`sp-wordmark-bend${k.sfx}.png`)} />}
-        back={<ShirtBack bg={bg} pal={pal} spot />} />
+        back={<ShirtBack bg={bg} pal={pal} spot wm={art(`sp-wordmark-bare-bones${k.sfx}.png`)} lines={lines} />} />
       <div className="pf-row">
         <ol className="pf-list">
           <li className="pf-label">SCREENS</li>
@@ -268,6 +307,7 @@ function ScreenPrint({ o, pick }: { o: Opts; pick: (k: string, v: string) => voi
           <li>Call inks by Pantone with the printer. Swatches here are screen colors.</li>
           <li>Hairlines under ~1 pt fill in. Thicken the wordmark outlines.</li>
           <li>Shirt color shows through every gap. Proof on the real blank.</li>
+          <li>Sponsor list on the back is live from SPONSORS. Lock it before burning screens; small names need a fine mesh.</li>
         </ol>
       </div>
     </>

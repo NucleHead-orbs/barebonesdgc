@@ -166,3 +166,20 @@
 .pf-s-tier b { font-family: 'Archivo Black'; font-size: 34px; letter-spacing: 2px; text-align: center; padding: 0 16px; }
 .pf-s-tier.open span { font-size: 22px; }
 .pf-hole.is-pad span { font-size: 9px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Tour shirt back: every "city" is a sponsor */
+.pf-tour { color: #fff; }
+.pf-t-tour { position: absolute; left: 0; right: 0; top: 356px; text-align: center; font-size: 34px; letter-spacing: 10px; }
+.pf-t-head { position: absolute; left: 120px; right: 120px; top: 752px; display: flex; align-items: center; justify-content: center; gap: 22px;
+  padding: 10px 0; border-top: 3px solid; border-bottom: 3px solid; font-size: 30px; letter-spacing: 4px; white-space: nowrap; }
+.pf-t-head span { font-size: 20px; letter-spacing: 6px; }
+.pf-t-head i { width: 12px; height: 12px; border-radius: 50%; }
+.pf-t-list { position: absolute; left: 90px; right: 90px; top: 836px; height: 620px; display: grid; column-gap: 0; align-content: center; }
+.pf-t-col { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: .9em; align-content: start; padding: 0 28px; min-width: 0; }
+.pf-t-row { display: contents; letter-spacing: .06em; text-transform: uppercase; }
+.pf-t-row > span { align-self: center; letter-spacing: .06em; text-transform: uppercase; }
+.pf-t-when { white-space: nowrap; }
+.pf-t-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-t-empty { grid-column: 1 / -1; text-align: center; font-size: 24px; opacity: .6; padding-top: 40px; }
+.pf-t-foot { position: absolute; left: 0; right: 0; bottom: 30px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.pf-t-club { font-size: 18px; letter-spacing: 6px; }
