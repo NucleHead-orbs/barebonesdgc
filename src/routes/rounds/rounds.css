@@ -123,4 +123,7 @@
 .sc-swap input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--accent-gold); flex: none; }
 .sc-swap span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .sc-swap small { color: var(--fg-2); }
+.sc-swap.is-blocked { opacity: .75; cursor: default; }
+.sc-swap.is-blocked.is-on { opacity: 1; border-color: var(--danger, #ff4f6e); }
+.sc-swap small.sc-swap-why { color: var(--danger, #ff4f6e); }
 .sc-online { align-self: flex-start; font-weight: 800; font-size: 13px; letter-spacing: .5px; text-transform: uppercase; color: var(--ink); background: var(--accent-gold); border-radius: var(--r-pill); padding: 4px 12px; }

@@ -43,8 +43,26 @@ export default function ScorecardApp() {
   }, [memberKey]);
   const meId = me?.me.id ?? null;
   /** Tag sets this card can put on the line: you + at least one other member on the card hold a tag in it. */
-  const swapSets = useMemo(() => (memberKey ? exchangeOptions(memberIds, tags, pools).filter((o) => meId && o.holders.some((h) => h.member_id === meId)) : []),
+  const options = useMemo(() => (memberKey ? exchangeOptions(memberIds, tags, pools).filter((o) => meId && o.holders.some((h) => h.member_id === meId)) : []),
     [memberKey, memberIds, tags, pools, meId]);
+  // Early Access sets need 3 players or an accepted challenge: ask the database (same rule it enforces on save)
+  const [lineOk, setLineOk] = useState<Record<string, boolean>>({});
+  const optionsKey = options.map((o) => `${o.pool.id}:${o.holders.map((h) => h.member_id).sort().join('+')}`).join(',');
+  useEffect(() => {
+    if (!optionsKey) return;
+    let live = true;
+    void (async () => {
+      const got: Record<string, boolean> = {};
+      for (const part of optionsKey.split(',')) {
+        const [pool, ids] = part.split(':');
+        const r = await api.lineOk(pool, ids.split('+'));
+        got[pool] = r.data !== false; // unknown (offline) = let the save decide
+      }
+      if (live) setLineOk(got);
+    })();
+    return () => { live = false; };
+  }, [optionsKey]);
+  const swapSets = useMemo(() => options.map((o) => ({ ...o, blocked: lineOk[o.pool.id] === false })), [options, lineOk]);
 
   useEffect(() => { write(DRAFT_KEY, JSON.stringify(d)); }, [d]);
   useEffect(() => {
@@ -109,7 +127,7 @@ export default function ScorecardApp() {
 }
 
 // ---------- setup ----------
-type SwapSet = ReturnType<typeof exchangeOptions>[number];
+type SwapSet = ReturnType<typeof exchangeOptions>[number] & { blocked: boolean };
 
 function Setup({ d, setD, me, members, courses, swapSets, onStart }: {
   d: Draft; setD: (f: (d: Draft) => Draft) => void; me: RoundMe | null; members: TagMember[]; courses: CourseOption[]; swapSets: SwapSet[]; onStart: () => void;
@@ -198,10 +216,11 @@ function Setup({ d, setD, me, members, courses, swapSets, onStart }: {
             {swapSets.map((o) => {
               const on = (d.onLine ?? []).includes(o.pool.id);
               return (
-                <label key={o.pool.id} className={`sc-swap${on ? ' is-on' : ''}`}>
-                  <input type="checkbox" id={`sc-swap-${o.pool.slug}`} checked={on} disabled={locked}
+                <label key={o.pool.id} className={`sc-swap${on ? ' is-on' : ''}${o.blocked ? ' is-blocked' : ''}`}>
+                  <input type="checkbox" id={`sc-swap-${o.pool.slug}`} checked={on} disabled={locked || (o.blocked && !on)}
                     onChange={(e) => { const c = e.target.checked; setD((x) => ({ ...x, onLine: c ? [...(x.onLine ?? []), o.pool.id] : (x.onLine ?? []).filter((y) => y !== o.pool.id) })); }} />
-                  <span><b>{o.pool.name}</b><small>{o.holders.map((h) => `${nameOf(h.member_id)} #${h.number}`).join(' · ')}</small></span>
+                  <span><b>{o.pool.name}</b><small>{o.holders.map((h) => `${nameOf(h.member_id)} #${h.number}`).join(' · ')}</small>
+                    {o.blocked && <small className="sc-swap-why">{on ? 'Untick this one: ' : ''}Early Access needs 3 Jewel players, or a challenge you two have accepted (My Tag → MATCHUPS).</small>}</span>
                 </label>
               );
             })}

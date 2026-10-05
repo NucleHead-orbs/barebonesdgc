@@ -58,6 +58,7 @@ export function daysLeft(today: string, closes: string): number {
 export function rulesText(min: number, cap: number): string[] {
   return [
     `Save your rounds on the Scorecard with at least ${min} Jewel players on the card (guests are fine, they just don't count).`,
+    'Just the two of you? It only counts as a challenge: one of you challenges the other on My Tag, the other accepts, then you play with tags on the line.',
     'A round counts once every Jewel player on it confirms from their My Tag.',
     `Each counting round = 1 raffle ticket, up to ${cap} a week (Monday to Sunday).`,
     'First time you play a counting round with someone new from the Jewel = 1 bonus ticket each.',

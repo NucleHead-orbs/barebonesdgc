@@ -61,6 +61,7 @@ export function heatMessage(m: string): string | null {
   if (/chat_off/.test(m)) return 'The chat is off for this tag set.';
   if (/slow_down/.test(m)) return 'Easy, tiger. One message every few seconds.';
   if (/invalid_message/.test(m)) return 'Messages are 1 to 500 characters.';
+  if (/needs_challenge/.test(m)) return 'Early Access tag rounds need 3 Jewel players, or 2 with a challenge you\'ve accepted.';
   if (/invalid_days/.test(m)) return 'Pick days of the week.';
   if (/too_many_courses/.test(m)) return 'Three favorite courses max.';
   if (/unknown_course/.test(m)) return "That course isn't in the library anymore. Pick another.";

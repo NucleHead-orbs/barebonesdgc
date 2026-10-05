@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'ea-challenge-rounds', date: '2026-10-05', help: 'early', who: 'all',
+    title: 'Early Access: 3 players, or an accepted challenge',
+    body: 'Early Access rounds still need **3 Jewel players** to move tags or earn tickets. New: **2 players count when it\'s an accepted challenge** between them. Any other 2-player round can\'t put Early Access tags on the line. Other tag sets are unchanged.',
+  },
+  {
     id: 'tag-board', date: '2026-10-05', help: 'tags', who: 'tags',
     title: 'My Tag: BOARD and MATCHUPS tabs',
     body: 'My Tag now has three tabs. **BOARD**: one message board per tag set (pick the set up top), reactions (tap a count to see who), and the house posts challenges, results, explosions and penalties on its own. **MATCHUPS**: players share their days and favorite courses; the Matchmaker suggests their best opponents with one-tap **CHALLENGE**, and posts the week\'s hottest matchups every Monday.',

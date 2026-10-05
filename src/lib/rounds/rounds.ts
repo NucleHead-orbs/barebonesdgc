@@ -127,6 +127,7 @@ export function roundMessage(err: unknown): string {
   if (/too_many_rounds/.test(m)) return "That's 20 rounds today. Save the rest tomorrow.";
   if (/not_your_round/.test(m)) return "That round isn't one of yours.";
   if (/no_tag_in_pool/.test(m)) return "You don't hold a tag in that set.";
+  if (/needs_challenge/.test(m)) return 'Early Access tags need 3 Jewel players on the card, or 2 with a challenge you\'ve accepted (My Tag → MATCHUPS). Untick that set and save again.';
   if (/need_two_holders/.test(m)) return 'A tag exchange needs at least two tag holders from that set on the round.';
   if (/already_exchanged/.test(m)) return 'Tags from that set are already on the line for this round.';
   if (/round_disputed/.test(m)) return "Someone disputed this round. Sort it out first (or void it and save it again).";

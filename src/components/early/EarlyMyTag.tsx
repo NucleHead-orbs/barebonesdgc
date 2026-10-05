@@ -28,7 +28,7 @@ export function EarlyMyTag({ token, rev }: { token: string; rev: number }) {
                 {x.me.bonus > 0 && <li><span>Bonus</span><b>{tickets(x.me.bonus)}</b></li>}
               </ul>
               <p className="td-hint">
-                Rounds count when you save them on the Scorecard with at least {x.min_players} Jewel players and everyone confirms. Up to {x.weekly_cap} a week.
+                Rounds count when you save them on the Scorecard with at least {x.min_players} Jewel players and everyone confirms, or with 2 when it's an accepted challenge (tags on the line). Up to {x.weekly_cap} a week.
                 {today <= x.closes_on ? ` ${daysLeft(today, x.closes_on)} days left (closes ${niceDate(x.closes_on)}).` : ' Closed: winners are drawn at the players meeting.'}
               </p>
               <Link className="td-btn quiet" to={earlyPath(x.slug)}>RULES & RAFFLE BOARD ›</Link>
