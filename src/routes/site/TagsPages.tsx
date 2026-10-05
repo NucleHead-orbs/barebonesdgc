@@ -53,7 +53,11 @@ export function TagsBoard() {
             {board.data && (
               <>
                 <SectionHeading kicker={board.data.pool.name} title="The Board" aside={`${board.data.tags.length} tags out`} />
-                {board.data.pool.invite_only && <Banner>Invite only. Golden Boners are carried by the club admins and core members, for bragging rights. Same rules as every tag: beat a holder, take the better number.</Banner>}
+                {board.data.pool.invite_only && (board.data.pool.slug === 'golden-boners'
+                  ? <Banner>Invite only. Golden Boners are carried by the club admins and core members, for bragging rights. Same rules as every tag: beat a holder, take the better number.</Banner>
+                  : board.data.pool.slug === 'jewel-xi-ea'
+                  ? <Banner>Early access tags for the first 50 Jewel XI registrants. Registered? <Link to="/jewel-xi/early-access">Claim yours</Link>. Same rules as every tag: beat a holder, take the better number.</Banner>
+                  : <Banner>Invite only. Same rules as every tag: beat a holder, take the better number.</Banner>)}
                 {!board.data.tags.length && <Banner>No tags issued in {board.data.pool.name} yet.{board.data.pool.invite_only ? '' : ' Ask your league TD for one.'}</Banner>}
                 {board.data.pending.some((p) => p.status === 'pending') && (
                   <Banner tone="warn">Includes {board.data.pending.filter((p) => p.status === 'pending').length} swap{board.data.pending.filter((p) => p.status === 'pending').length === 1 ? '' : 's'} waiting on confirmation. Rows marked <b>pending</b> move for real once everyone on the round confirms.</Banner>
