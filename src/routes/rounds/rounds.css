@@ -177,3 +177,7 @@
 .lv-who { padding: 4px 10px; border-radius: 999px; border: 2px solid var(--ink, #1b1424); background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
 .lv-who[aria-pressed='true'] { background: var(--ink, #1b1424); color: var(--bg-surface, #fff); }
 .lv-feed { list-style: none; padding: 0; margin: 0; font-size: 13px; opacity: .85; }
+
+.sc-about { font-size: 14px; }
+.sc-about summary { cursor: pointer; font-weight: 700; }
+.sc-about p { margin: 6px 0; line-height: 1.45; }

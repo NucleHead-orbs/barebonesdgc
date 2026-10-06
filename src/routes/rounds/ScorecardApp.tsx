@@ -16,6 +16,7 @@ import { useTheme } from '../../lib/theme';
 import { LIVE_KEY, liveOn, newLiveIds, toLiveCard } from '../../lib/rounds/live';
 import { useLiveReactions } from '../../lib/rounds/useLiveReactions';
 import { LiveFx } from './LiveFx';
+import { Prose } from '../../components/Prose';
 import './rounds.css';
 
 const read = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -193,6 +194,7 @@ function Setup({ d, setD, me, members, courses, swapSets, onStart }: {
             </select>
           </label>
         )}
+        {course?.description && <details className="sc-about"><summary>About {course.name}</summary><Prose text={course.description} /><Link to={`/courses#${course.id}`}>More on the Courses page ›</Link></details>}
         {course && !course.layouts.length && <p className="sc-hint">No hole-by-hole layout for {course.name} yet, so every hole starts at par 3. Change pars on the card as you go.</p>}
         <label className="sc-field"><span>Date</span>
           <input id="sc-date" className="sc-input" type="date" value={d.playedOn} max={localDate()} onChange={(e) => { const v = e.target.value; setD((x) => ({ ...x, playedOn: v })); }} />

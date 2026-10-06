@@ -12,7 +12,7 @@ const wrap = async <T>(fn: () => Promise<T>): Promise<Result<T>> => {
 };
 const must = <T>(r: { data: T; error: unknown }): T => { if (r.error) throw r.error; return r.data; };
 
-export interface CourseOption { id: string; name: string; city: string | null; layouts: Array<{ id: string; name: string; pars: number[]; labels: string[] | null; ft: Array<number | null> }> }
+export interface CourseOption { id: string; name: string; city: string | null; description?: string | null; layouts: Array<{ id: string; name: string; pars: number[]; labels: string[] | null; ft: Array<number | null> }> }
 export interface RoundMe { me: TagMember; pools: Array<{ pool_id: string; number: number }>; to_confirm: Array<{ id: string; course: string; played_on: string }> }
 export interface RoundPlayer {
   seq: number; member_id: string | null; guest_name: string | null; name: string; nickname: string | null;
@@ -32,10 +32,10 @@ export const loadMembers = () => wrap(async (): Promise<TagMember[]> =>
 
 /** Courses A–Z with each layout's pars (hole order). */
 export const loadCourses = () => wrap(async (): Promise<CourseOption[]> => {
-  const rows = (must(await supabase.from('courses').select('id, name, city, course_layouts(id, name, course_holes(n, par, label, dist_ft))').order('name')) ?? []) as Array<{
-    id: string; name: string; city: string | null; course_layouts: Array<{ id: string; name: string; course_holes: Array<{ n: number; par: number; label: string | null; dist_ft: number | null }> }> }>;
+  const rows = (must(await supabase.from('courses').select('id, name, city, description, course_layouts(id, name, course_holes(n, par, label, dist_ft))').order('name')) ?? []) as Array<{
+    id: string; name: string; city: string | null; description: string | null; course_layouts: Array<{ id: string; name: string; course_holes: Array<{ n: number; par: number; label: string | null; dist_ft: number | null }> }> }>;
   return rows.map((c) => ({
-    id: c.id, name: c.name, city: c.city,
+    id: c.id, name: c.name, city: c.city, description: c.description,
     layouts: (c.course_layouts ?? []).filter((l) => l.course_holes?.length).map((l) => {
       const hs = l.course_holes.slice().sort((a, b) => a.n - b.n);
       return { id: l.id, name: l.name, pars: hs.map((h) => h.par), labels: hs.some((h) => h.label) ? hs.map((h) => h.label ?? String(h.n)) : null, ft: hs.map((h) => h.dist_ft) };
@@ -97,6 +97,10 @@ export const tagsFor = (memberIds: string[]) => wrap(async (): Promise<{ pools: 
   ]);
   return { pools: (must(pools) ?? []) as TagPool[], tags: (must(tags) ?? []) as Array<{ pool_id: string; number: number; holder_id: string | null }> };
 });
+
+/** The owner's course write-up (owner only; the database checks). */
+export const describeCourse = (courseId: string, text: string) =>
+  wrap(async () => { must(await supabase.rpc('owner_course_describe', { p_course: courseId, p_text: text })); });
 
 // ---------- live rounds + TD vouch (migration 20261105) ----------
 export const livePush = (id: string, secret: string, token: string | null, card: LiveCard) =>

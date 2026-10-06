@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'courses-page', date: '2026-10-06', help: 'rounds', who: 'all',
+    title: 'Courses page + write-ups',
+    body: 'New **Courses** page on the club site: every course with its layouts (holes, par, feet), the hole-by-hole and Mike\'s write-up. The write-up also shows on the scorecard under the course picker (**About this course**). Added **DiscO at Eastmark** (Main par 63, Lower Pars par 55), **Freestone** and **Sun Ray Park DGC**.',
+  },
+  {
     id: 'live-reactions', date: '2026-10-05', help: 'rounds', who: 'all',
     title: 'Live rounds: razz and congrats',
     body: 'Anyone watching a live round can send a **razz** (skull rain, choke, trash, waaah) or a **congrats** (golf clap, on fire, GOAT, cheers) at one player or everyone. It plays over the scorer\'s card with who sent it. Viewers need their My Tag link on the phone; one every 15 seconds. The scorer can tap **Reactions on/off**.',
