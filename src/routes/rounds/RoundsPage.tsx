@@ -9,6 +9,8 @@ import type { Round, RoundMe } from '../../lib/rounds/api';
 import { ME_KEY, confirmState, fmtToPar, roundMessage, toParClass } from '../../lib/rounds/rounds';
 import { niceDate } from '../../lib/leagues/leagues';
 import { Banner, Button, SectionHeading } from '../../components/ui';
+import { LiveStrip } from './LiveRounds';
+import { supabase } from '../../lib/supabase';
 import './rounds.css';
 
 const readMe = () => { try { return localStorage.getItem(ME_KEY); } catch { return null; } };
@@ -44,6 +46,9 @@ export function RoundsList() {
           <Button to="/tags" variant="outline">Tag boards</Button>
         </div>
         <p className="lead">Keep score on the scorecard, save it here with your My Tag link, and put your tags on the line if you want. Everyone on the round confirms from their own link.</p>
+      </div>
+      <LiveStrip />
+      <div className="sec-inner br">
         {me && me.to_confirm.length > 0 && <Banner tone="warn">{me.to_confirm.length} round{me.to_confirm.length === 1 ? '' : 's'} waiting on your OK below.</Banner>}
         {err && <Banner tone="error">{err}</Banner>}
         {!rounds && !err && <p className="br-empty">Loading…</p>}
@@ -148,6 +153,8 @@ export function RoundDetail() {
         )}
         {r.note && <p className="br-note">{r.note}</p>}
 
+        <VouchBox roundId={r.id} onDone={async (msg) => { setOk(msg); setErr(''); await load(); }} onErr={setErr} />
+
         {r.exchanges.filter((x) => x.status === 'applied' && x.moves).map((x) => (
           <div key={x.id} className="br-panel">
             <b>{x.pool_name}</b>
@@ -179,5 +186,46 @@ export function RoundDetail() {
         {!me && <p className="br-hint">On this round? Open your My Tag link on this phone once, then come back here to confirm.</p>}
       </div>
     </section>
+  );
+}
+
+/**
+ * Signed-in league admins only (td_round_vouch_options decides): put a saved round's tags on the line past the rules
+ * (2-player Early Access, after the tee-off lock). Everyone on it still confirms on My Tag.
+ */
+function VouchBox({ roundId, onDone, onErr }: { roundId: string; onDone: (msg: string) => Promise<void>; onErr: (m: string) => void }) {
+  const [opts, setOpts] = useState<api.VouchOption[]>([]);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return;
+      const r = await api.vouchOptions(roundId);
+      if (live && r.data) setOpts(r.data);
+    })();
+    return () => { live = false; };
+  }, [roundId]);
+  if (!opts.length) return null;
+  return (
+    <div className="br-panel br-vouch">
+      <b>League admin: put tags on the line</b>
+      <p>You know everyone on this card, so you can vouch for it even though it skipped the tags (2-player Early Access, or tags picked after tee-off). Everyone with a tag on it confirms on My Tag and the tags swap, same as always.</p>
+      {opts.map((o) => (
+        <div key={o.pool_id} className="row">
+          <span><b>{o.name}</b>: {o.holders.map((h) => `${h.nickname || h.name} #${h.number}`).join(', ')}</span>
+          <button className="br-btn cta" disabled={busy} onClick={() => {
+            if (!window.confirm(`Put ${o.name} tags on the line for this round? Everyone on it confirms on My Tag, then the tags swap.`)) return;
+            setBusy(true);
+            void api.vouch(roundId, o.pool_id).then(async (r) => {
+              setBusy(false);
+              if (r.error) return onErr(roundMessage(r.error));
+              setOpts((x) => x.filter((y) => y.pool_id !== o.pool_id));
+              await onDone(`${o.name} tags are on the line. Everyone on it confirms on My Tag.`);
+            });
+          }}>VOUCH: TAGS ON THE LINE</button>
+        </div>
+      ))}
+    </div>
   );
 }

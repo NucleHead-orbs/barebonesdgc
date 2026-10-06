@@ -26,6 +26,7 @@ const roundPages = () => import('./routes/rounds/RoundsPage');
 const RoundsList = lazy(() => roundPages().then((m) => ({ default: m.RoundsList })));
 const RoundDetail = lazy(() => roundPages().then((m) => ({ default: m.RoundDetail })));
 const ScorecardApp = lazy(() => import('./routes/rounds/ScorecardApp'));
+const LivePage = lazy(() => import('./routes/rounds/LiveRounds'));
 // Each app loads only on its own route, so the first page stays small on course signal.
 const TdRoute = lazy(() => import('./routes/td/TdRoute'));
 const JewelApp = lazy(() => import('./routes/jewel/JewelApp'));
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/tags/:pool/:number" element={<TagPage />} />
           <Route path="/gallery" element={<GalleryPage />} />
           <Route path="/rounds" element={<RoundsList />} />
+          <Route path="/rounds/live/:id" element={<LivePage />} />
           <Route path="/rounds/:id" element={<RoundDetail />} />
           <Route path="/e/:slug/early-access" element={<EarlyAccessBySlug />} />
           <Route path="/dev-reports" element={<DevReportsPage />} />

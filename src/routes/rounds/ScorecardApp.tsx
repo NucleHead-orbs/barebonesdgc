@@ -13,10 +13,16 @@ import {
 import { display, swap, type TagMember, type TagPool } from '../../lib/tags/tags';
 import { localDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
+import { LIVE_KEY, liveOn, newLiveIds, toLiveCard } from '../../lib/rounds/live';
 import './rounds.css';
 
 const read = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const write = (k: string, v: string | null) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* private mode: still works, just not remembered */ } };
+/** The live mirror's id + secret for the card on this phone (beside the draft, not in it). */
+const readLive = (): { id: string; secret: string } | null => { try { const x = JSON.parse(read(LIVE_KEY) ?? 'null'); return x && x.id && x.secret ? x : null; } catch { return null; } };
+const liveIds = () => { let x = readLive(); if (!x) { x = newLiveIds(); write(LIVE_KEY, JSON.stringify(x)); } return x; };
+/** The card is saved or thrown away (or sharing switched off): take it off the live view. */
+const endLive = () => { const x = readLive(); if (x) { void api.liveEnd(x.id, x.secret); write(LIVE_KEY, null); } };
 const loadDraft = (): Draft | null => { try { const d = JSON.parse(read(DRAFT_KEY) ?? 'null'); return d && Array.isArray(d.pars) ? d as Draft : null; } catch { return null; } };
 
 export default function ScorecardApp() {
@@ -65,6 +71,12 @@ export default function ScorecardApp() {
   const swapSets = useMemo(() => options.map((o) => ({ ...o, blocked: lineOk[o.pool.id] === false })), [options, lineOk]);
 
   useEffect(() => { write(DRAFT_KEY, JSON.stringify(d)); }, [d]);
+  // live mirror: a couple of seconds after the card changes, push it (when there's signal). The phone's card stays the truth.
+  useEffect(() => {
+    if (!liveOn(d) || !started(d) || !d.players.length) return;
+    const t = window.setTimeout(() => { if (navigator.onLine) { const x = liveIds(); void api.livePush(x.id, x.secret, token, toLiveCard(d)); } }, 2500);
+    return () => window.clearTimeout(t);
+  }, [d, token]);
   useEffect(() => {
     void (async () => {
       const [m, c] = await Promise.all([api.loadMembers(), api.loadCourses()]);
@@ -104,6 +116,7 @@ export default function ScorecardApp() {
     setBusy(false);
     if (r.error || !r.data) return setErr(roundMessage(r.error));
     write(DRAFT_KEY, null);
+    endLive();
     nav(`/rounds/${r.data}?saved=1`);
   };
 
@@ -121,7 +134,7 @@ export default function ScorecardApp() {
       {view === 'setup'
         ? <Setup d={d} setD={setD} me={me} members={members} courses={courses} swapSets={swapSets} onStart={() => setView('card')} />
         : <Card d={d} setD={setD} onSetup={() => setView('setup')} me={me} busy={busy} swapSets={swapSets} onSave={() => void save()} onConnect={connect}
-            onNew={() => { setD(newDraft(localDate(), me ? { id: me.me.id, name: me.me.nickname || me.me.name } : null)); setView('setup'); }} />}
+            onNew={() => { endLive(); setD(newDraft(localDate(), me ? { id: me.me.id, name: me.me.nickname || me.me.name } : null)); setView('setup'); }} />}
     </div>
   );
 }
@@ -228,6 +241,12 @@ function Setup({ d, setD, me, members, courses, swapSets, onStart }: {
           <p className="sc-hint">{locked ? 'Locked: the round has started.' : 'Decide now. Once the first score is in, this locks. Checked sets swap when you save and everyone else on the card confirms from their My Tag link.'}</p>
         </section>
       )}
+      <section className="sc-panel">
+        <label className="sc-swap">
+          <input type="checkbox" id="sc-live" checked={liveOn(d)} onChange={(e) => { const on = e.target.checked; if (!on) endLive(); setD((x) => ({ ...x, live: on })); }} />
+          <span><b>Share live</b><small>Anyone can watch this card on the club site while you play (course, names as typed, scores). Off = it stays on this phone until you save.</small></span>
+        </label>
+      </section>
       <button className="sc-btn cta big" disabled={!ready} onClick={onStart}>{d.scores.some((s) => s.some((x) => x != null)) ? 'Back to the card' : 'Tee off'}</button>
     </main>
   );
@@ -258,6 +277,7 @@ function Card({ d, setD, onSetup, me, busy, swapSets, onSave, onConnect, onNew }
     <main className="sc-main">
       <div className="sc-course"><b>{d.course}</b><span>{d.pars.length} holes · par {d.pars.reduce((a, b) => a + b, 0)}</span><button className="sc-link" onClick={onSetup}>Edit round</button></div>
       {declared.length > 0 && <div className="sc-online">On the line: {declared.map((o) => o.pool.name).join(' + ')}</div>}
+      {liveOn(d) && started(d) && <LiveBadge />}
       <div className="sc-stand">
         {d.players.map((p, i) => (
           <div key={p.key} className={`sc-st${lead.includes(i) ? ' is-lead' : ''}`}>
@@ -359,4 +379,17 @@ function Card({ d, setD, onSetup, me, busy, swapSets, onSave, onConnect, onNew }
       </section>
     </main>
   );
+}
+
+/** "LIVE" on the card, with the public link to share. */
+function LiveBadge() {
+  const [copied, setCopied] = useState(false);
+  const x = readLive();
+  if (!x) return null;
+  const url = `${window.location.origin}/rounds/live/${x.id}`;
+  const share = async () => {
+    try { if (navigator.share) { await navigator.share({ title: 'Watch our round live', url }); return; } } catch { return; }
+    try { await navigator.clipboard.writeText(url); setCopied(true); } catch { window.prompt('Live link:', url); }
+  };
+  return <div className="sc-live"><span className="sc-live-dot" aria-hidden="true" />LIVE on the club site <button className="sc-link" onClick={() => void share()}>{copied ? 'Link copied' : 'Share link'}</button></div>;
 }

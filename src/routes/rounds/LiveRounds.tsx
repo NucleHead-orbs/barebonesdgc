@@ -1,0 +1,91 @@
+/**
+ * Live rounds, public (migration 20261105). LiveStrip: "Live now" on the club home and Boner Rounds (nothing when nobody's
+ * playing). LivePage (/rounds/live/:id): the full card, refreshing itself; FINAL once it's saved.
+ */
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import * as api from '../../lib/rounds/api';
+import { agoLabel, groupThru, liveStandings, type LiveRound } from '../../lib/rounds/live';
+import { fmtToPar, running, toParClass } from '../../lib/rounds/rounds';
+import { Banner, Button } from '../../components/ui';
+import './rounds.css';
+
+function usePoll<T>(load: () => Promise<{ data?: T; error?: unknown }>, ms: number) {
+  const [data, setData] = useState<T | undefined>(undefined);
+  const [failed, setFailed] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    let live = true;
+    const pull = async () => { const r = await load(); if (!live) return; if (r.error) setFailed(true); else { setFailed(false); setData(r.data); } setNow(Date.now()); };
+    void pull();
+    const t = window.setInterval(() => { if (document.visibilityState === 'visible') void pull(); }, ms);
+    return () => { live = false; window.clearInterval(t); };
+  }, [load, ms]);
+  return { data, failed, now };
+}
+
+export function LiveStrip() {
+  const { data, now } = usePoll(api.liveRounds, 30_000);
+  if (!data?.length) return null;
+  return (
+    <section className="sec lv-sec">
+      <div className="sec-inner">
+        <div className="lv-head"><span className="lv-dot" aria-hidden="true" /><b>Live now</b><span>{data.length} round{data.length === 1 ? '' : 's'} on the course</span></div>
+        <div className="lv-strip">
+          {data.map((r) => {
+            const st = liveStandings(r.card);
+            const lead = st[0];
+            return (
+              <Link key={r.id} to={`/rounds/live/${r.id}`} className="lv-card">
+                <b>{r.course}</b>
+                <span>{r.card.players.map((p) => p.name).join(', ')}</span>
+                <span className="lv-meta">Thru {groupThru(r.card)} of {r.card.pars.length}{lead && lead.thru > 0 ? ` · ${lead.name} ${fmtToPar(lead.toPar)}` : ''} · {agoLabel(r.updated_at, now)}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function LivePage() {
+  const { id = '' } = useParams();
+  const load = useCallback(() => api.liveRound(id), [id]);
+  const { data: r, failed, now } = usePoll<LiveRound | null>(load, 15_000);
+  if (r === undefined) return <section className="sec"><div className="sec-inner br"><p className="br-empty">{failed ? 'No signal. Trying again…' : 'Loading…'}</p></div></section>;
+  if (r === null) return <section className="sec"><div className="sec-inner br"><Banner tone="warn">That live round isn't here anymore.</Banner><Button to="/rounds">Boner Rounds</Button></div></section>;
+  const c = r.card;
+  const st = liveStandings(c);
+  const quiet = !r.ended && now - new Date(r.updated_at).getTime() > 30 * 60_000;
+  return (
+    <section className="sec">
+      <div className="sec-inner br">
+        <Link to="/rounds" className="br-back">‹ Boner Rounds</Link>
+        <div className="lv-title">
+          {r.ended ? <span className="lv-final">FINAL</span> : quiet ? <span className="lv-final">PAUSED</span> : <span className="lv-live"><span className="lv-dot" aria-hidden="true" />LIVE</span>}
+          <h1>{c.course}</h1>
+          <span className="lv-meta">Thru {groupThru(c)} of {c.pars.length} · updated {agoLabel(r.updated_at, now)}</span>
+        </div>
+        {r.ended && <p className="lead">They saved it. Look for it on <Link to="/rounds">Boner Rounds</Link> once everyone confirms.</p>}
+        <ol className="lv-board">
+          {st.map((p, i) => (
+            <li key={p.name + i}><span className="lv-pos">{p.thru ? i + 1 : '–'}</span><b>{p.name}</b><span className={toParClass(p.toPar)}>{p.thru ? fmtToPar(p.toPar) : '–'}</span><span className="lv-thru">{p.thru ? `thru ${p.thru}` : 'not started'}</span></li>
+          ))}
+        </ol>
+        <div className="br-tablewrap">
+          <table className="sc-table">
+            <tbody>
+              <tr><th>Hole</th>{c.pars.map((_, i) => <th key={i}>{c.labels?.[i] ?? i + 1}</th>)}<th>Tot</th></tr>
+              <tr><th>Par</th>{c.pars.map((p, i) => <td key={i}>{p}</td>)}<td>{c.pars.reduce((a, b) => a + b, 0)}</td></tr>
+              {c.players.map((p, pi) => (
+                <tr key={pi}><th>{p.name}</th>{c.pars.map((pp, i) => { const s = p.scores[i]; return <td key={i} className={s == null ? '' : toParClass(s - pp)}>{s ?? ''}</td>; })}<td><b>{running(c.pars, p.scores).strokes || ''}</b></td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="br-note">Live from the scorer's phone. It isn't official until it's saved and everyone confirms.</p>
+      </div>
+    </section>
+  );
+}

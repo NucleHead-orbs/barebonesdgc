@@ -127,3 +127,28 @@
 .sc-swap.is-blocked.is-on { opacity: 1; border-color: var(--danger, #ff4f6e); }
 .sc-swap small.sc-swap-why { color: var(--danger, #ff4f6e); }
 .sc-online { align-self: flex-start; font-weight: 800; font-size: 13px; letter-spacing: .5px; text-transform: uppercase; color: var(--ink); background: var(--accent-gold); border-radius: var(--r-pill); padding: 4px 12px; }
+
+/* live mirror */
+.sc-live { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: #ff4f6e; }
+.sc-live .sc-link { text-transform: none; letter-spacing: 0; font-weight: 600; }
+.sc-live-dot, .lv-dot { width: 10px; height: 10px; border-radius: 50%; background: #ff4f6e; animation: lv-pulse 1.6s ease-in-out infinite; flex: none; }
+@keyframes lv-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.75); } }
+@media (prefers-reduced-motion: reduce) { .sc-live-dot, .lv-dot { animation: none; } }
+.lv-sec { padding-top: 16px; padding-bottom: 16px; }
+.lv-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.lv-head b { font-family: var(--font-display); font-size: 22px; }
+.lv-head span:last-child { opacity: .7; font-size: 14px; }
+.lv-strip { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+.lv-card { flex: 0 0 auto; min-width: 220px; max-width: 300px; display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border-radius: 12px; border: 3px solid var(--ink, #1b1424); background: var(--bg-surface, #fff); color: var(--fg-1, inherit); text-decoration: none; box-shadow: 4px 4px 0 var(--ink, #1b1424); }
+.lv-card b { font-size: 17px; }
+.lv-card span { font-size: 13px; }
+.lv-meta { opacity: .7; }
+.lv-title { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 12px; }
+.lv-title h1 { margin: 0; font-family: var(--font-display); }
+.lv-live, .lv-final { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-weight: 800; letter-spacing: 1px; font-size: 13px; padding: 3px 10px; border-radius: 999px; }
+.lv-live { color: #ff4f6e; border: 2px solid #ff4f6e; }
+.lv-final { border: 2px solid currentColor; opacity: .8; }
+.lv-board { list-style: none; padding: 0; margin: 0 0 14px; display: flex; flex-direction: column; gap: 6px; }
+.lv-board li { display: grid; grid-template-columns: 28px 1fr auto auto; gap: 10px; align-items: baseline; padding: 8px 10px; border-radius: 10px; border: 2px solid var(--ink, #1b1424); background: var(--bg-surface, #fff); }
+.lv-board b { font-size: 17px; }
+.lv-pos, .lv-thru { opacity: .7; font-size: 13px; }

@@ -15,6 +15,7 @@ import { Banner, Button, Card, Chip, InsetFrame, SectionHeading, TourList } from
 import { CourseGuide, SponsorGrid, SponsorPanel } from '../../components/event';
 import { useLoad } from '../../lib/useLoad';
 import { BoneLabCard } from '../../components/dev/DevReports';
+import { LiveStrip } from '../rounds/LiveRounds';
 
 /** 1. Home (master brand) */
 export function Home() {
@@ -34,6 +35,8 @@ export function Home() {
           {CLUB.art.skeletonMoon && <img src={CLUB.art.skeletonMoon} alt="Bare Bones skeleton mascot" style={{ width: '100%', maxWidth: 440, justifySelf: 'center' }} />}
         </div>
       </section>
+
+      <LiveStrip />
 
       <div data-theme="jewel-xi" style={{ background: 'var(--bg-page)' }}>
         <InsetFrame className="band">
