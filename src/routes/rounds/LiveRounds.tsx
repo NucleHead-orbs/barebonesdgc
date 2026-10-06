@@ -5,8 +5,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import * as api from '../../lib/rounds/api';
-import { agoLabel, groupThru, liveStandings, type LiveRound } from '../../lib/rounds/live';
-import { fmtToPar, running, toParClass } from '../../lib/rounds/rounds';
+import { LIVE_REACTIONS, agoLabel, groupThru, liveStandings, reactionLine, type LiveCard, type LiveKind, type LiveRound } from '../../lib/rounds/live';
+import { useLiveReactions } from '../../lib/rounds/useLiveReactions';
+import { LiveFx } from './LiveFx';
+import { ME_KEY, fmtToPar, roundMessage, running, toParClass } from '../../lib/rounds/rounds';
 import { Banner, Button } from '../../components/ui';
 import './rounds.css';
 
@@ -67,6 +69,7 @@ export default function LivePage() {
           <h1>{c.course}</h1>
           <span className="lv-meta">Thru {groupThru(c)} of {c.pars.length} · updated {agoLabel(r.updated_at, now)}</span>
         </div>
+        {!r.ended && !quiet && <ReactBar liveId={r.id} card={c} muted={!!r.muted} />}
         {r.ended && <p className="lead">They saved it. Look for it on <Link to="/rounds">Boner Rounds</Link> once everyone confirms.</p>}
         <ol className="lv-board">
           {st.map((p, i) => (
@@ -87,5 +90,47 @@ export default function LivePage() {
         <p className="br-note">Live from the scorer's phone. It isn't official until it's saved and everyone confirms.</p>
       </div>
     </section>
+  );
+}
+
+/** Send a razz or a congrats to the card (your My Tag link on this phone signs it). Plays everyone's reactions here too. */
+function ReactBar({ liveId, card, muted }: { liveId: string; card: LiveCard; muted: boolean }) {
+  const [token] = useState<string | null>(() => { try { return localStorage.getItem(ME_KEY); } catch { return null; } });
+  const [target, setTarget] = useState<string | null>(null);
+  const [wait, setWait] = useState(false);
+  const [err, setErr] = useState('');
+  const fx = useLiveReactions(liveId, true);
+  const off = muted || fx.muted;
+  const send = async (kind: LiveKind) => {
+    if (!token || wait) return;
+    setErr(''); setWait(true);
+    const r = await api.liveReact(liveId, token, kind, target);
+    if (r.error) { setErr(roundMessage(r.error)); setWait(false); return; }
+    window.setTimeout(() => setWait(false), 15_000);
+  };
+  return (
+    <div className="lv-react">
+      <LiveFx key={fx.queue[0]?.id ?? 0} r={fx.queue[0]} onDone={fx.shift} />
+      {off ? <p className="br-note">The scorer muted reactions for this round.</p>
+        : !token ? <p className="br-note">Want to razz them? Open your My Tag link on this phone once, then come back here.</p>
+        : (
+          <>
+            <div className="lv-react-row"><b>At</b>
+              <button className="lv-who" aria-pressed={target === null} onClick={() => setTarget(null)}>Everyone</button>
+              {card.players.map((p) => <button key={p.name} className="lv-who" aria-pressed={target === p.name} onClick={() => setTarget(p.name)}>{p.name}</button>)}
+            </div>
+            {(['razz', 'congrats'] as const).map((tone) => (
+              <div key={tone} className="lv-react-row"><b>{tone === 'razz' ? 'Razz' : 'Congrats'}</b>
+                {LIVE_REACTIONS.filter((x) => x.tone === tone).map((x) => (
+                  <button key={x.kind} className="lv-rx" disabled={wait} onClick={() => void send(x.kind)}><span aria-hidden="true">{x.glyph}</span>{x.label}</button>
+                ))}
+              </div>
+            ))}
+            {wait && <p className="br-note">Sent. It pops up on their card. Next one in a few seconds.</p>}
+          </>
+        )}
+      {err && <p className="br-note" role="alert">{err}</p>}
+      {fx.feed.length > 0 && <ul className="lv-feed">{fx.feed.slice(0, 6).map((x) => <li key={x.id}>{reactionLine(x)}</li>)}</ul>}
+    </div>
   );
 }

@@ -14,6 +14,8 @@ import { display, swap, type TagMember, type TagPool } from '../../lib/tags/tags
 import { localDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
 import { LIVE_KEY, liveOn, newLiveIds, toLiveCard } from '../../lib/rounds/live';
+import { useLiveReactions } from '../../lib/rounds/useLiveReactions';
+import { LiveFx } from './LiveFx';
 import './rounds.css';
 
 const read = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -381,15 +383,25 @@ function Card({ d, setD, onSetup, me, busy, swapSets, onSave, onConnect, onNew }
   );
 }
 
-/** "LIVE" on the card, with the public link to share. */
+/** "LIVE" on the card: the public link to share, reactions playing over the card, and a mute. */
 function LiveBadge() {
   const [copied, setCopied] = useState(false);
   const x = readLive();
+  const fx = useLiveReactions(x?.id ?? null, !!x);
   if (!x) return null;
   const url = `${window.location.origin}/rounds/live/${x.id}`;
   const share = async () => {
     try { if (navigator.share) { await navigator.share({ title: 'Watch our round live', url }); return; } } catch { return; }
     try { await navigator.clipboard.writeText(url); setCopied(true); } catch { window.prompt('Live link:', url); }
   };
-  return <div className="sc-live"><span className="sc-live-dot" aria-hidden="true" />LIVE on the club site <button className="sc-link" onClick={() => void share()}>{copied ? 'Link copied' : 'Share link'}</button></div>;
+  const mute = async () => { const r = await api.liveMute(x.id, x.secret, !fx.muted); if (!r.error) fx.setMuted(!fx.muted); };
+  return (
+    <>
+      <div className="sc-live"><span className="sc-live-dot" aria-hidden="true" />LIVE on the club site
+        <button className="sc-link" onClick={() => void share()}>{copied ? 'Link copied' : 'Share link'}</button>
+        <button className="sc-link" onClick={() => void mute()}>{fx.muted ? 'Reactions off' : 'Reactions on'}</button>
+      </div>
+      {!fx.muted && <LiveFx key={fx.queue[0]?.id ?? 0} r={fx.queue[0]} onDone={fx.shift} />}
+    </>
+  );
 }

@@ -2,7 +2,7 @@
  * Boner Rounds data access. Public reads (saved rounds, members, course library, tags) go through RLS;
  * saving / confirming / exchanging / voiding are round_* RPCs checked against the My Tag link token.
  */
-import type { LiveCard, LiveRound } from './live';
+import type { LiveCard, LiveKind, LiveReaction, LiveRound } from './live';
 import { supabase } from '../supabase';
 import type { TagMember, TagPool } from '../tags/tags';
 
@@ -107,3 +107,12 @@ export const liveRound = (id: string) => wrap(async (): Promise<LiveRound | null
 export interface VouchOption { pool_id: string; name: string; holders: Array<{ name: string; nickname: string | null; number: number }> }
 export const vouchOptions = (roundId: string) => wrap(async (): Promise<VouchOption[]> => (must(await supabase.rpc('td_round_vouch_options', { p_round: roundId })) ?? []) as VouchOption[]);
 export const vouch = (roundId: string, poolId: string) => wrap(async () => { must(await supabase.rpc('td_round_vouch', { p_round: roundId, p_pool: poolId })); });
+
+// ---------- live reactions (migration 20261106) ----------
+export const liveReact = (liveId: string, token: string, kind: LiveKind, target: string | null) =>
+  wrap(async () => { must(await supabase.rpc('live_react', { p_live: liveId, p_token: token, p_kind: kind, p_target: target })); });
+export const liveReactions = (liveId: string, after: number) =>
+  wrap(async (): Promise<{ muted: boolean | null; last: number | null; list: LiveReaction[] }> =>
+    must(await supabase.rpc('live_reactions', { p_live: liveId, p_after: after })) as { muted: boolean | null; last: number | null; list: LiveReaction[] });
+export const liveMute = (id: string, secret: string, muted: boolean) =>
+  wrap(async () => { must(await supabase.rpc('round_live_mute', { p_id: id, p_secret: secret, p_muted: muted })); });

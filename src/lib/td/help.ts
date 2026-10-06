@@ -192,6 +192,7 @@ export const HELP: HelpSection[] = [
     id: 'rounds', title: 'Club scorecard, Boner Rounds and tag swaps (members)',
     steps: [
       '**Live:** while a scorecard round is played it shows on the club home and Boner Rounds ("Live now"), updating as scores go in. The scorer can turn **Share live** off on the setup screen, and the card has a **Share link**. It drops off 30 minutes after the last score or when it\'s saved; it\'s official only once saved and confirmed.',
+      '**Reactions:** on a live round\'s page, members (My Tag link on that phone) send a razz or a congrats at one player or everyone. It plays over the scorer\'s card and every viewer\'s screen, with who sent it. One every 15 seconds each. The scorer taps **Reactions on/off** on the card to mute.',
       '**Vouch (league admins):** signed in, open a saved round on Boner Rounds. **VOUCH: TAGS ON THE LINE** puts a tag set on it past the rules (2-player Early Access, or tags skipped at tee-off). Everyone with a tag on it confirms on My Tag, then the tags swap. Raffle tickets still need 3 Jewel players or a settled challenge.',
       'Anyone can keep a casual round at **barebonesdiscgolf.club/scorecard**: pick the course and layout (pars, hole names and feet fill in), add members or guests, **Tee off**. It saves on the phone as you go.',
       'To save a round to **Boner Rounds**, a member connects their **My Tag** link once (opening their My Tag link on that phone does it). The phone remembers them.',

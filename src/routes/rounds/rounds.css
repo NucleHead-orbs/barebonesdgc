@@ -152,3 +152,28 @@
 .lv-board li { display: grid; grid-template-columns: 28px 1fr auto auto; gap: 10px; align-items: baseline; padding: 8px 10px; border-radius: 10px; border: 2px solid var(--ink, #1b1424); background: var(--bg-surface, #fff); }
 .lv-board b { font-size: 17px; }
 .lv-pos, .lv-thru { opacity: .7; font-size: 13px; }
+
+/* live reactions overlay (transform + opacity only) */
+.lfx { position: fixed; inset: 0; z-index: 48; pointer-events: none; overflow: hidden; }
+.lfx-p { position: absolute; top: -60px; line-height: 1; animation: lfx-fall 1.9s cubic-bezier(.3, .1, .6, 1) forwards; }
+@keyframes lfx-fall { 0% { transform: translateY(0) rotate(0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(105vh) rotate(160deg); opacity: .9; } }
+.lfx-congrats .lfx-p { top: auto; bottom: -60px; animation-name: lfx-rise; }
+@keyframes lfx-rise { 0% { transform: translateY(0) scale(.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-105vh) scale(1.1); opacity: .9; } }
+.lfx-banner { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; max-width: calc(100% - 32px);
+  padding: 10px 16px; border-radius: 999px; background: rgba(20, 12, 30, .92); color: #fff; font-weight: 800; font-size: 16px; box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+  animation: lfx-pop 2.6s ease forwards; }
+.lfx-razz .lfx-banner { border: 3px solid #ff4f6e; }
+.lfx-congrats .lfx-banner { border: 3px solid #c6ff3d; }
+.lfx-glyph { font-size: 26px; }
+@keyframes lfx-pop { 0% { opacity: 0; transform: translateX(-50%) scale(.7); } 12% { opacity: 1; transform: translateX(-50%) scale(1.05); } 20% { transform: translateX(-50%) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .lfx-p { display: none; } .lfx-banner { animation: none; } }
+
+.lv-react { display: flex; flex-direction: column; gap: 8px; margin: 0 0 14px; padding: 12px; border-radius: 12px; border: 2px solid var(--ink, #1b1424); background: var(--bg-surface, #fff); }
+.lv-react-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.lv-react-row > b { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; opacity: .7; min-width: 72px; }
+.lv-rx { display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 999px; border: 2px solid var(--ink, #1b1424); background: transparent; color: inherit; font: inherit; font-size: 14px; cursor: pointer; }
+.lv-rx span { font-size: 20px; }
+.lv-rx:disabled { opacity: .4; cursor: default; }
+.lv-who { padding: 4px 10px; border-radius: 999px; border: 2px solid var(--ink, #1b1424); background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.lv-who[aria-pressed='true'] { background: var(--ink, #1b1424); color: var(--bg-surface, #fff); }
+.lv-feed { list-style: none; padding: 0; margin: 0; font-size: 13px; opacity: .85; }

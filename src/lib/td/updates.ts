@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'live-reactions', date: '2026-10-05', help: 'rounds', who: 'all',
+    title: 'Live rounds: razz and congrats',
+    body: 'Anyone watching a live round can send a **razz** (skull rain, choke, trash, waaah) or a **congrats** (golf clap, on fire, GOAT, cheers) at one player or everyone. It plays over the scorer\'s card with who sent it. Viewers need their My Tag link on the phone; one every 15 seconds. The scorer can tap **Reactions on/off**.',
+  },
+  {
     id: 'live-vouch', date: '2026-10-05', help: 'rounds', who: 'all',
     title: 'Live rounds + league admins can vouch',
     body: 'Scorecard rounds now show **live** on the club home and Boner Rounds as scores go in (the scorer can switch **Share live** off on the setup screen). Tap a live round for the full card. **Vouch:** signed in as a league admin, open a saved round on Boner Rounds and tap **VOUCH: TAGS ON THE LINE** to put that set\'s tags on it, even a 2-player Early Access round or one that skipped the tags at tee-off. Everyone on it confirms on My Tag.',

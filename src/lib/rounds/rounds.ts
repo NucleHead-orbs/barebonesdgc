@@ -129,6 +129,10 @@ export function roundMessage(err: unknown): string {
   if (/too_many_rounds/.test(m)) return "That's 20 rounds today. Save the rest tomorrow.";
   if (/not_your_round/.test(m)) return "That round isn't one of yours.";
   if (/no_tag_in_pool/.test(m)) return "You don't hold a tag in that set.";
+  if (/not_live/.test(m)) return 'That round isn\'t live anymore.';
+  if (/muted/.test(m)) return 'The scorer muted reactions for this round.';
+  if (/slow_down/.test(m)) return 'Easy. One reaction every 15 seconds.';
+  if (/invalid_reaction/.test(m)) return "That reaction isn't on the menu.";
   if (/invalid_card|invalid_live/.test(m)) return 'The live view didn\'t take that update. Your card is safe on this phone.';
   if (/forbidden/.test(m)) return 'Only that tag set\'s league admins can vouch for a round.';
   if (/needs_challenge/.test(m)) return 'Early Access tags need 3 Jewel players on the card, or 2 with a challenge you\'ve accepted (My Tag → MATCHUPS). Untick that set and save again.';

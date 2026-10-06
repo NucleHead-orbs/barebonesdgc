@@ -31,3 +31,14 @@ describe('live card', () => {
     expect(agoLabel('2026-10-05T11:56:00Z', now)).toBe('4 min ago');
   });
 });
+
+describe('live reactions', () => {
+  it('lines and particles', async () => {
+    const { reactionLine, particles, LIVE_REACTIONS } = await import('./live');
+    expect(LIVE_REACTIONS.filter((r) => r.tone === 'razz').length).toBe(4);
+    expect(reactionLine({ who: 'Woody', kind: 'skull', target: 'Blake' })).toBe('Woody sent Skull rain to Blake');
+    expect(reactionLine({ who: 'Woody', kind: 'clap', target: null })).toBe('Woody sent Golf clap to everyone');
+    expect(particles(7)).toEqual(particles(7));
+    expect(particles(7).every((p) => p.x >= 0 && p.x <= 92)).toBe(true);
+  });
+});
