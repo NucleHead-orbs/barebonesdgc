@@ -59,8 +59,6 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen }: { token: stri
   const [firstNew] = useState(() => readSeen(seenKey));
   const [who, setWho] = useState<{ id: number; kind: ReactionKind } | null>(null); // whose names are showing (tap a count)
   const after = useRef(0);
-  const box = useRef<HTMLDivElement>(null);
-  const stick = useRef(true); // follow new lines only while scrolled to the bottom
   const seenCb = useRef(onSeen);
   useEffect(() => { seenCb.current = onSeen; }, [onSeen]);
 
@@ -73,7 +71,6 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen }: { token: stri
     if (got.length) {
       after.current = got[got.length - 1].id;
       writeSeen(seenKey, after.current); seenCb.current();
-      if (stick.current) window.setTimeout(() => box.current?.scrollTo({ top: box.current.scrollHeight }), 30);
     }
   }, [token, poolId, seenKey]);
 
@@ -90,7 +87,7 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen }: { token: stri
     const r = await tagApi.chatPost(token, poolId, b);
     setBusy(false);
     if (r.error) return setErr(tagMessage(r.error));
-    setText(''); stick.current = true; await pull();
+    setText(''); await pull();
   };
   const react = async (id: number, kind: ReactionKind) => {
     const r = await tagApi.react(token, id, kind);
@@ -104,21 +101,27 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen }: { token: stri
     });
   };
 
+  const newestFirst = (lines ?? []).slice().reverse();
   return (
     <div className="bd-feed">
       <div className="bd-head"><b>{name} Board</b><span className="td-hint">Everyone holding a tag in this set. Challenges, results and explosions post here on their own.</span></div>
-      <div className="bd-lines" ref={box} onScroll={(e) => { const el = e.currentTarget; stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60; }}>
+      <form className="bd-send" onSubmit={(e) => { e.preventDefault(); void send(); }}>
+        <input className="td-input" value={text} maxLength={500} placeholder="Say something…" onChange={(e) => setText(e.target.value)} aria-label="Message" />
+        <button className="td-btn cta" type="submit" disabled={busy || !text.trim()}>SEND</button>
+      </form>
+      <div className="bd-lines">
         {lines === null && <p className="td-hint">Loading…</p>}
         {lines?.length === 0 && <p className="td-hint">Quiet in here. Talk some trash, set up a round.</p>}
-        {lines?.map((l, i) => {
+        {newestFirst.map((l, i) => {
           const r = rx[l.id];
           const mine = l.member_id === meId;
           const news = l.kind === 'system';
           const tone = news ? newsTone(l.event) : null;
-          const newMark = firstNew > 0 && l.id > firstNew && (i === 0 || lines[i - 1].id <= firstNew);
+          // newest on top: a line under everything new since this phone last looked
+          const newMark = firstNew > 0 && l.id <= firstNew && i > 0 && newestFirst[i - 1].id > firstNew;
           return (
             <div key={l.id}>
-              {newMark && <div className="bd-new"><span>NEW</span></div>}
+              {newMark && <div className="bd-new"><span>NEW ABOVE</span></div>}
               <article className={`bd-line${news ? ` is-news t-${tone!.tone}` : ''}${mine ? ' is-mine' : ''}`}>
                 <header>
                   {news ? <b className="bd-tag">{tone!.label}</b>
@@ -149,10 +152,6 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen }: { token: stri
           );
         })}
       </div>
-      <form className="bd-send" onSubmit={(e) => { e.preventDefault(); void send(); }}>
-        <input className="td-input" value={text} maxLength={500} placeholder="Say something…" onChange={(e) => setText(e.target.value)} aria-label="Message" />
-        <button className="td-btn cta" type="submit" disabled={busy || !text.trim()}>SEND</button>
-      </form>
       {err && <div className="td-warn" role="alert">{err} <button className="td-btn quiet" onClick={() => setErr('')}>OK</button></div>}
     </div>
   );

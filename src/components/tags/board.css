@@ -12,7 +12,7 @@
 .bd-feed { display: flex; flex-direction: column; gap: 8px; }
 .bd-head { display: flex; flex-direction: column; gap: 2px; }
 .bd-head b { font-family: var(--font-display); font-size: 22px; }
-.bd-lines { height: min(62dvh, 560px); overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 12px; background: var(--page); border: 1px solid var(--border); overscroll-behavior: contain; }
+.bd-lines { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 12px; background: var(--page); border: 1px solid var(--border); min-height: 120px; }
 .bd-line { padding: 8px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); }
 .bd-line.is-mine { border-color: color-mix(in srgb, var(--cyan) 50%, transparent); }
 .bd-line header { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
@@ -40,7 +40,7 @@
 .rx-ico { width: 18px; height: 18px; }
 .bd-new { display: flex; align-items: center; gap: 8px; color: var(--magenta); font-family: var(--font-label); font-size: 11px; letter-spacing: 2px; margin: 4px 0; }
 .bd-new::before, .bd-new::after { content: ''; flex: 1; height: 2px; background: var(--magenta); opacity: .6; }
-.bd-send { display: flex; gap: 8px; position: sticky; bottom: 0; padding: 6px 0 calc(6px + env(safe-area-inset-bottom, 0px)); background: var(--app); }
+.bd-send { display: flex; gap: 8px; }
 .bd-send .td-input { flex: 1; min-width: 0; font-size: 16px; }
 
 .mu { display: flex; flex-direction: column; gap: 12px; }
