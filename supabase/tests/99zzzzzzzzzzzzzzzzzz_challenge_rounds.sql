@@ -15,6 +15,8 @@ create temp table r_ctx (k text primary key, v text);
 grant all on r_ctx to anon;
 create or replace function pg_temp.v(key text) returns text language sql as $$ select v from r_ctx where k = key $$;
 create or replace function pg_temp.rounds(n text) returns jsonb language sql security definer as $$ select tag_rounds(pg_temp.tok(n)) $$;
+create or replace function pg_temp.tee(c uuid) returns timestamptz language sql security definer as $$ select tee_at from tag_challenges where id = c $$;
+grant execute on function pg_temp.tee(uuid) to anon;
 grant execute on function pg_temp.pool(), pg_temp.mem(text), pg_temp.tok(text), pg_temp.course(), pg_temp.news(text), pg_temp.v(text), pg_temp.rounds(text) to anon;
 
 insert into tag_pools (slug, name, sort, chat, challenges) values ('rounds-test', 'Rounds Test', 96, true, true);
@@ -42,6 +44,8 @@ select pg_temp.ok(pg_temp.refused(format('select tag_challenge_join(%L, %L)', pg
 select tag_challenge_slot(pg_temp.tok('Dot Round'), pg_temp.v('c')::uuid, now() + interval '3 days', pg_temp.course());
 select pg_temp.ok(pg_temp.refused(format('select tag_challenge_slot_ok(%L, %L)', pg_temp.tok('Dot Round'), pg_temp.v('c')), 'other_player_oks'), 'a counter goes back to the other one');
 select tag_challenge_slot_ok(pg_temp.tok('Bea Round'), pg_temp.v('c')::uuid);
+select tag_challenge_slot(pg_temp.tok('Bea Round'), pg_temp.v('c')::uuid, pg_temp.tee(pg_temp.v('c')::uuid), pg_temp.course());
+select pg_temp.ok((select r->>'locked' = 'true' from jsonb_array_elements(pg_temp.rounds('Bea Round')) r), 're-sending the agreed slot keeps it locked');
 select pg_temp.ok((select r->>'locked' = 'true' and r->>'role' = 'challenged' and r->>'course' = 'Round Park' from jsonb_array_elements(pg_temp.rounds('Bea Round')) r), 'locked; the pair sees it');
 select pg_temp.ok(jsonb_array_length(pg_temp.rounds('Out Round')) = 0, 'people outside the set don''t see it');
 select pg_temp.ok((select r->>'role' is null from jsonb_array_elements(pg_temp.rounds('Flo Round')) r), 'set holders see it as open');
