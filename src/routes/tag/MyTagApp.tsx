@@ -17,6 +17,9 @@ import { localDate, niceDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
 import { NewVersionNote } from '../../components/dev/DevReports';
 import { WelcomeTour } from '../../components/tags/WelcomeTour';
+import { InstallCard } from '../rounds/InstallCard';
+import { MYTAG_HEAD, isStandalone, useAppHead } from '../../lib/rounds/useInstall';
+import { platformOf } from '../../lib/rounds/install';
 import '../td/td.css';
 import './mytag.css';
 
@@ -31,6 +34,10 @@ export default function MyTagApp() {
   const [rev, setRev] = useState(0);
   const [toConfirm, setToConfirm] = useState<Array<{ id: string; course: string; played_on: string }>>([]);
   useTheme('event', 'bone');
+  useAppHead(MYTAG_HEAD);
+  /** Home-screen buttons: phones only, and never inside the home-screen app itself. */
+  const [canAdd] = useState(() => platformOf(navigator.userAgent, navigator.maxTouchPoints, navigator.platform) !== 'other' && !isStandalone());
+  const [addTag, setAddTag] = useState(false);
   const heatRows = useHeat(token, rev);
   const rounds = useRounds(token, rev);
   const [focus, setFocus] = useState<HeatFocus | null>(null);
@@ -170,8 +177,14 @@ export default function MyTagApp() {
         <div className="td-row">
           <Link className="td-btn cyan" to="/scorecard">OPEN THE SCORECARD</Link>
           <Link className="td-btn quiet" to="/rounds">BONER ROUNDS</Link>
-          <Link className="td-btn quiet" to="/scorecard?install=1">PUT IT ON MY HOME SCREEN</Link>
         </div>
+        {canAdd && (
+          <div className="td-row mt-add">
+            <Link className="td-btn cta" to="/scorecard?install=1">ADD SCORECARD TO HOME SCREEN</Link>
+            <button className="td-btn cta" aria-expanded={addTag} onClick={() => setAddTag((x) => !x)}>ADD MY TAG TO HOME SCREEN</button>
+          </div>
+        )}
+        {canAdd && addTag && <InstallCard app="mytag" token={null} force onClose={() => setAddTag(false)} />}
 
         {home.holdings.length > 0 && <LogRound home={home} token={token} act={act} />}
 
@@ -273,10 +286,10 @@ function LogRound({ home, token, act }: { home: TagHome; token: string; act: Act
     if (ok) reset();
   };
 
-  if (!open) return <button className="td-btn cta mt-log-open" onClick={() => setOpen(true)}>+ LOG A TAG ROUND</button>;
+  if (!open) return <button className="td-btn quiet mt-log-open" onClick={() => setOpen(true)}>+ MANUAL TAG ROUND SUBMISSION</button>;
   return (
     <section className="td-panel">
-      <h2>Log a tag round</h2>
+      <h2>Manual tag round submission</h2>
       {home.holdings.length > 1 && (
         <div className="td-chips" role="group" aria-label="League">
           {home.holdings.map((h) => (

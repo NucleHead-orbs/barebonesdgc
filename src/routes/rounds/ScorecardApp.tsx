@@ -18,7 +18,7 @@ import { LIVE_KEY, liveOn, newLiveIds, toLiveCard } from '../../lib/rounds/live'
 import { useLiveReactions } from '../../lib/rounds/useLiveReactions';
 import { LiveFx } from './LiveFx';
 import { Prose } from '../../components/Prose';
-import { useScorecardAppHead } from '../../lib/rounds/useInstall';
+import { SCORECARD_HEAD, useAppHead } from '../../lib/rounds/useInstall';
 import { AppConnect, InstallCard } from './InstallCard';
 import './rounds.css';
 
@@ -33,7 +33,7 @@ const loadDraft = (): Draft | null => { try { const d = JSON.parse(read(DRAFT_KE
 
 export default function ScorecardApp() {
   useTheme(null);
-  useScorecardAppHead();
+  useAppHead(SCORECARD_HEAD);
   const nav = useNavigate();
   const [params] = useSearchParams();
   const [token, setToken] = useState<string | null>(() => read(ME_KEY));
@@ -141,7 +141,7 @@ export default function ScorecardApp() {
       )}
       {view === 'setup'
         ? <Setup d={d} setD={setD} me={me} members={members} courses={courses} swapSets={swapSets} onStart={() => setView('card')}
-            top={token ? <InstallCard token={token} force={params.get('install') === '1'} /> : <><AppConnect onConnect={(l) => void connect(l)} /><InstallCard token={null} force={params.get('install') === '1'} /></>} />
+            top={token ? <InstallCard app="scorecard" token={token} force={params.get('install') === '1'} /> : <><AppConnect onConnect={(l) => void connect(l)} /><InstallCard app="scorecard" token={null} force={params.get('install') === '1'} /></>} />
         : <Card d={d} setD={setD} onSetup={() => setView('setup')} me={me} busy={busy} swapSets={swapSets} onSave={() => void save()} onConnect={connect}
             onNew={() => { endLive(); setD(newDraft(localDate(), me ? { id: me.me.id, name: me.me.nickname || me.me.name } : null)); setView('setup'); }} />}
     </div>

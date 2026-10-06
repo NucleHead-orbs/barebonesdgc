@@ -1,5 +1,5 @@
 /**
- * Home-screen app plumbing for /scorecard:
+ * Home-screen app plumbing for /scorecard and My Tag (/tag/:token):
  *  - while the scorecard is open, the page carries the scorecard manifest + Apple tags, so
  *    "Add to Home Screen" makes a "Scorecard" icon that opens straight to a new card;
  *  - catches Chrome's install prompt so we can offer a real INSTALL button.
@@ -21,8 +21,17 @@ export function isStandalone(): boolean {
   return window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
 
-/** Swap in the scorecard's app identity while mounted; put the site's back after. */
-export function useScorecardAppHead() {
+export interface AppHead { icon: string; title: string; pageTitle: string; manifest?: string }
+export const SCORECARD_HEAD: AppHead = { icon: '/assets/app/scorecard-180.png', title: 'Scorecard', pageTitle: 'Scorecard · Bare Bones', manifest: '/scorecard.webmanifest' };
+/**
+ * My Tag: no manifest on purpose. The link carries the player's token, so the home-screen icon
+ * must open the page it was saved from (iPhone and Android both do that when there's no manifest).
+ */
+export const MYTAG_HEAD: AppHead = { icon: '/assets/app/mytag-180.png', title: 'My Tag', pageTitle: 'My Tag · Bare Bones' };
+
+/** Swap in an app identity (icon, name, manifest) while mounted; put the site's back after. */
+export function useAppHead(app: AppHead) {
+  const { icon, title, pageTitle, manifest } = app;
   useEffect(() => {
     const added: Element[] = [];
     const put = (tag: 'link' | 'meta', attrs: Record<string, string>) => {
@@ -32,21 +41,21 @@ export function useScorecardAppHead() {
     };
     const touch = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
     const oldTouch = touch?.getAttribute('href') ?? null;
-    if (touch) touch.setAttribute('href', '/assets/app/scorecard-180.png');
-    else put('link', { rel: 'apple-touch-icon', href: '/assets/app/scorecard-180.png' });
-    put('link', { rel: 'manifest', href: '/scorecard.webmanifest' });
+    if (touch) touch.setAttribute('href', icon);
+    else put('link', { rel: 'apple-touch-icon', href: icon });
+    if (manifest) put('link', { rel: 'manifest', href: manifest });
     put('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' });
     put('meta', { name: 'mobile-web-app-capable', content: 'yes' });
-    put('meta', { name: 'apple-mobile-web-app-title', content: 'Scorecard' });
+    put('meta', { name: 'apple-mobile-web-app-title', content: title });
     put('meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black' });
     const oldTitle = document.title;
-    document.title = 'Scorecard · Bare Bones';
+    document.title = pageTitle;
     return () => {
       added.forEach((el) => el.remove());
       if (touch && oldTouch) touch.setAttribute('href', oldTouch);
       document.title = oldTitle;
     };
-  }, []);
+  }, [icon, title, pageTitle, manifest]);
 }
 
 /** Chrome's install prompt, when it has one. */

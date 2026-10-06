@@ -4,6 +4,7 @@
  * Android/Chrome hands us a real install prompt (beforeinstallprompt) once the manifest is on the page.
  */
 export type Platform = 'ios' | 'android' | 'other';
+export type App = 'scorecard' | 'mytag';
 export const INSTALL_KEY = 'bb-scorecard-install-hide';
 /** How long "Not now" hides the card. */
 export const HIDE_DAYS = 14;

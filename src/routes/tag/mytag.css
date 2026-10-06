@@ -37,3 +37,7 @@
 .mt-ea-total span { font-family: var(--font-label); letter-spacing: 1px; opacity: .8; }
 .mt-ea-lines { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
 .mt-ea-lines li { display: flex; justify-content: space-between; border-bottom: 1px solid var(--raised); padding: 4px 0; }
+
+/* home-screen buttons: full width so the long labels never squeeze on a phone */
+.mt-add .td-btn { flex: 1 1 100%; justify-content: center; text-align: center; white-space: normal; }
+.mt-add + .sc-install { margin-top: 4px; }

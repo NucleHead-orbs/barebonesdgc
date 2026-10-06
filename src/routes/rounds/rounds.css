@@ -191,3 +191,6 @@
 .sc-steps .sc-btn { display: block; margin-top: 6px; }
 .sc-steps .ic-share { vertical-align: -3px; margin: 0 2px; }
 .sc-install-later { align-self: flex-start; }
+.sc-install.is-mytag { border-color: #29e1ff; box-shadow: 0 0 0 1px rgba(41, 225, 255, .3), 0 0 18px rgba(255, 58, 209, .2); text-align: left; }
+.sc-install.is-mytag .sc-install-head img { box-shadow: 0 0 12px rgba(41, 225, 255, .5); }
+.sc-install.is-mytag .sc-steps li::marker { color: #29e1ff; }

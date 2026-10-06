@@ -1,10 +1,11 @@
 /**
- * "Put the scorecard on your home screen" card (scorecard setup screen), and the one-time
+ * "Put it on your home screen" cards (scorecard setup screen; My Tag from its button), and the one-time
  * connect step inside the iPhone app (home-screen apps on iPhone don't share Safari's memory).
  */
 import { useState } from 'react';
-import { HIDE_DAYS, INSTALL_KEY, hiddenUntil, hideFor, platformOf, showInstall, tagLinkFor, type Platform } from '../../lib/rounds/install';
+import { HIDE_DAYS, INSTALL_KEY, type App, hiddenUntil, hideFor, platformOf, showInstall, tagLinkFor, type Platform } from '../../lib/rounds/install';
 import { isStandalone, useInstallPrompt } from '../../lib/rounds/useInstall';
+import './rounds.css';
 
 const read = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const write = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
@@ -17,15 +18,27 @@ function ShareIcon() {
   );
 }
 
-export function InstallCard({ token, force }: { token: string | null; force: boolean }) {
+const COPY: Record<App, { icon: string; title: string; pitch: string; look: string }> = {
+  scorecard: { icon: '/assets/app/scorecard-180.png', title: 'Make it an app', pitch: 'One tap from your home screen to a fresh card. Fastest way to start a casual round.', look: 'Look for the glowing skull.' },
+  mytag: { icon: '/assets/app/mytag-180.png', title: 'My Tag on your home screen', pitch: 'Your tags, the Board and your matchups one tap away. It\'s your private link, so it only lives on your phone.', look: 'Look for the glowing tag.' },
+};
+
+/**
+ * Scorecard: shows itself on the setup screen (Not now hides it for a while).
+ * My Tag: opened from a button, so `onClose` closes it instead of remembering anything.
+ */
+export function InstallCard({ app, token, force, onClose }: { app: App; token: string | null; force: boolean; onClose?: () => void }) {
   const [platform] = useState<Platform>(() => platformOf(navigator.userAgent, navigator.maxTouchPoints, navigator.platform));
   const [standalone] = useState(isStandalone);
   const [until, setUntil] = useState(() => hiddenUntil(read(INSTALL_KEY)));
   const [now] = useState(() => Date.now());
   const [copied, setCopied] = useState(false);
   const [done, setDone] = useState(false);
-  const { canPrompt, install } = useInstallPrompt();
+  const prompt = useInstallPrompt();
+  // Chrome's real install only exists where the page carries a manifest (the scorecard)
+  const canPrompt = app === 'scorecard' && prompt.canPrompt;
   if (done || !showInstall({ standalone, platform, canPrompt, hiddenUntil: until, now, force })) return null;
+  const c = COPY[app];
 
   const notNow = () => { const t = hideFor(Date.now()); write(INSTALL_KEY, String(t)); setUntil(t); };
   const copy = async () => {
@@ -34,30 +47,32 @@ export function InstallCard({ token, force }: { token: string | null; force: boo
   };
 
   return (
-    <section className="sc-panel sc-install" aria-label="Add the scorecard to your home screen">
+    <section className={`sc-panel sc-install is-${app}`} aria-label={c.title}>
       <div className="sc-install-head">
-        <img src="/assets/app/scorecard-180.png" alt="" width="56" height="56" />
-        <div><h2>Make it an app</h2>
-          <p className="sc-hint">One tap from your home screen to a fresh card. Fastest way to start a casual round.</p></div>
+        <img src={c.icon} alt="" width="56" height="56" />
+        <div><h2>{c.title}</h2>
+          <p className="sc-hint">{c.pitch}</p></div>
       </div>
 
       {canPrompt ? (
-        <button className="sc-btn cta big" onClick={() => void install().then((ok) => { if (ok) setDone(true); })}>Install the scorecard</button>
+        <button className="sc-btn cta big" onClick={() => void prompt.install().then((ok) => { if (ok) setDone(true); })}>Install the scorecard</button>
       ) : platform === 'ios' ? (
         <ol className="sc-steps">
-          {token && <li><b>Copy your link first.</b> The app keeps its own memory, so you paste it once inside.
+          {app === 'scorecard' && token && <li><b>Copy your link first.</b> The app keeps its own memory, so you paste it once inside.
             <button className="sc-btn" onClick={() => void copy()}>{copied ? 'Copied' : 'Copy my link'}</button></li>}
           <li>Tap <b>Share</b> <ShareIcon /> in Safari's bottom bar (on newer iPhones it's under the <b>•••</b> button).</li>
           <li>Swipe the list up or tap <b>View More</b>, then tap <b>Add to Home Screen</b>.</li>
-          <li>Tap <b>Add</b>. Look for the glowing skull.</li>
+          <li>Tap <b>Add</b>. {c.look}</li>
         </ol>
       ) : (
         <ol className="sc-steps">
           <li>Tap your browser's menu (<b>⋮</b>, top right).</li>
-          <li>Tap <b>Install app</b> or <b>Add to Home screen</b>.</li>
+          <li>Tap <b>Add to Home screen</b> (or <b>Install app</b>), then <b>Add</b>.</li>
         </ol>
       )}
-      <button className="sc-link sc-install-later" onClick={notNow}>Not now (hides for {HIDE_DAYS} days)</button>
+      {onClose
+        ? <button className="sc-link sc-install-later" onClick={onClose}>Close</button>
+        : <button className="sc-link sc-install-later" onClick={notNow}>Not now (hides for {HIDE_DAYS} days)</button>}
     </section>
   );
 }
