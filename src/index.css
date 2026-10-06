@@ -98,24 +98,41 @@ body { background: var(--bg-page); -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
 /* ---------- LOUD buttons: the one thing we want a player to hit next (Mike, 2026-10-06) ----------
- * Brand fill, thick white outline, dark ring + chunky drop shadow, white heavy italic type tilted a hair, "!" on the end.
- * One rule for every primary button class so they all look the same. html prefix = wins over each screen's base styles.
- * Disabled/busy buttons go quiet (no tilt, no "!"). prefers-reduced-motion: no tilt or bounce. */
+ * Glow golf in a Tron movie: brand fill, white neon-tube outline, a halo in the theme's glow colour that pulses, and a light
+ * sweep across the face every few seconds. Level box, white heavy italic type. One rule for every primary button class.
+ * html prefix = wins over each screen's base styles. Disabled = no glow. prefers-reduced-motion = steady glow, no motion. */
+:root { --loud-glow: #a6d93b; --loud-glow-2: rgba(166, 217, 59, .55); }
+[data-theme='jewel-xi'], [data-theme='event'] { --loud-glow: #29e1ff; --loud-glow-2: #ff3ad1; }
 html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)) {
-  position: relative; border: 3px solid #fff !important; color: #fff !important;
+  position: relative; isolation: isolate; border: 2px solid #fff !important; color: #fff !important;
   font-weight: 900; font-style: italic; letter-spacing: .06em; text-transform: uppercase;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, .55), 0 0 6px rgba(0, 0, 0, .35);
-  box-shadow: 0 0 0 2px #0b0b0f, 0 5px 0 2px #0b0b0f, 0 12px 22px rgba(0, 0, 0, .45);
-  transform: rotate(-1.5deg); transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .6), 0 0 8px rgba(255, 255, 255, .85), 0 0 16px var(--loud-glow);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .35), 0 0 10px var(--loud-glow), inset 0 0 12px rgba(255, 255, 255, .3);
+  transition: transform .12s ease, filter .12s ease;
   padding-left: 1.15em; padding-right: 1.15em; min-height: 48px; font-size: max(1.08em, 15px);
 }
-html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):not(:disabled)::after { content: '!'; margin-left: .12em; }
-html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):not(:disabled):hover { transform: rotate(0) scale(1.03); filter: brightness(1.08); }
-html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):not(:disabled):active {
-  transform: rotate(-1.5deg) translateY(4px); box-shadow: 0 0 0 2px #0b0b0f, 0 1px 0 2px #0b0b0f, 0 4px 8px rgba(0, 0, 0, .4);
+/* the light sweep across the face (under the label) */
+html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet))::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
+  background: linear-gradient(105deg, transparent 0 38%, rgba(255, 255, 255, .55) 50%, transparent 62% 100%) no-repeat;
+  background-size: 250% 100%; background-position: 130% 0; animation: loud-sweep 3.6s ease-in-out infinite;
 }
-html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):disabled { transform: none; opacity: .5; }
-html .ds-btn-cta.ds-btn-sm { min-height: 34px; font-size: 12px; border-width: 2px !important; }
+/* the halo: lives outside the box, pulses (opacity only) */
+html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet))::after {
+  content: ''; position: absolute; inset: -2px; border-radius: inherit; pointer-events: none; z-index: -1;
+  box-shadow: 0 0 14px 3px var(--loud-glow), 0 0 32px 8px var(--loud-glow-2);
+  opacity: .35; animation: loud-pulse 1.8s ease-in-out infinite;
+}
+@keyframes loud-pulse { 50% { opacity: 1; } }
+@keyframes loud-sweep { 0%, 55% { background-position: 130% 0; } 100% { background-position: -30% 0; } }
+html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):not(:disabled):hover { transform: scale(1.03); filter: brightness(1.1); }
+html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):not(:disabled):active { transform: translateY(2px) scale(.98); }
+html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):disabled { opacity: .5; animation: none; box-shadow: none; text-shadow: 0 1px 0 rgba(0, 0, 0, .6); }
+html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):disabled::after,
+html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):disabled::before { display: none; }
+html .ds-btn-cta.ds-btn-sm { min-height: 34px; font-size: 12px; }
 @media (prefers-reduced-motion: reduce) {
-  html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)) { transform: none !important; transition: none; }
+  html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)) { transition: none; }
+  html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet))::before { animation: none; display: none; }
+  html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet))::after { animation: none; opacity: .7; }
 }
