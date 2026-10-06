@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'scorecard-app', date: '2026-10-06', help: 'rounds', who: 'all',
+    title: 'The scorecard as a home-screen app',
+    body: 'The scorecard can live on your home screen now: a glowing-skull **Scorecard** icon that opens straight to a new card, full screen, no browser bars. The setup screen walks players through it (iPhone: Share → **Add to Home Screen**; Android: **Install the scorecard**). My Tag has **PUT IT ON MY HOME SCREEN**. iPhone apps keep their own memory, so players paste their My Tag link once inside (**Copy my link** → **Paste my link**).',
+  },
+  {
     id: 'courses-page', date: '2026-10-06', help: 'rounds', who: 'all',
     title: 'Courses page + write-ups',
     body: 'New **Courses** page on the club site: every course with its layouts (holes, par, feet), the hole-by-hole and Mike\'s write-up. The write-up also shows on the scorecard under the course picker (**About this course**). Added **DiscO at Eastmark** (Main par 63, Lower Pars par 55), **Freestone** and **Sun Ray Park DGC**.',

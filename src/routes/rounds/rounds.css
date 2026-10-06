@@ -181,3 +181,13 @@
 .sc-about { font-size: 14px; }
 .sc-about summary { cursor: pointer; font-weight: 700; }
 .sc-about p { margin: 6px 0; line-height: 1.45; }
+
+/* home-screen app card */
+.sc-install { border-color: var(--cta-bg, #a6d93b); box-shadow: 0 0 0 1px rgba(166, 217, 59, .25), 0 0 18px rgba(166, 217, 59, .18); }
+.sc-install-head { display: flex; gap: 12px; align-items: center; }
+.sc-install-head img { border-radius: 13px; flex: none; box-shadow: 0 0 12px rgba(166, 217, 59, .45); }
+.sc-steps { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.4; }
+.sc-steps li::marker { font-family: var(--font-label); color: var(--cta-bg, #a6d93b); }
+.sc-steps .sc-btn { display: block; margin-top: 6px; }
+.sc-steps .ic-share { vertical-align: -3px; margin: 0 2px; }
+.sc-install-later { align-self: flex-start; }

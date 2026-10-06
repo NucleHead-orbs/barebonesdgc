@@ -1,0 +1,17 @@
+{
+  "name": "Bare Bones Scorecard",
+  "short_name": "Scorecard",
+  "description": "Keep score on a casual round and save it to Boner Rounds.",
+  "id": "/scorecard",
+  "start_url": "/scorecard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1512",
+  "theme_color": "#0f1512",
+  "icons": [
+    { "src": "/assets/app/scorecard-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/app/scorecard-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/app/scorecard-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

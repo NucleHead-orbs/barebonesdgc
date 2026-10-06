@@ -170,6 +170,7 @@ export default function MyTagApp() {
         <div className="td-row">
           <Link className="td-btn cyan" to="/scorecard">OPEN THE SCORECARD</Link>
           <Link className="td-btn quiet" to="/rounds">BONER ROUNDS</Link>
+          <Link className="td-btn quiet" to="/scorecard?install=1">PUT IT ON MY HOME SCREEN</Link>
         </div>
 
         {home.holdings.length > 0 && <LogRound home={home} token={token} act={act} />}

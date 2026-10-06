@@ -18,7 +18,7 @@
 .td-title { font-family: var(--font-display); font-size: 28px; line-height: 1; }
 .td-sub { font-family: var(--font-label); font-size: 11px; letter-spacing: 2px; color: var(--magenta); }
 .td-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.td-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 8px; border: 2px solid #fff; background: transparent; color: #fff; font-family: var(--font-label); font-size: 13px; }
+.td-btn { text-decoration: none; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 8px; border: 2px solid #fff; background: transparent; color: #fff; font-family: var(--font-label); font-size: 13px; }
 .td-btn.cyan { border-color: var(--cyan); color: var(--cyan); }
 .td-btn.gold { border-color: var(--gold); color: var(--gold); }
 .td-btn.cta { border: 0; background: var(--cta); color: #000; }

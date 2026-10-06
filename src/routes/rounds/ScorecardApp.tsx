@@ -3,7 +3,8 @@
  * a member saves it to Boner Rounds with their My Tag link. Nothing here decides anything the database doesn't re-check.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import * as api from '../../lib/rounds/api';
 import type { CourseOption, RoundMe } from '../../lib/rounds/api';
 import {
@@ -17,6 +18,8 @@ import { LIVE_KEY, liveOn, newLiveIds, toLiveCard } from '../../lib/rounds/live'
 import { useLiveReactions } from '../../lib/rounds/useLiveReactions';
 import { LiveFx } from './LiveFx';
 import { Prose } from '../../components/Prose';
+import { useScorecardAppHead } from '../../lib/rounds/useInstall';
+import { AppConnect, InstallCard } from './InstallCard';
 import './rounds.css';
 
 const read = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -30,7 +33,9 @@ const loadDraft = (): Draft | null => { try { const d = JSON.parse(read(DRAFT_KE
 
 export default function ScorecardApp() {
   useTheme(null);
+  useScorecardAppHead();
   const nav = useNavigate();
+  const [params] = useSearchParams();
   const [token, setToken] = useState<string | null>(() => read(ME_KEY));
   const [me, setMe] = useState<RoundMe | null>(null);
   const [members, setMembers] = useState<TagMember[]>([]);
@@ -135,7 +140,8 @@ export default function ScorecardApp() {
           <span key={x.id}>{i > 0 && ', '}<Link to={`/rounds/${x.id}`}>{x.course}</Link></span>))}</div>
       )}
       {view === 'setup'
-        ? <Setup d={d} setD={setD} me={me} members={members} courses={courses} swapSets={swapSets} onStart={() => setView('card')} />
+        ? <Setup d={d} setD={setD} me={me} members={members} courses={courses} swapSets={swapSets} onStart={() => setView('card')}
+            top={token ? <InstallCard token={token} force={params.get('install') === '1'} /> : <><AppConnect onConnect={(l) => void connect(l)} /><InstallCard token={null} force={params.get('install') === '1'} /></>} />
         : <Card d={d} setD={setD} onSetup={() => setView('setup')} me={me} busy={busy} swapSets={swapSets} onSave={() => void save()} onConnect={connect}
             onNew={() => { endLive(); setD(newDraft(localDate(), me ? { id: me.me.id, name: me.me.nickname || me.me.name } : null)); setView('setup'); }} />}
     </div>
@@ -145,8 +151,8 @@ export default function ScorecardApp() {
 // ---------- setup ----------
 type SwapSet = ReturnType<typeof exchangeOptions>[number] & { blocked: boolean };
 
-function Setup({ d, setD, me, members, courses, swapSets, onStart }: {
-  d: Draft; setD: (f: (d: Draft) => Draft) => void; me: RoundMe | null; members: TagMember[]; courses: CourseOption[]; swapSets: SwapSet[]; onStart: () => void;
+function Setup({ d, setD, me, members, courses, swapSets, onStart, top }: {
+  d: Draft; setD: (f: (d: Draft) => Draft) => void; me: RoundMe | null; members: TagMember[]; courses: CourseOption[]; swapSets: SwapSet[]; onStart: () => void; top?: ReactNode;
 }) {
   const locked = started(d);
   const nameOf = (mid: string) => d.players.find((p) => p.memberId === mid)?.name ?? '?';
@@ -170,6 +176,7 @@ function Setup({ d, setD, me, members, courses, swapSets, onStart }: {
   const ready = d.course.trim() && d.players.length > 0 && d.players.every((p) => p.name.trim());
   return (
     <main className="sc-main">
+      {top}
       <section className="sc-panel">
         <h1>New round</h1>
         <label className="sc-field"><span>Course</span>
