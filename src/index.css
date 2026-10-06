@@ -96,3 +96,26 @@ html, body, #root { margin: 0; min-height: 100%; }
 body { background: var(--bg-page); -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid var(--accent-gold); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ---------- LOUD buttons: the one thing we want a player to hit next (Mike, 2026-10-06) ----------
+ * Brand fill, thick white outline, dark ring + chunky drop shadow, white heavy italic type tilted a hair, "!" on the end.
+ * One rule for every primary button class so they all look the same. html prefix = wins over each screen's base styles.
+ * Disabled/busy buttons go quiet (no tilt, no "!"). prefers-reduced-motion: no tilt or bounce. */
+html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)) {
+  position: relative; border: 3px solid #fff !important; color: #fff !important;
+  font-weight: 900; font-style: italic; letter-spacing: .06em; text-transform: uppercase;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, .55), 0 0 6px rgba(0, 0, 0, .35);
+  box-shadow: 0 0 0 2px #0b0b0f, 0 5px 0 2px #0b0b0f, 0 12px 22px rgba(0, 0, 0, .45);
+  transform: rotate(-1.5deg); transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+  padding-left: 1.15em; padding-right: 1.15em; min-height: 48px; font-size: max(1.08em, 15px);
+}
+html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):not(:disabled)::after { content: '!'; margin-left: .12em; }
+html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):not(:disabled):hover { transform: rotate(0) scale(1.03); filter: brightness(1.08); }
+html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):not(:disabled):active {
+  transform: rotate(-1.5deg) translateY(4px); box-shadow: 0 0 0 2px #0b0b0f, 0 1px 0 2px #0b0b0f, 0 4px 8px rgba(0, 0, 0, .4);
+}
+html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):disabled { transform: none; opacity: .5; }
+html .ds-btn-cta.ds-btn-sm { min-height: 34px; font-size: 12px; border-width: 2px !important; }
+@media (prefers-reduced-motion: reduce) {
+  html :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)) { transform: none !important; transition: none; }
+}
