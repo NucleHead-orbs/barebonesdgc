@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'td-rounds', date: '2026-10-07', help: 'tags', who: 'tags',
+    title: 'ROUNDS: see and fix every tag round',
+    body: 'Bag Tags has a **ROUNDS** box: every challenge and casual round coming up in the set, tee time, course and the whole card. **ADD PLAYER** and **REMOVE** work any time (late jump-ins, after-tee drop-outs), post to the Board and ping the player.',
+  },
+  {
     id: 'dropout-to-tee', date: '2026-10-07', help: 'tags', who: 'tags',
     title: 'Drop out until tee time',
     body: 'Jump-ins on a challenge round can now **DROP OUT** (My Tag → MATCHUPS) right up to tee time. Jumping in still closes 2 hours before tee.',

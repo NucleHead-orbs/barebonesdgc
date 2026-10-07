@@ -11,6 +11,7 @@ import { onlyRound, type LbRow } from '../../lib/jewel/leaderboard';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
 import HeatBox from './HeatBox';
 import RoomBox from './RoomBox';
+import RoundsBox from './RoundsBox';
 import './tags-panel.css';
 
 /**
@@ -82,6 +83,7 @@ export default function TagsPanel({ admin, onBack, onlyPool, eventId }: { admin:
         <>
           <div className="td-hint">One numbered set per league. Best score on a round takes the lowest number on it; ties keep their order. Players log casual rounds from their <b>My Tag</b> link and confirm each other; league nights you record here from the scorecard.</div>
           {open.length > 0 && <OpenRounds rounds={open} act={act} />}
+          <RoundsBox key={`rounds-${pool.id}`} pool={pool} held={held} names={byId} />
           <RoomBox key={pool.id} pool={pool} members={members} held={held} onTags={reload} />
           <HeatBox key={`heat-${pool.id}`} pool={pool} />
           <IssueTag {...ctx} />

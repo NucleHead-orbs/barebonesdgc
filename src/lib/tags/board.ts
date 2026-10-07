@@ -181,7 +181,7 @@ export function casualMessage(err: unknown): string | null {
   if (/slot_too_far/.test(m)) return 'Pick a time within the next 30 days.';
   if (/slot_closed/.test(m)) return 'Too late: it closed at tee time.';
   if (/not_open/.test(m)) return 'That round was called off.';
-  if (/round_full/.test(m)) return 'That card is full (6).';
+  if (/round_full/.test(m)) return `That card is full (${CARD_MAX}).`;
   if (/not_in_set/.test(m)) return 'Everyone you invite needs a tag in this set.';
   if (/too_many_players/.test(m)) return `Invite up to ${MAX_INVITED} players (a card of ${CARD_MAX}).`;
   if (/invite_yourself/.test(m)) return "You're already on it: you're the host.";

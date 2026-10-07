@@ -6,6 +6,7 @@ import { supabase } from '../supabase';
 import type { MatchStatus, PendingSwap, Tag, TagMember, TagPool } from './tags';
 import type { BoardHeat, ChatLine, HeatRow } from './heat';
 import type { BoardRead, CasualRound, ChallengeRound, MatchupSet, Mention, Profile, ReactionKind } from './board';
+import type { TdRound, TdRoundKind } from './tdRounds';
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
 const wrap = async <T>(fn: () => Promise<T>): Promise<Result<T>> => {
@@ -168,6 +169,12 @@ export const tdHeatSet = (poolId: string, bombs: boolean, challenges: boolean, c
   wrap(async () => { must(await supabase.rpc('td_tag_heat_set', { p_pool: poolId, p_bombs: bombs, p_challenges: challenges, p_chat: chat })); });
 export const tdChat = (poolId: string) => wrap(async (): Promise<ChatLine[]> => (must(await supabase.rpc('td_tag_chat', { p_pool: poolId })) ?? []) as ChatLine[]);
 export const tdChatHide = (id: number, hide: boolean) => wrap(async () => { must(await supabase.rpc('td_tag_chat_hide', { p_id: id, p_hide: hide })); });
+/** TD ROUNDS (migration 20261115): every upcoming tag round in a set + add / remove by hand. */
+export const tdRounds = (poolId: string) => wrap(async (): Promise<TdRound[]> => (must(await supabase.rpc('td_tag_rounds', { p_pool: poolId })) ?? []) as TdRound[]);
+export const tdRoundAdd = (kind: TdRoundKind, id: string, memberId: string) =>
+  wrap(async () => { must(await supabase.rpc('td_round_add', { p_kind: kind, p_id: id, p_member: memberId })); });
+export const tdRoundRemove = (kind: TdRoundKind, id: string, memberId: string) =>
+  wrap(async () => { must(await supabase.rpc('td_round_remove', { p_kind: kind, p_id: id, p_member: memberId })); });
 
 // ---------- the Board, profiles, Matchups (migration 20261031) ----------
 export const boardRead = (token: string, poolId: string, after: number) =>
