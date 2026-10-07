@@ -8,7 +8,7 @@ import {
   bump, cardComplete, cleanInitials, firstOpenHole, holeDone, holeOrder, mergeScores, playerLine,
   resultMessage, shortNames, signState, signStatusLine, tileTone, toParText, type CardPlayer, type HoleInfo, type ScoreMap,
 } from '../../lib/scorecard/logic';
-import { CardError, cachedCard, fetchCard, signCard, submitCard, unlockCard, type CardSnapshot } from '../../lib/scorecard/api';
+import { CardError, cachedCard, fetchCard, r2Set, r2Status, signCard, submitCard, unlockCard, type CardSnapshot, type R2Status } from '../../lib/scorecard/api';
 import { handoffKey, handoffStep, handoffUrl, holesDone } from '../../lib/scorecard/handoff';
 import './card.css';
 
@@ -207,6 +207,7 @@ export default function CardApp() {
       {(complete || locked) && !watching && (
         <SignPanel token={token} snap={snap} scores={scores} state={state} signed={signed} onDone={sync} />
       )}
+      {snap.submitted && <R2Ask token={token} players={snap.players} />}
       {td && (snap.submitted || signed > 0) && <TdUnlock cardId={snap.card.id} onDone={sync} />}
       {!locked && !watching && <button type="button" className="sc-handoff" onClick={() => setSheet(true)}>HAND THE CARD OFF</button>}
       {sheet && <HandoffSheet token={token} pending={pending.length} online={online} sync={sync}
@@ -426,5 +427,50 @@ function HandoffSheet({ token, pending, online, sync, onClose, onDone }: {
         <button type="button" className="sc-sheet-close" onClick={onClose}>Cancel</button>
       </div>
     </div>
+  );
+}
+
+/**
+ * After a Round 1 card is submitted (2-round events): "Playing Round 2?" for each player on the card.
+ * Only players who say IN get Round 2 cards. Answers lock once that player is on a published Round 2 card.
+ */
+function R2Ask({ token, players }: { token: string; players: CardPlayer[] }) {
+  const [st, setSt] = useState<R2Status | null>(null);
+  const [msg, setMsg] = useState('');
+  const load = useCallback(async () => { try { setSt(await r2Status(token)); setMsg(''); } catch { setMsg('No signal: answers will load when you have a bar.'); } }, [token]);
+  useEffect(() => { void (async () => { await load(); })(); }, [load]);
+  if (!st?.asks) return msg ? <p className="sc-note">{msg}</p> : null;
+  if (!st.open) return null;
+  const answer = async (id: string, v: boolean) => {
+    setSt((s) => (s ? { ...s, players: s.players.map((p) => (p.id === id ? { ...p, r2_in: v } : p)) } : s));
+    try {
+      const r = await r2Set(token, id, v);
+      if (r === 'r2_closed') setMsg('Round 2 cards are already out for that player. Tell the check-in table.');
+      await load();
+    } catch { setMsg('No signal: that answer didn\'t save. Try again.'); await load(); }
+  };
+  const waiting = st.players.filter((p) => p.r2_in == null).length;
+  return (
+    <section className="sc-r2" aria-label="Playing Round 2?">
+      <h2>Playing Round 2?</h2>
+      <p>Only players who tap <b>IN</b> get a Round 2 card. {waiting ? `${waiting} still to answer.` : 'Everyone answered. Thanks!'}</p>
+      <ul>
+        {st.players.map((p) => {
+          const name = players.find((x) => x.id === p.id)?.name ?? 'Player';
+          return (
+            <li key={p.id}>
+              <b>{name}</b>
+              {p.locked ? <span className="sc-r2-locked">{p.r2_in === false ? 'Out' : 'On a Round 2 card'}</span> : (
+                <span className="sc-r2-btns">
+                  <button type="button" aria-pressed={p.r2_in === true} className="in" onClick={() => void answer(p.id, true)}>{p.r2_in === true ? '✓ IN' : 'IN'}</button>
+                  <button type="button" aria-pressed={p.r2_in === false} className="out" onClick={() => void answer(p.id, false)}>OUT</button>
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {msg && <p className="sc-note">{msg}</p>}
+    </section>
   );
 }

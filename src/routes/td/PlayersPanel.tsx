@@ -37,7 +37,22 @@ export default function PlayersPanel({ setup, players, sponsors, priv, onPlayers
 
   const query = q.trim().toLowerCase();
   const shown = useMemo(() => players.filter((p) => !query || p.name.toLowerCase().includes(query)), [players, query]);
-  const inCount = players.filter((p) => p.checked_in).length;
+  // Round 2 confirm (2-round events with check-in): the same table, switched to Round 2 answers
+  const asksR2 = ev.use_checkin && ev.rounds === 2;
+  const [day, setDay] = useState<1 | 2>(1);
+  const r2 = asksR2 && day === 2;
+  const inCount = players.filter((p) => (r2 ? p.r2_in === true : p.checked_in)).length;
+  const outCount = r2 ? players.filter((p) => p.r2_in === false).length : 0;
+  const setR2 = async (p: ExistingPlayer, v: boolean | null) => {
+    const before = p.r2_in ?? null;
+    onPlayers(players.map((x) => (x.id === p.id ? { ...x, r2_in: v } : x)));
+    const r = await api.setR2(p.id, v, 'td');
+    if (r.error) {
+      onPlayers(players.map((x) => (x.id === p.id ? { ...x, r2_in: before } : x)));
+      setErr(`${p.name}: ${rpcError(r.error).message}`);
+    } else if (v === true) setToast(`${p.name} is in for Round 2.`);
+    else if (v === false) setToast(`${p.name} is out for Round 2. They won't get a Round 2 card.`);
+  };
   const byDiv = divCodes.map((d) => [d, shown.filter((p) => p.div_code === d)] as const).filter(([, ps]) => ps.length);
 
   const setIn = async (p: ExistingPlayer, on: boolean) => {
@@ -138,13 +153,21 @@ export default function PlayersPanel({ setup, players, sponsors, priv, onPlayers
           busy={busy === 'import'} onImport={(rows, sp) => void doImport(rows, sp)} onCancel={() => setPending(null)} />
       )}
 
+      {asksR2 && (
+        <div className="td-seg cyan" role="tablist" aria-label="Which check-in">
+          <button role="tab" aria-selected={day === 1} aria-pressed={day === 1} onClick={() => setDay(1)}>ROUND 1 CHECK-IN</button>
+          <button role="tab" aria-selected={day === 2} aria-pressed={day === 2} onClick={() => setDay(2)}>ROUND 2 CONFIRM</button>
+        </div>
+      )}
+      {r2 && <div className="td-hint">Only players marked <b>IN</b> get Round 2 cards. Players answer on their Round 1 card after it's submitted (<b>self</b>); tap IN or OUT here to set or change anyone.</div>}
       <div className="td-row">
         <div className="td-stat"><b>{players.length}</b><span>REGISTERED</span></div>
-        {ev.use_checkin && <div className="td-stat"><b style={{ color: 'var(--under)' }}>{inCount}</b><span>CHECKED IN</span></div>}
-        {ev.use_checkin && <div className="td-stat"><b style={{ color: players.length - inCount ? 'var(--gold)' : '#fff' }}>{players.length - inCount}</b><span>NOT YET</span></div>}
+        {ev.use_checkin && <div className="td-stat"><b style={{ color: 'var(--under)' }}>{inCount}</b><span>{r2 ? 'IN FOR R2' : 'CHECKED IN'}</span></div>}
+        {r2 && <div className="td-stat"><b style={{ color: outCount ? 'var(--over)' : '#fff' }}>{outCount}</b><span>OUT</span></div>}
+        {ev.use_checkin && <div className="td-stat"><b style={{ color: players.length - inCount - outCount ? 'var(--gold)' : '#fff' }}>{players.length - inCount - outCount}</b><span>{r2 ? 'NO ANSWER' : 'NOT YET'}</span></div>}
         <div style={{ flex: 1 }} />
         <label className="td-btn cyan td-file">IMPORT DGS CSV<input type="file" accept=".csv,text/csv" onChange={onFile} disabled={!!busy} /></label>
-        {ev.use_checkin && <button className="td-btn" onClick={() => void checkInAll()} disabled={!!busy || !shown.some((p) => !p.checked_in)}>CHECK IN {query ? 'MATCHES' : 'ALL'}</button>}
+        {ev.use_checkin && !r2 && <button className="td-btn" onClick={() => void checkInAll()} disabled={!!busy || !shown.some((p) => !p.checked_in)}>CHECK IN {query ? 'MATCHES' : 'ALL'}</button>}
       </div>
 
       <form className="td-walkup" onSubmit={add}>
@@ -162,11 +185,17 @@ export default function PlayersPanel({ setup, players, sponsors, priv, onPlayers
 
       {byDiv.map(([d, ps]) => (
         <section key={d} className="td-roster" aria-label={`${d} players`}>
-          <div className="td-label">{d} · {ps.length}{ev.use_checkin ? ` · ${ps.filter((p) => p.checked_in).length} IN` : ''}</div>
+          <div className="td-label">{d} · {ps.length}{ev.use_checkin ? ` · ${ps.filter((p) => (r2 ? p.r2_in === true : p.checked_in)).length} IN` : ''}</div>
           {ps.map((p) => (
             <Fragment key={p.id}>
-            <div className={`td-roster-row${p.checked_in ? ' is-in' : ''}`}>
-              {ev.use_checkin && (
+            <div className={`td-roster-row${(r2 ? p.r2_in === true : p.checked_in) ? ' is-in' : ''}${r2 && p.r2_in === false ? ' is-out' : ''}`}>
+              {r2 && (
+                <span className="td-r2">
+                  <button className="td-checkin" aria-pressed={p.r2_in === true} aria-label={`${p.name} in for Round 2`} onClick={() => void setR2(p, p.r2_in === true ? null : true)}>{p.r2_in === true ? '✓ IN' : 'IN'}</button>
+                  <button className="td-checkin is-outbtn" aria-pressed={p.r2_in === false} aria-label={`${p.name} out for Round 2`} onClick={() => void setR2(p, p.r2_in === false ? null : false)}>OUT</button>
+                </span>
+              )}
+              {ev.use_checkin && !r2 && (
                 <button className="td-checkin" aria-pressed={!!p.checked_in} aria-label={`${p.name} checked in`} onClick={() => void setIn(p, !p.checked_in)}>
                   {p.checked_in ? '✓ IN' : 'CHECK IN'}
                 </button>

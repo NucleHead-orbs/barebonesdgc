@@ -40,6 +40,9 @@ export const ack = (t: string, id: string) => call<null>('crew_ack', { p_token: 
 export const taskDone = (t: string, id: string, done: boolean) => call<null>('crew_task_done', { p_token: t, p_task: id, p_done: done });
 export const taskNote = (t: string, id: string, body: string) => call<null>('crew_task_note', { p_token: t, p_task: id, p_body: body });
 export const checkin = (t: string, player: string, on: boolean) => call<null>('crew_checkin', { p_token: t, p_player: player, p_on: on });
+/** Check-in crew: Round 2 answers ({player_id: true|false}, no answer = missing) and whether this event asks at all. */
+export const r2Status = (t: string) => call<{ asks: boolean; r2: Record<string, boolean> }>('crew_r2_status', { p_token: t });
+export const r2Set = (t: string, player: string, v: boolean | null) => call<null>('crew_r2_set', { p_token: t, p_player: player, p_in: v });
 /** Check-in crew: which pack bag each player gets ({player_id: shirt size}). */
 export const packSizes = (t: string) => call<Record<string, string>>('crew_pack_sizes', { p_token: t });
 export const walkup = (t: string, name: string, div: string) => call<string>('crew_walkup', { p_token: t, p_name: name, p_div: div });

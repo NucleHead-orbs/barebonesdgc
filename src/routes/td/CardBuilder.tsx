@@ -5,7 +5,7 @@ import {
   mergeSettings, parseHoleList, slotKey, movePlayer, toggleLock, toPublishPayload, matchPublished,
   hasUnpublishedChanges, unassignedIds, rpcError, type ExistingPlayer, type PublishedCard, type RpcErrorKind,
 } from '../../lib/td/builder';
-import { cardPool, roundFormat, settingsForFormat } from '../../lib/td/setup';
+import { cardPool, r2Summary, roundFormat, settingsForFormat } from '../../lib/td/setup';
 import { addToDraw, captainMap, drawTeams, generateDoubles, membersOf, moveTeam, pruneTeams, swapPlayers, type TeamPair } from '../../lib/cards/doubles';
 import { cardIssues } from '../../lib/cards/pairing';
 import { pairingFor, VIBE_MARK } from '../../lib/td/requests';
@@ -35,13 +35,14 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
   const pmDefault = useMemo(() => setup.divisions.filter((d) => d.wave === 'PM').map((d) => d.code), [setup.divisions]);
   const rounds: Round[] = ev.rounds === 2 ? [1, 2] : [1];
   const twoWaves = ev.waves === 2;
-  const players = useMemo(() => cardPool(allPlayers, ev.use_checkin), [allPlayers, ev.use_checkin]);
-  const notIn = allPlayers.length - players.length;
 
   const [fatal, setFatal] = useState('');
   const [loaded, setLoaded] = useState(false);
   const [r1, setR1] = useState<Record<string, number>>({});
   const [round, setRound] = useState<Round>(1);
+  const players = useMemo(() => cardPool(allPlayers, ev.use_checkin, round, ev.rounds), [allPlayers, ev.use_checkin, round, ev.rounds]);
+  const notIn = allPlayers.length - players.length;
+  const r2Asks = ev.use_checkin && ev.rounds === 2 && round === 2;
   const [settings, setSettings] = useState<PerRound<BuilderSettings> | null>(null);
   const [cards, setCards] = useState<PerRound<Card[]>>({ 1: [], 2: [] });
   const [published, setPublished] = useState<PerRound<PublishedCard[]>>({ 1: [], 2: [] });
@@ -250,8 +251,12 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
     warnings.push(`The draw is out of date (${notDrawn.length} checked-in not drawn, ${goneFromDraw.length} drawn but not checked in). Tap UPDATE DRAW, then regenerate.`);
   const soft: string[] = [];
   if (S.sortBy === 'r1' && players.length && !Object.keys(r1).length) soft.push('No official R1 totals yet, so R1-score seeding falls back to rating, then name.');
-  if (ev.use_checkin && notIn > 0) soft.push(`${notIn} registered player${notIn === 1 ? " isn't" : "s aren't"} checked in and won't be put on cards. Check them in on the Players tab, then regenerate.`);
-  if (!players.length) soft.push(ev.use_checkin && allPlayers.length ? 'Nobody is checked in yet. Check players in on the Players tab.' : 'No players yet. Add or import them on the Players tab.');
+  if (r2Asks) {
+    const s2 = r2Summary(allPlayers);
+    if (s2.waiting.length) soft.push(`${s2.waiting.length} Round 1 player${s2.waiting.length === 1 ? " hasn't" : "s haven't"} confirmed Round 2: ${s2.waiting.map((p) => p.name).join(', ')}. Only confirmed players go on Round 2 cards. Confirm them on Players → ROUND 2, then regenerate.`);
+    if (s2.out.length) soft.push(`Out for Round 2: ${s2.out.map((p) => p.name).join(', ')}.`);
+  } else if (ev.use_checkin && notIn > 0) soft.push(`${notIn} registered player${notIn === 1 ? " isn't" : "s aren't"} checked in and won't be put on cards. Check them in on the Players tab, then regenerate.`);
+  if (!players.length) soft.push(r2Asks && allPlayers.length ? 'Nobody has confirmed Round 2 yet. Players confirm from their Round 1 card after it\'s submitted, or on Players → ROUND 2.' : ev.use_checkin && allPlayers.length ? 'Nobody is checked in yet. Check players in on the Players tab.' : 'No players yet. Add or import them on the Players tab.');
 
   const status = !scopeCards.length ? ['NONE', '#fff'] : !isPublished ? ['DRAFT', 'var(--over)'] : unpublished ? ['EDITED', 'var(--gold)'] : ['LIVE', 'var(--under)'];
 

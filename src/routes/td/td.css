@@ -492,3 +492,7 @@ button.td-vote-opt:disabled { cursor: default; }
 }
 .td-bagsize { margin-left: 8px; padding: 0 6px; border: 1px solid var(--gold); border-radius: 6px; color: var(--gold); font-size: 12px; font-weight: 800; }
 .td-ok.td-float { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 40; width: max-content; max-width: calc(100% - 32px); background: var(--app); box-shadow: 0 8px 28px rgba(0, 0, 0, .55); font-size: 16px; }
+.td-r2 { display: inline-flex; gap: 6px; }
+.td-checkin.is-outbtn[aria-pressed='true'] { background: var(--over, #ff4f6e); border-color: var(--over, #ff4f6e); color: #fff; }
+.td-roster-row.is-out { opacity: .6; }
+.td-r2 .td-checkin { min-width: 64px; }

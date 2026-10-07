@@ -89,6 +89,7 @@ export const HELP: HelpSection[] = [
       'Already on the list: tap the gray **CHECK IN** button. It turns green.',
       'Pre-registered on Disc Golf Scene? Tap **IMPORT DGS CSV** and pick the export file.',
       'With check-in on, only checked-in players go on cards.',
+      '**Round 2 confirm** (2-round events): only players marked **IN** get Round 2 cards. Players answer on their Round 1 card right after it\'s submitted (**Playing Round 2? IN / OUT**). At the table, switch Players (or the crew Check-in tab) to **ROUND 2 CONFIRM** and tap **IN** or **OUT** for anyone; tap again to clear. Cards → Round 2 lists who from Round 1 hasn\'t answered, so you can chase them before generating. Once someone is on a published Round 2 card, changes go through the table.',
       '**Pack bags:** once someone is checked in (here or on a crew phone), the screen says which bag: **Bag: L shirt** (or disc only). Their size also shows next to their name. Send them to the pack table; bags are A to Z by last name.',
     ],
   },

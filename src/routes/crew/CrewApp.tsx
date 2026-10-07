@@ -211,26 +211,50 @@ function Checkin({ token, home, act }: Ctx) {
     const k = q.trim().toLowerCase();
     return players.filter((p) => !k || p.name.toLowerCase().includes(k)).slice(0, 60);
   }, [players, q]);
-  const inCount = players.filter((p) => p.checked_in).length;
+  // Round 2 confirm (2-round events): same list, IN / OUT for Round 2
+  const [r2, setR2] = useState<{ asks: boolean; r2: Record<string, boolean> }>({ asks: false, r2: {} });
+  const [day, setDay] = useState<1 | 2>(1);
+  const loadR2 = useCallback(async () => { const r = await crewApi.r2Status(token); if (r.data) setR2(r.data); }, [token]);
+  useEffect(() => { void (async () => { await loadR2(); })(); }, [loadR2]);
+  const onR2 = r2.asks && day === 2;
+  const setAns = async (p: { id: string; name: string }, v: boolean | null) => {
+    if (await act(crewApi.r2Set(token, p.id, v), v === true ? `${p.name} is in for Round 2.` : v === false ? `${p.name} is out for Round 2.` : `${p.name}: Round 2 answer cleared.`)) await loadR2();
+  };
+  const inCount = onR2 ? Object.values(r2.r2).filter((v) => v).length : players.filter((p) => p.checked_in).length;
   // player pack bags: which size bag goes with each player (shown on the row and when they're checked in)
   const [bags, setBags] = useState<Record<string, string>>({});
   useEffect(() => { void (async () => { const r = await crewApi.packSizes(token); if (r.data) setBags(r.data); })(); }, [token]);
   return (
     <>
       <section className="td-panel">
+        {r2.asks && (
+          <div className="td-seg cyan" role="tablist" aria-label="Which check-in">
+            <button role="tab" aria-selected={day === 1} aria-pressed={day === 1} onClick={() => setDay(1)}>ROUND 1</button>
+            <button role="tab" aria-selected={day === 2} aria-pressed={day === 2} onClick={() => setDay(2)}>ROUND 2 CONFIRM</button>
+          </div>
+        )}
         <div className="td-counts">
-          <div className="td-stat"><b style={{ color: 'var(--under)' }}>{inCount}</b><span>CHECKED IN</span></div>
-          <div className="td-stat"><b>{players.length - inCount}</b><span>NOT YET</span></div>
+          <div className="td-stat"><b style={{ color: 'var(--under)' }}>{inCount}</b><span>{onR2 ? 'IN FOR R2' : 'CHECKED IN'}</span></div>
+          {onR2 && <div className="td-stat"><b>{Object.values(r2.r2).filter((v) => !v).length}</b><span>OUT</span></div>}
+          <div className="td-stat"><b>{players.length - (onR2 ? Object.keys(r2.r2).length : inCount)}</b><span>{onR2 ? 'NO ANSWER' : 'NOT YET'}</span></div>
         </div>
+        {onR2 && <p className="td-hint">Only players marked IN get Round 2 cards. Tap again to clear an answer.</p>}
         <input className="td-input td-search-wide" type="search" aria-label="Search players" placeholder="Search a name…" value={q} onChange={(e) => setQ(e.target.value)} />
       </section>
       <ul className="td-checklist">
         {hits.map((p) => (
-          <li key={p.id} className={p.checked_in ? 'is-in' : ''}>
+          <li key={p.id} className={(onR2 ? r2.r2[p.id] === true : p.checked_in) ? 'is-in' : ''}>
             <span><b>{p.name}</b> <span className="td-hint">{p.div_code}</span>{bags[p.id] && <span className="td-bagsize" title="Player pack bag">{bags[p.id]}</span>}</span>
+            {onR2 ? (
+              <span className="td-r2">
+                <button className="td-checkin" aria-pressed={r2.r2[p.id] === true} onClick={() => void setAns(p, r2.r2[p.id] === true ? null : true)}>{r2.r2[p.id] === true ? '✓ IN' : 'IN'}</button>
+                <button className="td-checkin is-outbtn" aria-pressed={r2.r2[p.id] === false} onClick={() => void setAns(p, r2.r2[p.id] === false ? null : false)}>OUT</button>
+              </span>
+            ) : (
             <button className={`td-btn ${p.checked_in ? 'quiet' : 'cta'}`} onClick={() => void act(crewApi.checkin(token, p.id, !p.checked_in), p.checked_in ? `${p.name} un-checked.` : `${p.name} is in. ${bagLine(bags[p.id])}. Send them to the pack table.`)}>
               {p.checked_in ? 'UNDO' : 'CHECK IN'}
             </button>
+            )}
           </li>
         ))}
         {!hits.length && <li className="td-hint">No one by that name. Add them as a walk-up below.</li>}

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS } from '../cards/generate';
 import { defaultSettings, mergeSettings, rpcError } from './builder';
 import {
-  cardPool, coursePar, ctpHoles, divisionsProblem, emailOk, eventTabs, formatSummary, holesProblem, normEmail, normalizeDivCode,
+  cardPool, r2Summary, coursePar, ctpHoles, divisionsProblem, emailOk, eventTabs, formatSummary, holesProblem, normEmail, normalizeDivCode,
   resizeHoles, settingsForFormat, setupMessage, withWaves, type HoleRow,
 } from './setup';
 
@@ -64,6 +64,15 @@ describe('format', () => {
     const ps = [{ id: 'a', checked_in: true }, { id: 'b', checked_in: false }];
     expect(cardPool(ps, true).map((p) => p.id)).toEqual(['a']);
     expect(cardPool(ps, false)).toHaveLength(2);
+  });
+  it('Round 2 of a 2-round event takes only players confirmed for Round 2', () => {
+    const ps = [{ id: 'a', checked_in: true, r2_in: true }, { id: 'b', checked_in: true, r2_in: false }, { id: 'c', checked_in: true, r2_in: null }, { id: 'd', checked_in: false, r2_in: true }];
+    expect(cardPool(ps, true, 2, 2).map((p) => p.id)).toEqual(['a', 'd']);
+    expect(cardPool(ps, true, 1, 2).map((p) => p.id)).toEqual(['a', 'b', 'c']);
+    expect(cardPool(ps, true, 2, 1).map((p) => p.id)).toEqual(['a', 'b', 'c']);
+    expect(cardPool(ps, false, 2, 2)).toHaveLength(4);
+    const s = r2Summary(ps);
+    expect([s.r1, s.in.length, s.out.length, s.waiting.map((p) => p.id)]).toEqual([3, 2, 1, ['c']]);
   });
   it('single-wave events never generate PM cards', () => {
     expect(settingsForFormat({ ...DEFAULT_SETTINGS }, 1).pmDivisions).toEqual([]);

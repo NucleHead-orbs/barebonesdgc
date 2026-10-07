@@ -98,10 +98,15 @@ export const deleteEvent = (eventId: string) => wrap(async () => {
 
 // ---------- players ----------
 export const loadPlayers = (eventId: string) => wrap(async (): Promise<ExistingPlayer[]> =>
-  list(await supabase.from('players').select('id, name, div_code, rating, pdga, reg_order, checked_in, finish_status, shirt_size').eq('event_id', eventId).order('reg_order', { nullsFirst: false })));
+  list(await supabase.from('players').select('id, name, div_code, rating, pdga, reg_order, checked_in, r2_in, finish_status, shirt_size').eq('event_id', eventId).order('reg_order', { nullsFirst: false })));
 
 export const setCheckedIn = (playerId: string, on: boolean) => wrap(async () => {
   must(await supabase.from('players').update({ checked_in: on }).eq('id', playerId));
+});
+
+/** Round 2 answer from the TD's check-in table (null clears it). */
+export const setR2 = (playerId: string, v: boolean | null, by: string) => wrap(async () => {
+  must(await supabase.from('players').update({ r2_in: v, r2_in_at: v == null ? null : new Date().toISOString(), r2_in_by: v == null ? null : by }).eq('id', playerId));
 });
 
 /** Walk-up player. Same RPC as the DGS import, so a repeat name updates instead of duplicating. */

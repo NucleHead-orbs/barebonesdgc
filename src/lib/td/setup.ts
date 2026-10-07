@@ -128,9 +128,20 @@ export const eventTabs = (ev: Pick<EventConfig, 'use_sponsors'> & { kind?: Event
 export const ctpHoles = (holes: Array<{ n: number; ctp_prize?: string | null }>) =>
   holes.filter((h) => h.ctp_prize).map((h) => ({ n: h.n, prize: h.ctp_prize! })).sort((a, b) => a.n - b.n);
 
-/** Who goes into card generation: with check-in on, only checked-in players. */
-export function cardPool<P extends { checked_in?: boolean }>(players: P[], useCheckin: boolean): P[] {
-  return useCheckin ? players.filter((p) => p.checked_in === true) : players;
+/**
+ * Who goes into card generation: with check-in on, only checked-in players.
+ * Round 2 of a 2-round event with check-in: only players confirmed for Round 2 (r2_in, migration 20261111).
+ */
+export function cardPool<P extends { checked_in?: boolean; r2_in?: boolean | null }>(players: P[], useCheckin: boolean, round: 1 | 2 = 1, rounds = 1): P[] {
+  if (!useCheckin) return players;
+  if (round === 2 && rounds === 2) return players.filter((p) => p.r2_in === true);
+  return players.filter((p) => p.checked_in === true);
+}
+
+/** Round 2 answers among Round 1 checked-in players (the builder's "chase these" list). */
+export function r2Summary<P extends { checked_in?: boolean; r2_in?: boolean | null }>(players: P[]) {
+  const r1 = players.filter((p) => p.checked_in === true);
+  return { r1: r1.length, in: players.filter((p) => p.r2_in === true), out: players.filter((p) => p.r2_in === false), waiting: r1.filter((p) => p.r2_in == null) };
 }
 
 /** Card rules as the event's format allows: single wave => nobody is PM. */

@@ -77,3 +77,14 @@ export const signCard = (token: string, playerId: string, initials: string) =>
   rpcText('sign_card', { p_token: token, p_player_id: playerId, p_initials: initials });
 export const submitCard = (token: string) => rpcText('submit_card', { p_token: token });
 export const unlockCard = (cardId: string) => rpcText('td_unlock_card', { p_card_id: cardId });
+
+// ---------- Round 2 confirm (migration 20261111) ----------
+export interface R2Status { asks: boolean; open: boolean; players: Array<{ id: string; r2_in: boolean | null; locked: boolean }> }
+/** Who on this card has answered for Round 2 (asks = this event asks; open = this card can answer now). */
+export async function r2Status(token: string): Promise<R2Status> {
+  const r = await supabase.rpc('card_r2_status', { p_token: token });
+  if (r.error) throw new CardError('No signal right now. Try again in a moment.', 'network');
+  return r.data as R2Status;
+}
+/** 'saved' | 'not_open' | 'rejected_not_on_card' | 'r2_closed' */
+export const r2Set = (token: string, playerId: string, inR2: boolean) => rpcText('card_r2_set', { p_token: token, p_player: playerId, p_in: inR2 });
