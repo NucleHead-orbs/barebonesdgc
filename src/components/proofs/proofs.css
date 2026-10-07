@@ -144,7 +144,7 @@
 /* Baron Von Goose, the Rule Rocker (narrator) */
 .pf-s-baron { position: relative; width: 330px; height: 390px; flex: none; }
 .pf-s-baron img { position: absolute; right: 0; bottom: 0; height: 380px; width: auto; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, .55)); }
-.pf-s-bname { position: absolute; left: 0; bottom: 18px; transform: rotate(-8deg); transform-origin: left bottom; display: flex; flex-direction: column; align-items: flex-start; }
+.pf-s-bname { position: absolute; left: -200px; bottom: 18px; transform: rotate(-8deg); transform-origin: left bottom; display: flex; flex-direction: column; align-items: flex-start; }
 .pf-s-bname b { font-family: 'Permanent Marker', cursive; font-weight: 400; font-size: 38px; line-height: .92; color: #fff; text-transform: uppercase;
   -webkit-text-stroke: 2px #111; paint-order: stroke fill; text-shadow: 0 3px 0 #111, 0 0 14px rgba(0, 0, 0, .8); }
 .pf-s-bname i { display: block; width: 190px; height: 5px; margin: 6px 0 4px; border-radius: 3px; transform: skewX(-20deg); }
