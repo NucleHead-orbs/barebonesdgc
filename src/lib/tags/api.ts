@@ -5,7 +5,7 @@
 import { supabase } from '../supabase';
 import type { MatchStatus, PendingSwap, Tag, TagMember, TagPool } from './tags';
 import type { BoardHeat, ChatLine, HeatRow } from './heat';
-import type { BoardRead, ChallengeRound, MatchupSet, Profile, ReactionKind } from './board';
+import type { BoardRead, ChallengeRound, MatchupSet, Mention, Profile, ReactionKind } from './board';
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
 const wrap = async <T>(fn: () => Promise<T>): Promise<Result<T>> => {
@@ -172,6 +172,8 @@ export const tdChatHide = (id: number, hide: boolean) => wrap(async () => { must
 // ---------- the Board, profiles, Matchups (migration 20261031) ----------
 export const boardRead = (token: string, poolId: string, after: number) =>
   wrap(async (): Promise<BoardRead> => must(await supabase.rpc('tag_board_read', { p_token: token, p_pool: poolId, p_after: after })) as BoardRead);
+/** My @mentions, newest first (last 14 days). */
+export const mentions = (token: string) => wrap(async (): Promise<Mention[]> => (must(await supabase.rpc('tag_mentions', { p_token: token })) ?? []) as Mention[]);
 export const react = (token: string, chatId: number, kind: ReactionKind) =>
   wrap(async (): Promise<boolean> => !!must(await supabase.rpc('tag_chat_react', { p_token: token, p_chat: chatId, p_kind: kind })));
 export const profileGet = (token: string) => wrap(async (): Promise<Profile> => must(await supabase.rpc('tag_profile_get', { p_token: token })) as Profile);

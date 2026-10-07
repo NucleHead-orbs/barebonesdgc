@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { asTab, canJumpIn, roundStep, slotLabel, whoLine, daysSummary, type ChallengeRound, hasDay, mergeLines, newsTone, pickReasons, toggleDay, type Pick } from './board';
+import { applyMention, mentionAt, mentionParts, mentionPicks, asTab, canJumpIn, roundStep, slotLabel, whoLine, daysSummary, type ChallengeRound, hasDay, mergeLines, newsTone, pickReasons, toggleDay, type Pick } from './board';
 import type { ChatLine } from './heat';
 
 const line = (id: number): ChatLine => ({ id, member_id: null, name: null, nickname: null, body: String(id), at: '', number: null, hidden: false });
@@ -73,5 +73,39 @@ describe('challenge rounds', () => {
   it('labels the slot', () => {
     expect(slotLabel(null, 'X')).toBe('');
     expect(slotLabel(tee, 'Papago')).toMatch(/ at Papago$/);
+  });
+});
+
+describe('@mentions', () => {
+  const people = [
+    { id: 'a', label: 'Danny Walden', number: 4 }, { id: 'b', label: 'Bullockey', number: 18 },
+    { id: 'c', label: 'Dan', number: 9 }, { id: 'me', label: 'Mike', number: 1 },
+  ];
+  it('finds the @ being typed, not emails', () => {
+    expect(mentionAt('yo @Dan', 7)).toEqual({ start: 3, query: 'Dan' });
+    expect(mentionAt('@', 1)).toEqual({ start: 0, query: '' });
+    expect(mentionAt('yo @Danny Wa', 12)).toEqual({ start: 3, query: 'Danny Wa' });
+    expect(mentionAt('mail mike@x', 11)).toBeNull();
+    expect(mentionAt('no at here', 10)).toBeNull();
+    expect(mentionAt('@Dan  done', 10)).toBeNull();
+  });
+  it('offers starts-with first, then word matches, never me', () => {
+    expect(mentionPicks(people, 'dan', 'me').map((p) => p.id)).toEqual(['a', 'c']);
+    expect(mentionPicks(people, 'wal', 'me').map((p) => p.id)).toEqual(['a']);
+    expect(mentionPicks(people, '', 'me').map((p) => p.id)).toEqual(['a', 'b', 'c']);
+    expect(mentionPicks(people, 'mi', 'me')).toEqual([]);
+  });
+  it('drops the name in with a space after', () => {
+    expect(applyMention('yo @da see you', { start: 3, query: 'da' }, 'Danny Walden')).toEqual({ text: 'yo @Danny Walden see you', caret: 17 });
+    expect(applyMention('@', { start: 0, query: '' }, 'Dan')).toEqual({ text: '@Dan ', caret: 5 });
+  });
+  it('splits a message for highlighting, longest name first, any case', () => {
+    expect(mentionParts('@danny walden and @Dan!', ['Dan', 'Danny Walden'])).toEqual([
+      { text: '@danny walden', at: true }, { text: ' and ', at: false }, { text: '@Dan', at: true }, { text: '!', at: false }]);
+    expect(mentionParts('mail dan@Dan.com or @Danish', ['Dan'])).toEqual([{ text: 'mail dan@Dan.com or @Danish', at: false }]);
+    expect(mentionParts('plain', [])).toEqual([{ text: 'plain', at: false }]);
+  });
+  it('labels the new house posts', () => {
+    expect(newsTone('result')).toEqual({ label: 'RESULTS', tone: 'fight' });
   });
 });

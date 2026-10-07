@@ -65,6 +65,7 @@ export function newsTone(event: string | null | undefined): { label: string; ton
     case 'penalty': return { label: 'PENALTY', tone: 'boom' };
     case 'challenge': case 'accepted': return { label: 'CHALLENGE', tone: 'fight' };
     case 'played': return { label: 'SETTLED', tone: 'fight' };
+    case 'result': return { label: 'RESULTS', tone: 'fight' };
     case 'matchmaker': return { label: 'MATCHMAKER', tone: 'match' };
     default: return { label: 'NEWS', tone: 'meh' };
   }
@@ -98,3 +99,53 @@ export function slotLabel(tee: string | null, course: string | null): string {
 /** datetime-local value <-> ISO (device time zone). */
 export const toLocalInput = (ms: number) => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
 export const canJumpIn = (r: ChallengeRound, now: number) => r.role === null && roundStep(r, now) === 'open' && r.joins.length < MAX_JUMP_INS;
+
+// ---------- @mentions (migration 20261109): the database decides who was mentioned; these only help type and show it ----------
+export interface MentionPerson { id: string; label: string; number: number | null }
+export interface Mention { chat_id: number; pool_id: string; pool: string; from: string | null; body: string; at: string }
+
+/** The "@som" being typed right before the caret: where its "@" is and what's typed after it. Not inside an email. */
+export function mentionAt(text: string, caret: number): { start: number; query: string } | null {
+  const before = text.slice(0, caret);
+  const at = before.lastIndexOf('@');
+  if (at < 0) return null;
+  if (at > 0 && /[\p{L}\p{N}_]/u.test(before[at - 1])) return null;
+  const query = before.slice(at + 1);
+  if (query.length > 30 || /[\n@]/.test(query) || /\s\s/.test(query) || /^\s/.test(query)) return null;
+  return { start: at, query };
+}
+
+/** Who to offer for "@query": names starting with it first, then any word starting with it. Never yourself. */
+export function mentionPicks(people: MentionPerson[], query: string, meId: string, max = 6): MentionPerson[] {
+  const q = query.trim().toLowerCase();
+  const others = people.filter((p) => p.id !== meId);
+  const starts = others.filter((p) => p.label.toLowerCase().startsWith(q));
+  const words = others.filter((p) => !starts.includes(p) && p.label.toLowerCase().split(/\s+/).some((w) => w.startsWith(q)));
+  return [...starts, ...words].slice(0, max);
+}
+
+/** Put "@Label " in place of the "@query" being typed; returns the new text and where the caret goes. */
+export function applyMention(text: string, at: { start: number; query: string }, label: string): { text: string; caret: number } {
+  const head = `${text.slice(0, at.start)}@${label} `;
+  const tail = text.slice(at.start + 1 + at.query.length).replace(/^ /, '');
+  return { text: head + tail, caret: head.length };
+}
+
+/** Split a message so the mentioned names can be highlighted (longest names first, any case). */
+export function mentionParts(body: string, labels: string[]): Array<{ text: string; at: boolean }> {
+  const ls = [...new Set(labels.filter(Boolean))].sort((a, b) => b.length - a.length);
+  if (!ls.length) return [{ text: body, at: false }];
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`@(?:${ls.map(esc).join('|')})(?![\\p{L}\\p{N}_])`, 'giu');
+  const out: Array<{ text: string; at: boolean }> = [];
+  let last = 0;
+  for (const m of body.matchAll(re)) {
+    const i = m.index ?? 0;
+    if (i > 0 && /[\p{L}\p{N}_]/u.test(body[i - 1])) continue;
+    if (i > last) out.push({ text: body.slice(last, i), at: false });
+    out.push({ text: m[0], at: true });
+    last = i + m[0].length;
+  }
+  if (last < body.length) out.push({ text: body.slice(last), at: false });
+  return out.length ? out : [{ text: body, at: false }];
+}

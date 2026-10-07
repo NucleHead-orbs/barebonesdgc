@@ -12,7 +12,7 @@ import { HeatBell, TagHeat } from '../../components/tags/TagHeat';
 import { TagBoard } from '../../components/tags/TagBoard';
 import { Matchups } from '../../components/tags/Matchups';
 import { asTab, type MyTagTab } from '../../lib/tags/board';
-import { chatSeenKey, readSeen, useHeat, useRounds, welcomeSeen, type HeatFocus } from '../../lib/tags/useHeat';
+import { chatSeenKey, readSeen, useHeat, useMentions, useRounds, welcomeSeen, type HeatFocus } from '../../lib/tags/useHeat';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
 import { NewVersionNote } from '../../components/dev/DevReports';
@@ -40,6 +40,8 @@ export default function MyTagApp() {
   const [addTag, setAddTag] = useState(false);
   const heatRows = useHeat(token, rev);
   const rounds = useRounds(token, rev);
+  const mentions = useMentions(token, rev);
+  const [focusChat, setFocusChat] = useState<number | null>(null);
   const [focus, setFocus] = useState<HeatFocus | null>(null);
   const [params, setParams] = useSearchParams();
   const tab = asTab(params.get('tab'));
@@ -67,6 +69,10 @@ export default function MyTagApp() {
     return () => { live = false; };
   }, [heatRows, token, meIdForSeen]);
   const onSeen = useCallback((pool: string) => setUnread((u) => (u[pool] ? { ...u, [pool]: 0 } : u)), []);
+  // @mentions this phone hasn't seen: newer than the last Board line read in that set (re-checked as the Board is read)
+  const atMe = useMemo(() => (meIdForSeen ? mentions.filter((m) => m.chat_id > readSeen(chatSeenKey(m.pool, meIdForSeen))) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- unread changes whenever a Board read moves the seen marker
+    [mentions, meIdForSeen, unread]);
 
   const load = useCallback(async () => {
     const r = await tagApi.me(token);
@@ -108,7 +114,8 @@ export default function MyTagApp() {
           <div className="td-title">My Tag</div>
           <div className="td-sub">BARE BONES BAG TAGS · {display(home.me).toUpperCase()}</div>
         </div>
-        <HeatBell rows={heatRows} unread={unread}
+        <HeatBell rows={heatRows} unread={unread} atMe={atMe}
+          onMention={(m) => { setBoardPool(m.pool); setFocusChat(m.chat_id); go('board'); }}
           onChat={(pool) => { setBoardPool(pool); go('board'); }}
           onChallenge={(pool) => { go('tags'); setFocus((f) => ({ kind: 'challenge', pool, n: (f?.n ?? 0) + 1 })); }} />
       </header>
@@ -125,7 +132,7 @@ export default function MyTagApp() {
 
         {!home.holdings.length && <div className="td-warn soft">You don't hold a tag right now. Ask your league TD to issue you one.</div>}
         {tab === 'board' && <TagBoard token={token} meId={meId} rows={heatRows} names={names} pool={boardPool} onPool={setBoardPool}
-          unread={unread} seenKey={seenKey} onSeen={onSeen} />}
+          unread={unread} seenKey={seenKey} onSeen={onSeen} rosters={home.rosters} focusId={focusChat} />}
         {tab === 'matchups' && <Matchups token={token} act={act} rev={rev} rounds={rounds} />}
         {tab === 'tags' && <>
         <div className="mt-tags">

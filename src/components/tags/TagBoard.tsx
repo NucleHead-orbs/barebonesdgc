@@ -1,11 +1,12 @@
 /**
  * My Tag → BOARD: one message board per tag set (pick the set up top). Players' messages, the house's news posts
- * (challenges, results, explosions, the weekly Matchmaker) and reactions. Reads tag_board_read every few seconds.
+ * (challenges, results with their roast, explosions, the weekly Matchmaker), reactions and @mentions. Reads tag_board_read every few seconds.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as tagApi from '../../lib/tags/api';
-import { REACTIONS, mergeLines, newsTone, whoLine, type ReactionKind, type Reactions } from '../../lib/tags/board';
+import { REACTIONS, applyMention, mentionAt, mentionParts, mentionPicks, mergeLines, newsTone, whoLine, type MentionPerson, type ReactionKind, type Reactions } from '../../lib/tags/board';
 import type { ChatLine, HeatRow } from '../../lib/tags/heat';
+import type { RosterEntry } from '../../lib/tags/api';
 import { readSeen, writeSeen } from '../../lib/tags/useHeat';
 import { display, tagMessage } from '../../lib/tags/tags';
 import './board.css';
@@ -23,10 +24,14 @@ export function ReactionIcon({ kind }: { kind: ReactionKind }) {
   );
 }
 
-export function TagBoard({ token, meId, rows, names, pool, onPool, unread, seenKey, onSeen }: {
+export function TagBoard({ token, meId, rows, names, pool, onPool, unread, seenKey, onSeen, rosters, focusId }: {
   token: string; meId: string; rows: HeatRow[] | null; names: Record<string, string>;
   pool: string | null; onPool: (pool: string) => void; unread: Record<string, number>;
   seenKey: (pool: string) => string; onSeen: (pool: string) => void;
+  /** who holds a tag in each set (by set slug): who can be @mentioned */
+  rosters: Record<string, RosterEntry[]>;
+  /** a message to scroll to (from the @ bell) */
+  focusId?: number | null;
 }) {
   const sets = (rows ?? []).filter((r) => r.chat);
   if (!rows) return <p className="td-empty">Loading the board…</p>;
@@ -45,12 +50,15 @@ export function TagBoard({ token, meId, rows, names, pool, onPool, unread, seenK
         </div>
       )}
       <BoardFeed key={cur.pool_id} token={token} meId={meId} poolId={cur.pool_id} name={names[cur.pool] ?? cur.pool}
-        seenKey={seenKey(cur.pool)} onSeen={() => onSeen(cur.pool)} />
+        seenKey={seenKey(cur.pool)} onSeen={() => onSeen(cur.pool)} focusId={focusId ?? null}
+        people={(rosters[cur.pool] ?? []).map((r) => ({ id: r.member_id, label: display(r), number: r.number }))} />
     </section>
   );
 }
 
-function BoardFeed({ token, meId, poolId, name, seenKey, onSeen }: { token: string; meId: string; poolId: string; name: string; seenKey: string; onSeen: () => void }) {
+function BoardFeed({ token, meId, poolId, name, seenKey, onSeen, people, focusId }: {
+  token: string; meId: string; poolId: string; name: string; seenKey: string; onSeen: () => void; people: MentionPerson[]; focusId: number | null;
+}) {
   const [lines, setLines] = useState<ChatLine[] | null>(null);
   const [rx, setRx] = useState<Record<string, Reactions>>({});
   const [text, setText] = useState('');
@@ -58,6 +66,23 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen }: { token: stri
   const [busy, setBusy] = useState(false);
   const [firstNew] = useState(() => readSeen(seenKey));
   const [who, setWho] = useState<{ id: number; kind: ReactionKind } | null>(null); // whose names are showing (tap a count)
+  const [caret, setCaret] = useState(0);
+  const input = useRef<HTMLInputElement>(null);
+  const at = mentionAt(text, caret);
+  const picks = at ? mentionPicks(people, at.query, meId) : [];
+  const pick = (p: MentionPerson) => {
+    if (!at) return;
+    const next = applyMention(text, at, p.label);
+    setText(next.text); setCaret(next.caret);
+    requestAnimationFrame(() => { const el = input.current; if (el) { el.focus(); el.setSelectionRange(next.caret, next.caret); } });
+  };
+  // the @ bell: bring that message into view once it's loaded
+  const focused = useRef<number | null>(null);
+  useEffect(() => {
+    if (!focusId || focused.current === focusId || !lines?.some((l) => l.id === focusId)) return;
+    focused.current = focusId;
+    document.getElementById(`bd-${focusId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [focusId, lines]);
   const after = useRef(0);
   const seenCb = useRef(onSeen);
   useEffect(() => { seenCb.current = onSeen; }, [onSeen]);
@@ -106,15 +131,27 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen }: { token: stri
     <div className="bd-feed">
       <div className="bd-head"><b>{name} Board</b><span className="td-hint">Everyone holding a tag in this set. Challenges, results and explosions post here on their own.</span></div>
       <form className="bd-send" onSubmit={(e) => { e.preventDefault(); void send(); }}>
-        <input className="td-input" value={text} maxLength={500} placeholder="Say something…" onChange={(e) => setText(e.target.value)} aria-label="Message" />
+        <input ref={input} className="td-input" value={text} maxLength={500} placeholder="Say something… @ to call someone out" aria-label="Message"
+          onChange={(e) => { setText(e.target.value); setCaret(e.target.selectionStart ?? e.target.value.length); }}
+          onSelect={(e) => setCaret(e.currentTarget.selectionStart ?? 0)} autoComplete="off" />
         <button className="td-btn cta" type="submit" disabled={busy || !text.trim()}>SEND</button>
       </form>
+      {picks.length > 0 && (
+        <div className="bd-at-picks" role="listbox" aria-label="Mention a player">
+          {picks.map((p) => (
+            <button key={p.id} type="button" role="option" aria-selected={false} className="bd-at-pick" onMouseDown={(e) => e.preventDefault()} onClick={() => pick(p)}>
+              @{p.label}{p.number ? <span> #{p.number}</span> : null}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="bd-lines">
         {lines === null && <p className="td-hint">Loading…</p>}
         {lines?.length === 0 && <p className="td-hint">Quiet in here. Talk some trash, set up a round.</p>}
         {newestFirst.map((l, i) => {
           const r = rx[l.id];
           const mine = l.member_id === meId;
+          const atMe = !!l.mentions?.some((m) => m.id === meId);
           const news = l.kind === 'system';
           const tone = news ? newsTone(l.event) : null;
           // newest on top: a line under everything new since this phone last looked
@@ -122,13 +159,17 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen }: { token: stri
           return (
             <div key={l.id}>
               {newMark && <div className="bd-new"><span>NEW ABOVE</span></div>}
-              <article className={`bd-line${news ? ` is-news t-${tone!.tone}` : ''}${mine ? ' is-mine' : ''}`}>
+              <article id={`bd-${l.id}`} className={`bd-line${news ? ` is-news t-${tone!.tone}` : ''}${mine ? ' is-mine' : ''}${atMe ? ' is-at-me' : ''}${l.id === focusId ? ' is-focus' : ''}`}>
                 <header>
                   {news ? <b className="bd-tag">{tone!.label}</b>
                     : <b>{l.name ? display({ name: l.name, nickname: l.nickname }) : 'Former member'}{l.number ? <span> #{l.number}</span> : null}</b>}
                   <time>{new Date(l.at).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</time>
                 </header>
-                <p>{l.body}</p>
+                <p>{l.mentions?.length
+                  ? mentionParts(l.body, l.mentions.map((m) => m.label)).map((x, j) => (x.at
+                    ? <b key={j} className={`bd-at${l.mentions!.some((m) => m.id === meId && x.text.slice(1).toLowerCase() === m.label.toLowerCase()) ? ' me' : ''}`}>{x.text}</b>
+                    : <span key={j}>{x.text}</span>))
+                  : l.body}</p>
                 <div className="bd-rx">
                   {REACTIONS.map((x) => {
                     const n = r?.counts[x.kind] ?? 0;

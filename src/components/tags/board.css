@@ -88,3 +88,14 @@
 .wt-row { display: flex; gap: 10px; margin-top: 14px; }
 .wt-btn { flex: 1; min-height: 56px; border-radius: 12px; border: 0; background: var(--cyan); color: #000; font-family: var(--font-label); font-size: 17px; letter-spacing: 1px; cursor: pointer; }
 .wt-btn.quiet { flex: 0 0 auto; padding: 0 18px; background: transparent; color: var(--text, #fff); border: 2px solid var(--border); }
+
+/* @mentions */
+.bd-at-picks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -2px; }
+.bd-at-pick { min-height: 36px; padding: 0 12px; border-radius: 18px; border: 2px solid var(--cyan); background: color-mix(in srgb, var(--cyan) 12%, var(--surface)); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
+.bd-at-pick span { color: var(--gold); font-weight: 600; }
+.bd-at { color: var(--cyan); font-weight: 800; }
+.bd-at.me { color: #0b0710; background: var(--cyan); border-radius: 4px; padding: 0 3px; }
+.bd-line.is-at-me { border-color: var(--cyan); box-shadow: 0 0 0 1px var(--cyan), 0 0 14px color-mix(in srgb, var(--cyan) 35%, transparent); }
+.bd-line.is-focus { animation: bd-focus 1.6s ease-out 2; }
+@keyframes bd-focus { 0% { box-shadow: 0 0 0 3px var(--cyan), 0 0 24px var(--cyan); } 100% { box-shadow: 0 0 0 1px var(--cyan), 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .bd-line.is-focus { animation: none; } }

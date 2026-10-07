@@ -35,3 +35,5 @@
 .ht-icon.is-hot { border-color: #ff4f6e; color: #ff4f6e; animation: ht-pulse 1.1s ease-in-out infinite; }
 .ht-icon b { position: absolute; top: -7px; right: -7px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #ff4f6e; color: #fff; font-size: 12px; line-height: 20px; text-align: center; }
 @media (prefers-reduced-motion: reduce) { .ht-icon.is-hot { animation: none; } }
+.ht-icon.is-at { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 12px color-mix(in srgb, var(--cyan) 45%, transparent); }
+.ht-icon.is-at b { background: var(--cyan); color: #0b0710; }

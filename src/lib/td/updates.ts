@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'roasts-mentions', date: '2026-10-07', help: 'tags', who: 'all',
+    title: 'Round roasts + @mentions on the Board',
+    body: 'Every applied tag round now posts to its set\'s Board with a roast written from the real numbers: **RESULTS** for regular rounds, the **SETTLED** post for challenges. Margins, aces, birdie runs, blow-up holes, bogey-free winners, last place, tag moves. Players can **@mention** each other on the Board (type **@**, pick a name). The name lights up and they get an **@** ping in their My Tag bell.',
+  },
+  {
     id: 'scorecard-app', date: '2026-10-06', help: 'rounds', who: 'all',
     title: 'Scorecard and My Tag as home-screen apps',
     body: 'The scorecard can live on your home screen now: a glowing-skull **Scorecard** icon that opens straight to a new card, full screen, no browser bars. The setup screen walks players through it (iPhone: Share → **Add to Home Screen**; Android: **Install the scorecard**). On a phone, My Tag has **ADD SCORECARD TO HOME SCREEN** and **ADD MY TAG TO HOME SCREEN** (a glowing-tag icon that opens the player\'s own My Tag). **Log a tag round** is now **Manual tag round submission** and no longer the big button: the Scorecard is the way in. iPhone apps keep their own memory, so players paste their My Tag link once inside (**Copy my link** → **Paste my link**).',

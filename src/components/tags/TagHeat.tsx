@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import * as tagApi from '../../lib/tags/api';
 import { DROP_PLACES, FREE_DECLINES, declineNote, timeLeft, type HeatChallenge, type HeatRow } from '../../lib/tags/heat';
 import { useNow, type HeatFocus } from '../../lib/tags/useHeat';
-import type { ChallengeRound } from '../../lib/tags/board';
+import type { ChallengeRound, Mention } from '../../lib/tags/board';
 import { SlotBox } from './ChallengeRounds';
 import { display } from '../../lib/tags/tags';
 import { niceDate } from '../../lib/leagues/leagues';
@@ -135,8 +135,10 @@ export function BombIcon({ small }: { small?: boolean }) {
 }
 
 /** My Tag header: one icon for new chat messages, one for challenges waiting on you. Tap = jump there. */
-export function HeatBell({ rows, unread, onChat, onChallenge }: {
+export function HeatBell({ rows, unread, onChat, onChallenge, atMe = [], onMention }: {
   rows: HeatRow[] | null; unread: Record<string, number>; onChat: (pool: string) => void; onChallenge: (pool: string) => void;
+  /** @mentions of me this phone hasn't seen yet, newest first */
+  atMe?: Mention[]; onMention?: (m: Mention) => void;
 }) {
   if (!rows) return null;
   const chats = rows.filter((r) => r.chat);
@@ -149,6 +151,13 @@ export function HeatBell({ rows, unread, onChat, onChallenge }: {
   const chPool = ch.find((r) => incoming(r) > 0)?.pool ?? ch[0]?.pool;
   return (
     <div className="ht-bell">
+      {atMe.length > 0 && onMention && (
+        <button type="button" className="ht-icon is-on is-at" onClick={() => onMention(atMe[0])}
+          aria-label={`${atMe.length} new mention${atMe.length === 1 ? '' : 's'}: ${atMe[0].from ?? 'someone'} mentioned you`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.6" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M15.6 12v1.4a2.6 2.6 0 0 0 5.2 0V12A8.8 8.8 0 1 0 17 19.2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+          <b>{atMe.length > 99 ? '99+' : atMe.length}</b>
+        </button>
+      )}
       {chatPool && (
         <button type="button" className={`ht-icon${chatN ? ' is-on' : ''}`} onClick={() => onChat(chatPool)}
           aria-label={chatN ? `${chatN} new chat message${chatN === 1 ? '' : 's'}` : 'Group chat'}>

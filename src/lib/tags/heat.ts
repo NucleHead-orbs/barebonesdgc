@@ -17,7 +17,7 @@ export interface HeatRow {
 /** One Board line. kind 'system' = the house posting news (event says what); member_id is null then. */
 export interface ChatLine {
   id: number; member_id: string | null; name: string | null; nickname: string | null; body: string; at: string; number: number | null; hidden: boolean;
-  kind?: 'chat' | 'system'; event?: string | null;
+  kind?: 'chat' | 'system'; event?: string | null; mentions?: Array<{ id: string; label: string }>;
 }
 export interface BoardHeat {
   bombs: boolean; challenges: boolean; chat: boolean;

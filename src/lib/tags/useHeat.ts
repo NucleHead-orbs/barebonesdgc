@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import * as tagApi from './api';
 import type { HeatRow } from './heat';
-import type { ChallengeRound } from './board';
+import type { ChallengeRound, Mention } from './board';
 
 /** Loads tag_heat for this link (again whenever `rev` changes). */
 export function useHeat(token: string, rev: number): HeatRow[] | null {
@@ -46,3 +46,14 @@ export const writeSeen = (key: string, id: number) => { try { localStorage.setIt
 const WELCOME = (memberId: string) => `bb-welcome-${memberId}`;
 export const welcomeSeen = (memberId: string) => { try { return localStorage.getItem(WELCOME(memberId)) === '1'; } catch { return true; } };
 export const markWelcomeSeen = (memberId: string) => { try { localStorage.setItem(WELCOME(memberId), '1'); } catch { /* shows again next time */ } };
+
+/** My @mentions (tag_mentions), again whenever `rev` changes. */
+export function useMentions(token: string, rev: number): Mention[] {
+  const [rows, setRows] = useState<Mention[]>([]);
+  useEffect(() => {
+    let live = true;
+    void (async () => { const r = await tagApi.mentions(token); if (live && r.data) setRows(r.data); })();
+    return () => { live = false; };
+  }, [token, rev]);
+  return rows;
+}
