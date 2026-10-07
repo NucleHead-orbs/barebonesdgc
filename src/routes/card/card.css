@@ -116,3 +116,18 @@
   .sc-ctp-ring { display: none; }
   .sc-ctp-target.big .dot { animation: none; }
 }
+
+/* ---------- handing the card off ---------- */
+.sc-handoff { display: block; width: 100%; margin-top: 12px; min-height: 48px; border-radius: var(--r-card); border: 2px solid var(--cyan, #29e1ff); background: transparent; color: var(--cyan, #29e1ff); font-family: 'Archivo Black', sans-serif; font-size: 15px; letter-spacing: .06em; cursor: pointer; }
+.sc-handoff-hi, .sc-handoff-watch { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0; padding: 10px 12px; border-radius: var(--r-card); border: 2px solid var(--cyan, #29e1ff); background: color-mix(in srgb, var(--cyan, #29e1ff) 12%, var(--surface)); font-size: 15px; line-height: 1.4; }
+.sc-handoff-watch { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--surface)); }
+.sc-handoff-hi button, .sc-handoff-watch button { margin-left: auto; min-height: 40px; padding: 0 14px; border-radius: 8px; border: 2px solid currentColor; background: transparent; color: inherit; font-weight: 800; cursor: pointer; }
+.sc-sheet { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .78); }
+.sc-sheet-box { width: min(420px, 100%); max-height: calc(100dvh - 32px); overflow: auto; padding: 18px; border-radius: var(--r-hole, 16px); border: 3px solid var(--cyan, #29e1ff); background: var(--surface); text-align: center; }
+.sc-sheet-box h2 { font-family: var(--font-display); font-weight: 400; font-size: 30px; margin: 0 0 8px; }
+.sc-sheet-box p { line-height: 1.45; margin: 0 0 12px; }
+.sc-sheet-warn { color: var(--over, #ff4f6e); }
+.sc-qr { width: min(280px, 80vw); margin: 0 auto 12px; padding: 10px; border-radius: 12px; background: #fff; }
+.sc-qr svg { display: block; width: 100%; height: auto; }
+.sc-sheet-link, .sc-sheet-close { display: block; margin: 10px auto 0; min-height: 40px; border: 0; background: none; color: var(--text-muted); text-decoration: underline; font: inherit; cursor: pointer; }
+.sc-sheet-link { color: var(--cyan, #29e1ff); }

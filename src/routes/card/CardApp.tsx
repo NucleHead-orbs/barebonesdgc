@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
+import QRCode from 'qrcode';
 import { supabase, syncScores } from '../../lib/supabase';
 import { ScoreQueue, deviceId, type QueuedScore, type RejectedScore } from '../../lib/offline/queue';
 import { useTheme } from '../../lib/theme';
@@ -8,9 +9,12 @@ import {
   resultMessage, shortNames, signState, signStatusLine, tileTone, toParText, type CardPlayer, type HoleInfo, type ScoreMap,
 } from '../../lib/scorecard/logic';
 import { CardError, cachedCard, fetchCard, signCard, submitCard, unlockCard, type CardSnapshot } from '../../lib/scorecard/api';
+import { handoffKey, handoffStep, handoffUrl, holesDone } from '../../lib/scorecard/handoff';
 import './card.css';
 
 const queue = new ScoreQueue();
+const readLs = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
+const writeLs = (k: string, v: string | null) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* private mode: handoff still works, this phone just won't remember it */ } };
 const REFRESH_MS = 20_000;
 
 /**
@@ -26,6 +30,12 @@ export default function CardApp() {
   const [online, setOnline] = useState(true);
   const [hole, setHole] = useState<number>();
   const [td, setTd] = useState(false);
+  const [params, setParams] = useSearchParams();
+  // opened from a handoff QR: this phone has the card now (and if it handed off earlier, it just got it back)
+  const [welcome, setWelcome] = useState(() => params.get('handoff') === '1');
+  const [handed, setHanded] = useState(() => params.get('handoff') !== '1' && !!readLs(handoffKey(token)));
+  const [sheet, setSheet] = useState(false);
+  useEffect(() => { if (params.get('handoff') === '1') writeLs(handoffKey(token), null); }, [params, token]);
   const alive = useRef(true);
   // no snapshot yet: neutral; old cached snapshot without event info: it can only be Jewel XI
   const skin = snap?.event ? (snap.event.skin === 'jewel-xi' ? 'jewel-xi' : 'event') : snap ? 'jewel-xi' : 'event';
@@ -110,9 +120,10 @@ export default function CardApp() {
   const idx = order.indexOf(current);
   const go = (d: 1 | -1) => setHole(order[(idx + d + order.length) % order.length]);
   const locked = snap.submitted;
+  const watching = handed && !locked;
 
   const tap = async (pid: string, strokes: number) => {
-    if (locked) return;
+    if (locked || watching) return;
     await queue.enqueue({ token, playerId: pid, hole: current, strokes, clientTs: new Date().toISOString(), deviceId: deviceId() });
     await refreshLocal();
     void sync();
@@ -148,6 +159,19 @@ export default function CardApp() {
         </div>
       )}
 
+      {welcome && !locked && (
+        <div className="sc-handoff-hi" role="status">
+          <b>You've got the card.</b> Every score so far is loaded (thru {holesDone(order, snap.players.map((p) => p.id), scores)} of {order.length}). Pick up on hole {current}.
+          <button type="button" onClick={() => { setWelcome(false); setParams({}, { replace: true }); }}>GOT IT</button>
+        </div>
+      )}
+      {watching && (
+        <div className="sc-handoff-watch" role="status">
+          <b>You handed this card off.</b> Watching only: scores update every 20 seconds.
+          <button type="button" onClick={() => { writeLs(handoffKey(token), null); setHanded(false); }}>Take the card back</button>
+        </div>
+      )}
+
       <section className="sc-hole" aria-label={`Hole ${info.n}`}>
         <button type="button" className="sc-arrow" aria-label="Previous hole" onClick={() => go(-1)}>‹</button>
         <div className="sc-hole-mid">
@@ -171,7 +195,7 @@ export default function CardApp() {
 
       <ul className={`sc-players${locked ? ' is-locked' : ''}`}>
         {snap.players.map((p) => (
-          <PlayerRow key={p.id} p={p} hole={info} scores={scores} holes={snap.holes} locked={locked}
+          <PlayerRow key={p.id} p={p} hole={info} scores={scores} holes={snap.holes} locked={locked || watching}
             signed={!!snap.signoffs[p.id]} onSet={(n) => void tap(p.id, n)} />
         ))}
       </ul>
@@ -180,10 +204,13 @@ export default function CardApp() {
       )}
       {!locked && signed > 0 && <p className="sc-note">Changing any score clears every signature on the card.</p>}
 
-      {(complete || locked) && (
+      {(complete || locked) && !watching && (
         <SignPanel token={token} snap={snap} scores={scores} state={state} signed={signed} onDone={sync} />
       )}
       {td && (snap.submitted || signed > 0) && <TdUnlock cardId={snap.card.id} onDone={sync} />}
+      {!locked && !watching && <button type="button" className="sc-handoff" onClick={() => setSheet(true)}>HAND THE CARD OFF</button>}
+      {sheet && <HandoffSheet token={token} pending={pending.length} online={online} sync={sync}
+        onClose={() => setSheet(false)} onDone={() => { writeLs(handoffKey(token), new Date().toISOString()); setHanded(true); setSheet(false); }} />}
       <a className="sc-board" href={snap.event ? `/e/${snap.event.slug}` : '/jewel'}>Live leaderboard ›</a>
     </Shell>
   );
@@ -356,5 +383,48 @@ function TdUnlock({ cardId, onDone }: { cardId: string; onDone: () => Promise<vo
         : <button type="button" onClick={() => setArmed(true)}>TD: unlock card</button>}
       {msg && <p className="sc-err" role="alert">{msg}</p>}
     </section>
+  );
+}
+
+/**
+ * Pass the scoring to a cardmate: make sure every tap on this phone is saved, then show the card's QR for them to scan.
+ * Their phone opens the same card (/c/:token); this phone goes watch-only once "Done" is tapped.
+ */
+function HandoffSheet({ token, pending, online, sync, onClose, onDone }: {
+  token: string; pending: number; online: boolean; sync: () => Promise<void>; onClose: () => void; onDone: () => void;
+}) {
+  const [checking, setChecking] = useState(true);
+  const [qr, setQr] = useState('');
+  const [copied, setCopied] = useState(false);
+  const url = handoffUrl(location.origin, token);
+  const check = useCallback(async () => { setChecking(true); await sync(); setChecking(false); }, [sync]);
+  useEffect(() => { void (async () => { await check(); })(); }, [check]);
+  useEffect(() => { void QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' }).then(setQr); }, [url]);
+  const step = handoffStep({ checking, pending });
+  const share = async () => {
+    try {
+      if (navigator.share) await navigator.share({ title: 'Scorecard', url });
+      else { await navigator.clipboard.writeText(url); setCopied(true); }
+    } catch { /* closed the share sheet */ }
+  };
+  return (
+    <div className="sc-sheet" role="dialog" aria-modal="true" aria-labelledby="sc-handoff-h">
+      <div className="sc-sheet-box">
+        <h2 id="sc-handoff-h">Hand the card off</h2>
+        {step === 'syncing' && <p>Saving every score on this phone first…</p>}
+        {step === 'unsynced' && <>
+          <p className="sc-sheet-warn"><b>{pending} score{pending === 1 ? ' is' : 's are'} only on this phone.</b> {online ? 'Still sending.' : 'No signal right now.'} The next scorer won't see {pending === 1 ? 'it' : 'them'} until {pending === 1 ? 'it saves' : 'they save'}. Step toward signal and try again.</p>
+          <button type="button" className="sc-next" onClick={() => void check()}>TRY AGAIN</button>
+        </>}
+        {step === 'ready' && <>
+          <p>All scores are saved. Have the next scorer point their camera here. (The QR on the paper card works too.)</p>
+          <div className="sc-qr" aria-label="Scorecard QR code" dangerouslySetInnerHTML={{ __html: qr }} />
+          <button type="button" className="sc-sheet-link" onClick={() => void share()}>{copied ? 'Link copied' : 'Text or copy the link instead'}</button>
+          <button type="button" className="sc-next" onClick={onDone}>DONE: THEY'VE GOT IT</button>
+          <p className="sc-note">This phone switches to watching only. You can take the card back any time.</p>
+        </>}
+        <button type="button" className="sc-sheet-close" onClick={onClose}>Cancel</button>
+      </div>
+    </div>
   );
 }

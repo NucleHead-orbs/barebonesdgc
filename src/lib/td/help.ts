@@ -128,6 +128,7 @@ export const HELP: HelpSection[] = [
       'Tap a gray number to give par, use minus / plus to change it, tap **NEXT HOLE**.',
       'A **CTP** hole flashes a gold target with the prize when it comes up, and shows **CTP · prize** under the hole number.',
       'No signal is fine: it saves on the phone and catches up later.',
+      '**Passing the scoring around:** any phone that opens the card\'s QR can score it; the newest tap on a hole wins. The tidy way: the scorer taps **HAND THE CARD OFF**. It saves every score first (it won\'t show the QR while a score is stuck on that phone), then shows a big QR for the next scorer\'s camera (or a link to text). **DONE: THEY\'VE GOT IT** turns the old phone watch-only (**Take the card back** undoes it). The new phone opens with every score so far and the next hole to play. Nobody has to use it: scanning the paper card works exactly as before.',
       'After the last hole everyone types initials and taps **Sign**, then one person taps **SUBMIT CARD**.',
       'Dubs round: one score line per team. Either partner can enter it and sign for the team.',
       'Card submitted by mistake? Open that card\'s QR while signed in as TD and tap **TD: unlock card**.',

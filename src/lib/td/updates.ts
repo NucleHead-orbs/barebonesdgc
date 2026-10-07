@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'card-handoff', date: '2026-10-07', help: 'scoring', who: 'all',
+    title: 'Hand the card off',
+    body: 'Event scorecards have a **HAND THE CARD OFF** button for passing scoring to a cardmate. It saves every score on the phone first, then shows a big QR (or a link) for the next scorer. The old phone goes watch-only until it taps **Take the card back**. Optional: scanning the paper card\'s QR still works like always.',
+  },
+  {
     id: 'roasts-mentions', date: '2026-10-07', help: 'tags', who: 'all',
     title: 'Round roasts + @mentions on the Board',
     body: 'Every applied tag round now posts to its set\'s Board with a roast written from the real numbers: **RESULTS** for regular rounds, the **SETTLED** post for challenges. Margins, aces, birdie runs, blow-up holes, bogey-free winners, last place, tag moves. Players can **@mention** each other on the Board (type **@**, pick a name). The name lights up and they get an **@** ping in their My Tag bell.',
