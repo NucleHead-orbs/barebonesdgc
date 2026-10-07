@@ -62,14 +62,18 @@ export const STARTER: Array<Omit<NewTask, 'sort'>> = [
   { title: 'Order player packs / stamped discs', category: 'prizes', due_offset_days: -21 },
   { title: 'Tee sign designs done', category: 'designs', due_offset_days: -14 },
   { title: 'Collect sponsor logos', category: 'sponsors', due_offset_days: -14 },
+  { title: 'Buy player pack bags (one per amateur) + DVD cases (one per card per wave)', category: 'prizes', due_offset_days: -14 },
   { title: 'Print tee signs + event signage', category: 'printing', due_offset_days: -10 },
   { title: 'Print prize bucks', category: 'printing', due_offset_days: -7 },
   { title: 'Payout tables set (Winners tab)', category: 'prizes', due_offset_days: -7 },
+  { title: 'Print course guides + maps (one per DVD case)', category: 'printing', due_offset_days: -7 },
   { title: 'Final player import from Disc Golf Scene', category: 'registration', due_offset_days: -3 },
+  { title: 'Print bag labels (Prep → PACK BAGS) and pre-pack bags: shirt + disc, A to Z', category: 'prizes', due_offset_days: -3 },
   { title: 'Course walk: tee signs, OB, drop zones', category: 'course', due_offset_days: -2 },
   { title: 'Print card QR sheets', category: 'printing', due_offset_days: -1 },
   { title: 'Pack prize table, raffle, cash box', category: 'prizes', due_offset_days: -1 },
   { title: 'Check-in table set up', category: 'day_of', due_offset_days: 0 },
+  { title: 'Each wave: check in, GENERATE + PUBLISH that wave, print DVD inserts, stuff the cases', category: 'day_of', due_offset_days: 0 },
   { title: 'Post results (Winners tab)', category: 'day_of', due_offset_days: 1 },
 ];
 

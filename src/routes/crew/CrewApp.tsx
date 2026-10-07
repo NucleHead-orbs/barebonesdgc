@@ -11,6 +11,7 @@ import {
   type ContactKind, type ContactStatus, type RaffleSale, type Role,
 } from '../../lib/crew/crew';
 import { dueDate, fmtDay, sortTasks, taskState } from '../../lib/prep/prep';
+import { bagLine } from '../../lib/prep/packs';
 import { boldParts } from '../../lib/td/help';
 import { useTheme } from '../../lib/theme';
 import { dateRange } from '../../lib/td/setup';
@@ -87,7 +88,7 @@ export default function CrewApp() {
         ))}
       </nav>
       <main className="td-main td-crewapp">
-        {toast && <div className="td-ok" role="status">{toast}</div>}
+        {toast && <div className="td-ok td-float" role="status">{toast}</div>}
         {err && <div className="td-warn" role="alert">{err} <button className="td-btn quiet" onClick={() => setErr('')}>OK</button></div>}
         {cur === 'brief' && <Briefing {...ctx} />}
         {cur === 'tasks' && <Tasks {...ctx} />}
@@ -211,6 +212,9 @@ function Checkin({ token, home, act }: Ctx) {
     return players.filter((p) => !k || p.name.toLowerCase().includes(k)).slice(0, 60);
   }, [players, q]);
   const inCount = players.filter((p) => p.checked_in).length;
+  // player pack bags: which size bag goes with each player (shown on the row and when they're checked in)
+  const [bags, setBags] = useState<Record<string, string>>({});
+  useEffect(() => { void (async () => { const r = await crewApi.packSizes(token); if (r.data) setBags(r.data); })(); }, [token]);
   return (
     <>
       <section className="td-panel">
@@ -223,8 +227,8 @@ function Checkin({ token, home, act }: Ctx) {
       <ul className="td-checklist">
         {hits.map((p) => (
           <li key={p.id} className={p.checked_in ? 'is-in' : ''}>
-            <span><b>{p.name}</b> <span className="td-hint">{p.div_code}</span></span>
-            <button className={`td-btn ${p.checked_in ? 'quiet' : 'cta'}`} onClick={() => void act(crewApi.checkin(token, p.id, !p.checked_in), p.checked_in ? `${p.name} un-checked.` : `${p.name} checked in.`)}>
+            <span><b>{p.name}</b> <span className="td-hint">{p.div_code}</span>{bags[p.id] && <span className="td-bagsize" title="Player pack bag">{bags[p.id]}</span>}</span>
+            <button className={`td-btn ${p.checked_in ? 'quiet' : 'cta'}`} onClick={() => void act(crewApi.checkin(token, p.id, !p.checked_in), p.checked_in ? `${p.name} un-checked.` : `${p.name} is in. ${bagLine(bags[p.id])}. Send them to the pack table.`)}>
               {p.checked_in ? 'UNDO' : 'CHECK IN'}
             </button>
           </li>

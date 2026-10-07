@@ -156,6 +156,10 @@ export const importPlayers = (eventId: string, rows: ImportRow[]) => wrap(async 
 export const publishRound = (eventId: string, round: 1 | 2, cards: PublishCard[], force = false) => wrap(async (): Promise<PublishedCard[]> =>
   must(await supabase.rpc('td_publish_round', { p_event_id: eventId, p_round: round, p_cards: cards, p_force: force })) as PublishedCard[]);
 
+/** Publish one wave only (two-wave events): the other wave's cards, signatures and submissions are untouched. */
+export const publishWave = (eventId: string, round: 1 | 2, wave: 'AM' | 'PM', cards: PublishCard[], force = false) => wrap(async (): Promise<PublishedCard[]> =>
+  must(await supabase.rpc('td_publish_wave', { p_event_id: eventId, p_round: round, p_wave: wave, p_cards: cards, p_force: force })) as PublishedCard[]);
+
 // ---------- sponsors (TD) ----------
 export interface Sponsor {
   id: string; name: string; tier: string | null; hole: number | null; logo_url: string | null;

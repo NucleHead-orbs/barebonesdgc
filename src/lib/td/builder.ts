@@ -153,6 +153,9 @@ export function rpcError(err: unknown, round?: number): { kind: RpcErrorKind; me
   if (/team_split/.test(msg)) return { kind: 'other', message: 'A card splits a team. Partners must share a card: regenerate, or move the whole team.' };
   if (/player_without_team/.test(msg)) return { kind: 'other', message: 'Someone on a card isn\'t in the draw. Add latecomers to the draw, then regenerate.' };
   if (/not_doubles/.test(msg)) return { kind: 'other', message: `${r} is set to singles. Switch it to doubles in Setup to draw partners.` };
+  if (/wave_has_scores/.test(msg))
+    return { kind: 'has_scores', message: `This wave already has scores, so publishing was refused. Nothing changed. Force republish keeps every score but drops signatures and submissions on this wave's rebuilt cards.` };
+  if (/player_on_other_wave/.test(msg)) return { kind: 'other', message: 'Someone on these cards is already on a card in the other wave. Move their division to one wave (PM WAVE DIVISIONS), then regenerate.' };
   if (/round_has_scores/.test(msg))
     return { kind: 'has_scores', message: `${r} already has scores, so publishing was refused. Nothing changed. Force republish keeps every score but drops signatures and submissions on the rebuilt cards.` };
   if (/forbidden|permission denied/i.test(msg) || e.code === '42501') return { kind: 'forbidden', message: "This account isn't a TD for this event. Ask the organizer to add your email." };

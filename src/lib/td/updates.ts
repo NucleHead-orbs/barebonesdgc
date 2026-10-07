@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'event-day-flow', date: '2026-10-07', help: 'cards', who: 'all',
+    title: 'Event day: waves, DVD inserts, pack bags',
+    body: 'Two-wave events now generate and publish **one wave at a time**: the PM wave gets its cards after it checks in, and the AM wave (already scoring) is never touched. **QR SHEET** prints **DVD CASE INSERTS**: one card per case sleeve, two per page. **Prep → PACK BAGS** counts pre-packed bags by shirt size and prints A-to-Z bag labels; check-in (TD or crew phone) says which bag the moment someone is in.',
+  },
+  {
     id: 'card-handoff', date: '2026-10-07', help: 'scoring', who: 'all',
     title: 'Hand the card off',
     body: 'Event scorecards have a **HAND THE CARD OFF** button for passing scoring to a cardmate. It saves every score on the phone first, then shows a big QR (or a link) for the next scorer. The old phone goes watch-only until it taps **Take the card back**. Optional: scanning the paper card\'s QR still works like always.',

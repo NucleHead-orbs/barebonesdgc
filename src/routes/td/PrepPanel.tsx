@@ -3,6 +3,7 @@ import * as api from '../../lib/td/api';
 import { rpcError, type ExistingPlayer } from '../../lib/td/builder';
 import type { CrewMember } from '../../lib/crew/crew';
 import ContactsPanel from './ContactsPanel';
+import { isAmateur, packCount, packRows } from '../../lib/prep/packs';
 import {
   DESIGN_CATEGORIES, MAX_FILE_BYTES, SIZES, STATUS_LABEL, TASK_CATEGORIES, designCategoryLabel, dueDate, fmtBytes, fmtDay,
   isImage, latest, localToday, normalizeSize, offsetLabel, orderCsv, rollup, shirtTally, sortTasks, starterToAdd,
@@ -13,8 +14,8 @@ import { ProofView } from '../../components/proofs/Proofs';
 import { PROOF_CATEGORY, PROOF_KINDS, PROOF_LABEL, type ProofKind } from '../../lib/proofs/proofs';
 const DiscOrderPanel = lazy(() => import('./DiscOrderPanel'));
 const VotesPanel = lazy(() => import('./VotesPanel'));
-type View = 'dash' | 'tasks' | 'shirts' | 'designs' | 'votes' | 'innova' | 'contacts';
-const VIEWS: Array<[View, string]> = [['dash', 'DASHBOARD'], ['tasks', 'TASKS'], ['shirts', 'SHIRTS'], ['designs', 'DESIGNS'], ['votes', 'VOTES'], ['innova', 'INNOVA ORDER'], ['contacts', 'CONTACTS']];
+type View = 'dash' | 'tasks' | 'shirts' | 'packs' | 'designs' | 'votes' | 'innova' | 'contacts';
+const VIEWS: Array<[View, string]> = [['dash', 'DASHBOARD'], ['tasks', 'TASKS'], ['shirts', 'SHIRTS'], ['packs', 'PACK BAGS'], ['designs', 'DESIGNS'], ['votes', 'VOTES'], ['innova', 'INNOVA ORDER'], ['contacts', 'CONTACTS']];
 const STATE_LABEL: Record<TaskState, string> = { done: 'DONE', overdue: 'OVERDUE', soon: 'THIS WEEK', later: 'LATER', nodate: 'NO DATE' };
 const SHARE_DAYS = 7;
 const CORE_SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
@@ -81,6 +82,7 @@ export default function PrepPanel({ setup, players, onPlayers, email }: {
       {view === 'dash' && <Dashboard ctx={ctx} tally={tally} go={setView} />}
       {view === 'tasks' && <Tasks ctx={ctx} />}
       {view === 'shirts' && <Shirts ctx={ctx} tally={tally} players={players} onPlayers={onPlayers} />}
+      {view === 'packs' && <Packs ev={ev} players={players} divisions={setup.divisions} />}
       {view === 'designs' && <Designs ctx={ctx} />}
       {view === 'votes' && <Suspense fallback={<p className="td-empty">Loading…</p>}><VotesPanel eventId={ev.id} email={email} assets={data.assets} creditLabel={data.creditLabel} onToast={setToast} /></Suspense>}
       {view === 'innova' && <Suspense fallback={<p className="td-empty">Loading…</p>}><DiscOrderPanel ev={ev} email={email} /></Suspense>}
@@ -640,5 +642,66 @@ function DesignCard({ ctx, a, thumb, label, onOpen }: { ctx: Ctx; a: DesignAsset
         <button className="td-link danger" onClick={() => void remove()}>Delete design</button>
       </div>
     </article>
+  );
+}
+
+// ---------- player pack bags ----------
+/**
+ * Pre-packed bags (shirt + disc), one per player in the chosen divisions (amateurs by default).
+ * Count by size for packing, and labels for Avery 5163/8163 (2" x 4", 10 per letter sheet), A to Z by last name.
+ */
+function Packs({ ev, players, divisions }: { ev: api.EventSetup['event']; players: ExistingPlayer[]; divisions: api.EventSetup['divisions'] }) {
+  const present = divisions.filter((d) => players.some((p) => p.div_code === d.code));
+  const [divs, setDivs] = useState<string[]>(() => present.filter((d) => isAmateur(d.code)).map((d) => d.code));
+  const waves = ev.waves === 2;
+  const rows = useMemo(() => packRows(players, divs, (code) => (waves ? divisions.find((d) => d.code === code)?.wave ?? 'AM' : null)), [players, divs, waves, divisions]);
+  const count = packCount(rows);
+  const pages = Array.from({ length: Math.ceil(rows.length / 10) }, (_, i) => rows.slice(i * 10, i * 10 + 10));
+  const print = () => {
+    document.body.classList.add('bb-print-labels');
+    const done = () => { document.body.classList.remove('bb-print-labels'); window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+    window.print();
+  };
+  const toggle = (code: string) => setDivs((d) => (d.includes(code) ? d.filter((x) => x !== code) : [...d, code]));
+  return (
+    <>
+      <section className="td-panel td-noprint">
+        <div className="td-row">
+          <h2>Player pack bags</h2>
+          <div className="td-counts"><Stat v={count.total} k="BAGS" color="var(--cyan)" /><Stat v={count.noShirt} k="DISC ONLY" color={count.noShirt ? 'var(--gold)' : '#fff'} /></div>
+          <div style={{ flex: 1 }} />
+          <button className="td-btn cta" onClick={print} disabled={!rows.length}>PRINT BAG LABELS</button>
+        </div>
+        <div className="td-label">WHO GETS A BAG (tap a division)</div>
+        <div className="td-chips">
+          {present.map((d) => <button key={d.code} className="td-chip" aria-pressed={divs.includes(d.code)} onClick={() => toggle(d.code)}>{d.code}</button>)}
+        </div>
+        <p className="td-hint">Starts with the amateur divisions. Labels print A to Z by last name on Avery 5163 / 8163 (2" × 4", 10 per sheet): print at 100%, no "fit to page". Pack each bag with its shirt and a disc, then line them up A to Z at the pack table. Check-in shows the bag size the moment someone is checked in.</p>
+        <table className="td-table td-shirts">
+          <thead><tr><th>SIZE</th><th>BAGS</th></tr></thead>
+          <tbody>
+            {count.sizes.map((r) => <tr key={r.size}><td><b>{r.size}</b></td><td>{r.n}</td></tr>)}
+            {count.noShirt > 0 && <tr><td><b>Disc only</b></td><td>{count.noShirt}</td></tr>}
+            <tr><td><b>TOTAL</b></td><td><b>{count.total}</b></td></tr>
+          </tbody>
+        </table>
+        {count.noShirt > 0 && <div className="td-warn soft">No shirt size: {rows.filter((r) => !r.size).map((r) => r.raw ? `${r.name} ("${r.raw}")` : r.name).join(', ')}. Fix sizes on SHIRTS, or pack them a disc only.</div>}
+      </section>
+      <style>{'@media print { @page { size: letter portrait; margin: 0; } }'}</style>
+      <div className="td-labels" aria-label="Bag labels preview">
+        {pages.map((pg, i) => (
+          <div className="td-label-page" key={i}>
+            {pg.map((r) => (
+              <div className="td-bag" key={r.id}>
+                <div className="who"><b>{r.last.toUpperCase()}</b><span>{r.first}</span></div>
+                <div className="size">{r.size ?? 'DISC'}</div>
+                <div className="foot">{ev.name} · {r.div}{r.wave ? ` · ${r.wave} wave` : ''}</div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </>
   );
 }

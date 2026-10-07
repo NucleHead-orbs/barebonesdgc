@@ -5,6 +5,7 @@ import { importDiff, rpcError, type ExistingPlayer } from '../../lib/td/builder'
 import { cycleVibe, VIBE_LABEL, VIBE_MARK } from '../../lib/td/requests';
 import ImportReview from './ImportReview';
 import { PlayerPicker } from './PlayerPicker';
+import { bagLine } from '../../lib/prep/packs';
 
 /**
  * Players tab: the check-in table. Built for a folding table at the course:
@@ -32,7 +33,7 @@ export default function PlayersPanel({ setup, players, sponsors, priv, onPlayers
     if (r.data) setLocked(r.data);
   }, [ev.id]);
   useEffect(() => { void (async () => { await loadLocked(); })(); }, [loadLocked, players.length]); // roster changed => locks may have too
-  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(''), 4000); return () => clearTimeout(t); }, [toast]);
+  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(''), 6000); return () => clearTimeout(t); }, [toast]);
 
   const query = q.trim().toLowerCase();
   const shown = useMemo(() => players.filter((p) => !query || p.name.toLowerCase().includes(query)), [players, query]);
@@ -45,7 +46,7 @@ export default function PlayersPanel({ setup, players, sponsors, priv, onPlayers
     if (r.error) {
       onPlayers(players.map((x) => (x.id === p.id ? { ...x, checked_in: !on } : x)));
       setErr(`${p.name}: ${rpcError(r.error).message}`);
-    }
+    } else if (on) setToast(`${p.name} is in. ${bagLine(p.shirt_size)}. Send them to the pack table.`);
   };
 
   const checkInAll = async () => {
@@ -129,7 +130,7 @@ export default function PlayersPanel({ setup, players, sponsors, priv, onPlayers
 
   return (
     <main className="td-main">
-      {toast && <div className="td-ok" role="status">{toast}</div>}
+      {toast && <div className="td-ok td-float" role="status">{toast}</div>}
       {err && <div className="td-warn" role="alert">{err} <button className="td-btn quiet" onClick={() => setErr('')}>DISMISS</button></div>}
       {pending && (
         <ImportReview fileName={pending.fileName} text={pending.text} divCodes={divCodes} existing={players} withSponsors={ev.use_sponsors}
@@ -172,6 +173,7 @@ export default function PlayersPanel({ setup, players, sponsors, priv, onPlayers
               )}
               <button className="td-roster-name" onClick={() => setOpen(open === p.id ? null : p.id)} aria-expanded={open === p.id}>
                 {p.name}{apartOf(p.id).length > 0 && <span className="td-hint"> · ⊘{apartOf(p.id).length}</span>}
+                {p.shirt_size && <span className="td-bagsize" title="Player pack bag">{p.shirt_size}</span>}
               </button>
               <button className={`td-vibe${priv.vibe[p.id] ? ` is-${priv.vibe[p.id]}` : ''}`} onClick={() => void tag(p)}
                 title={priv.vibe[p.id] ? `${VIBE_LABEL[priv.vibe[p.id]]} (private). Tap to change.` : 'Private tag: tap for ⭐ needs a good card, again for ☺ plays with anyone'}

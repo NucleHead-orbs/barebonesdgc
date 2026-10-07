@@ -40,6 +40,8 @@ export const ack = (t: string, id: string) => call<null>('crew_ack', { p_token: 
 export const taskDone = (t: string, id: string, done: boolean) => call<null>('crew_task_done', { p_token: t, p_task: id, p_done: done });
 export const taskNote = (t: string, id: string, body: string) => call<null>('crew_task_note', { p_token: t, p_task: id, p_body: body });
 export const checkin = (t: string, player: string, on: boolean) => call<null>('crew_checkin', { p_token: t, p_player: player, p_on: on });
+/** Check-in crew: which pack bag each player gets ({player_id: shirt size}). */
+export const packSizes = (t: string) => call<Record<string, string>>('crew_pack_sizes', { p_token: t });
 export const walkup = (t: string, name: string, div: string) => call<string>('crew_walkup', { p_token: t, p_name: name, p_div: div });
 export const raffleSale = (t: string, s: { buyer: string; tickets: number; amount: number; method: RaffleSale['method'] }) =>
   call<string>('crew_raffle_sale', { p_token: t, p_buyer: s.buyer, p_tickets: s.tickets, p_amount: s.amount, p_method: s.method });

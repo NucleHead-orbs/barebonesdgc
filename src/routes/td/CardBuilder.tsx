@@ -102,9 +102,15 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
   if (fatal) return <div className="td-main"><div className="td-warn" role="alert">Could not load cards. {fatal}</div></div>;
   if (!loaded || !S) return <p className="td-empty">Loading cards…</p>;
 
-  const isPublished = published[round].length > 0;
-  const unpublished = hasUnpublishedChanges(roundCards, published[round]);
   const shownWave: Wave = twoWaves ? wave : 'AM';
+  // Two waves (singles): each wave is generated and published on its own, so the PM wave can check in, get cards and
+  // go live while the AM wave is already out scoring (td_publish_wave never touches the other wave).
+  const byWave = twoWaves && !dubs;
+  const scopeCards = byWave ? roundCards.filter((c) => c.wave === shownWave) : roundCards;
+  const scopePublished = byWave ? published[round].filter((c) => c.wave === shownWave) : published[round];
+  const scopeName = byWave ? `R${round} ${shownWave}` : `R${round}`;
+  const isPublished = scopePublished.length > 0;
+  const unpublished = hasUnpublishedChanges(scopeCards, scopePublished);
   const inWave = players.filter((p) => waveOf(p.div_code, S.pmDivisions) === shownWave);
   const unassigned = unassignedIds(inWave.map((p) => p.id), roundCards);
   const allUnassigned = unassignedIds(players.map((p) => p.id), roundCards);
@@ -143,19 +149,20 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
         : `The draw is out of date: ${notDrawn.length ? `${notDrawn.length} checked-in player(s) aren't drawn` : ''}${notDrawn.length && goneFromDraw.length ? ' and ' : ''}${goneFromDraw.length ? `${goneFromDraw.length} drawn player(s) aren't checked in` : ''}. Tap UPDATE DRAW first.` });
     }
     try {
+      const other = byWave ? roundCards.filter((c) => c.wave !== shownWave) : [];
       const input = {
-        players: api.toBuilderPlayers(players), settings: next, divOrder, holeCount,
-        lockedCards: roundCards, // generate drops anyone no longer in the pool (e.g. un-checked-in) from locked cards
+        players: api.toBuilderPlayers(byWave ? players.filter((p) => waveOf(p.div_code, next.pmDivisions) === shownWave) : players), settings: next, divOrder, holeCount,
+        lockedCards: byWave ? scopeCards : roundCards, // generate drops anyone no longer in the pool (e.g. un-checked-in) from locked cards
         r1Strokes: next.sortBy === 'r1' ? r1 : undefined,
         pairing: pairingFor(requests, priv, round),
       };
       const res = dubs ? generateDoubles({ ...input, teams: roundTeams }) : generateCards(input);
-      setCardsFor(res.cards);
+      setCardsFor([...other, ...res.cards.filter((c) => !byWave || c.wave === shownWave)]);
       setGenWarn((w) => ({ ...w, [round]: res.warnings }));
       setSettings((s) => (s ? { ...s, [round]: next } : s));
       setDirty((d) => ({ ...d, [round]: false }));
       setSel(null); setAlert(null);
-      flash(`Generated ${res.cards.length} cards for Round ${round}. Nothing is live until you publish.`);
+      flash(`Generated ${res.cards.filter((c) => !byWave || c.wave === shownWave).length} cards for ${byWave ? `the ${shownWave} wave, Round ${round}` : `Round ${round}`}. Nothing is live until you publish.`);
       void api.saveSettings(ev.id, round, next).then((r) => { if (r.error) setAlert({ ...rpcError(r.error), message: `Cards generated, but settings did not save. ${rpcError(r.error).message}` }); });
     } catch (e) {
       setAlert({ kind: 'generate', message: e instanceof CardGenerationError ? e.message : `Generation failed: ${String(e)}` });
@@ -163,18 +170,22 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
   };
 
   const publish = async (force = false) => {
-    const warn = allUnassigned.length ? `\n\n${allUnassigned.length} player(s) are not on a card and won't be able to score in the app.` : '';
+    const missing = byWave ? unassigned.length : allUnassigned.length;
+    const warn = missing ? `\n\n${missing} player(s) are not on a card and won't be able to score in the app.` : '';
+    const what = byWave ? `the ${shownWave} wave of Round ${round}` : `Round ${round}`;
     const msg = force
-      ? `FORCE republish Round ${round}?\n\nEvery score stays. Signatures and submissions on the rebuilt cards are dropped, so those cards must sign off again.`
-      : `Publish ${roundCards.length} cards for Round ${round}? This replaces Round ${round} in the scoring app.${warn}`;
+      ? `FORCE republish ${what}?\n\nEvery score stays. Signatures and submissions on the rebuilt cards are dropped, so those cards must sign off again.`
+      : `Publish ${scopeCards.length} cards for ${what}? This replaces ${what} in the scoring app.${byWave ? ` The ${shownWave === 'AM' ? 'PM' : 'AM'} wave isn't touched.` : ''}${warn}`;
     if (!window.confirm(msg)) return;
     setBusy('publish'); setAlert(null);
-    const r = await api.publishRound(ev.id, round, toPublishPayload(roundCards), force);
+    const r = byWave
+      ? await api.publishWave(ev.id, round, shownWave, toPublishPayload(scopeCards), force)
+      : await api.publishRound(ev.id, round, toPublishPayload(roundCards), force);
     setBusy('');
     if (r.error || !r.data) return setAlert(rpcError(r.error, round));
     const live = r.data;
     setPublished((p) => ({ ...p, [round]: live }));
-    flash(`Round ${round} is live: ${live.length} cards can score. QR sheet is ready.`);
+    flash(`${byWave ? `Round ${round} ${shownWave} wave` : `Round ${round}`} is live: ${byWave ? live.filter((c) => c.wave === shownWave).length : live.length} cards can score. QR sheet is ready.`);
   };
 
   const exportCsv = () => {
@@ -226,7 +237,8 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
   };
 
   if (view === 'qr') {
-    return <QrSheet round={round} eventName={ev.name} cards={published[round]} names={names} onBack={() => setView('builder')} />;
+    return <QrSheet round={round} eventName={ev.name} cards={scopePublished} names={names} onBack={() => setView('builder')}
+      wave={byWave ? shownWave : null} slug={ev.slug ?? null} />;
   }
 
   // ---- warnings (red), in the order the TD should fix them. Pairing issues are recomputed live, so hand moves show them too.
@@ -241,24 +253,25 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
   if (ev.use_checkin && notIn > 0) soft.push(`${notIn} registered player${notIn === 1 ? " isn't" : "s aren't"} checked in and won't be put on cards. Check them in on the Players tab, then regenerate.`);
   if (!players.length) soft.push(ev.use_checkin && allPlayers.length ? 'Nobody is checked in yet. Check players in on the Players tab.' : 'No players yet. Add or import them on the Players tab.');
 
-  const status = !roundCards.length ? ['NONE', '#fff'] : !isPublished ? ['DRAFT', 'var(--over)'] : unpublished ? ['EDITED', 'var(--gold)'] : ['LIVE', 'var(--under)'];
+  const status = !scopeCards.length ? ['NONE', '#fff'] : !isPublished ? ['DRAFT', 'var(--over)'] : unpublished ? ['EDITED', 'var(--gold)'] : ['LIVE', 'var(--under)'];
 
   return (
     <>
       <div className="td-toolbar">
-        <div className="td-stat"><b style={{ color: status[1] }}>{status[0]}</b><span>ROUND {round}</span></div>
+        <div className="td-stat"><b style={{ color: status[1] }}>{status[0]}</b><span>ROUND {round}{byWave ? ` · ${shownWave}` : ''}</span></div>
         <div style={{ flex: 1 }} />
         <button className="td-btn" onClick={exportCsv} disabled={!roundCards.length}>EXPORT CSV</button>
         <button className="td-btn gold" onClick={() => setView('qr')} disabled={!isPublished || unpublished}
-          title={unpublished ? 'Publish your changes first: codes come from the published round.' : undefined}>QR SHEET</button>
-        <button className="td-btn cta" onClick={() => void publish(false)} disabled={!roundCards.length || !!busy}>
-          {busy === 'publish' ? 'PUBLISHING…' : isPublished ? `REPUBLISH R${round}` : `PUBLISH & START R${round}`}
+          title={unpublished ? 'Publish your changes first: codes come from the published round.' : undefined}>QR SHEET{byWave ? ` ${shownWave}` : ''}</button>
+        <button className="td-btn cta" onClick={() => void publish(false)} disabled={!scopeCards.length || !!busy}>
+          {busy === 'publish' ? 'PUBLISHING…' : isPublished ? `REPUBLISH ${scopeName}` : `PUBLISH & START ${scopeName}`}
         </button>
       </div>
       {toast && <div className="td-toast" role="status">{toast}</div>}
-      {roundCards.length > 0 && !isPublished && (
-        <div className="td-warn" role="status">Round {round} hasn't started. Cards are a draft until you tap <b>PUBLISH &amp; START R{round}</b>: that opens scoring and makes the QR codes.</div>
+      {scopeCards.length > 0 && !isPublished && (
+        <div className="td-warn" role="status">{byWave ? `The ${shownWave} wave of Round ${round}` : `Round ${round}`} hasn't started. Cards are a draft until you tap <b>PUBLISH &amp; START {scopeName}</b>: that opens scoring and makes the QR codes.</div>
       )}
+      {byWave && <div className="td-hint">Each wave is generated and published on its own: check the {shownWave} wave in, then <b>GENERATE</b> and <b>PUBLISH &amp; START {scopeName}</b>. The other wave never changes.</div>}
       <div className="td-body">
         <aside className="td-side">
           {rounds.length > 1 && (
@@ -334,7 +347,7 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
             <div className="td-warn" role="alert">
               ⚠ {alert.message}
               <div className="td-actions">
-                {alert.kind === 'has_scores' && <button className="td-btn danger" onClick={() => void publish(true)} disabled={!!busy}>FORCE REPUBLISH R{round}</button>}
+                {alert.kind === 'has_scores' && <button className="td-btn danger" onClick={() => void publish(true)} disabled={!!busy}>FORCE REPUBLISH {scopeName}</button>}
                 <button className="td-btn" onClick={() => setAlert(null)}>DISMISS</button>
               </div>
             </div>
