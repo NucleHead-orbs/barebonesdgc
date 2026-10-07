@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { casualAction, seatsLeft, type CasualRound, applyMention, mentionAt, mentionParts, mentionPicks, asTab, canJumpIn, roundStep, slotLabel, whoLine, daysSummary, type ChallengeRound, hasDay, mergeLines, newsTone, pickReasons, toggleDay, type Pick } from './board';
+import { canDropOut, casualAction, seatsLeft, type CasualRound, applyMention, mentionAt, mentionParts, mentionPicks, asTab, canJumpIn, roundStep, slotLabel, whoLine, daysSummary, type ChallengeRound, hasDay, mergeLines, newsTone, pickReasons, toggleDay, type Pick } from './board';
 import type { ChatLine } from './heat';
 
 const line = (id: number): ChatLine => ({ id, member_id: null, name: null, nickname: null, body: String(id), at: '', number: null, hidden: false });
@@ -70,6 +70,12 @@ describe('challenge rounds', () => {
     expect(canJumpIn({ ...open, joins: Array(8).fill(p) }, now)).toBe(false); // 8 jump-ins + the pair = a card of 10
     expect(canJumpIn({ ...open, role: 'joined' as const }, now)).toBe(false);
     expect(canJumpIn({ ...open, locked: false }, now)).toBe(false);
+  });
+  it('jump-ins drop out until tee time, after jump-ins close', () => {
+    const joined = { ...base, role: 'joined' as const, tee_at: tee, closes_at: closes, locked: true };
+    expect(canDropOut(joined, new Date(closes).getTime() + 60_000)).toBe(true);
+    expect(canDropOut(joined, new Date(tee).getTime() + 1)).toBe(false);
+    expect(canDropOut({ ...joined, role: null }, now)).toBe(false);
   });
   it('labels the slot', () => {
     expect(slotLabel(null, 'X')).toBe('');

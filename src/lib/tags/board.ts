@@ -101,6 +101,8 @@ export function slotLabel(tee: string | null, course: string | null): string {
 }
 /** datetime-local value <-> ISO (device time zone). */
 export const toLocalInput = (ms: number) => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
+/** A jump-in can drop out until tee time (jumping in closes 2 hours before; migration 20261114). */
+export const canDropOut = (r: ChallengeRound, now: number) => r.role === 'joined' && (!r.tee_at || now < new Date(r.tee_at).getTime());
 export const canJumpIn = (r: ChallengeRound, now: number) => r.role === null && roundStep(r, now) === 'open' && r.joins.length < MAX_JUMP_INS;
 
 // ---------- @mentions (migration 20261109): the database decides who was mentioned; these only help type and show it ----------

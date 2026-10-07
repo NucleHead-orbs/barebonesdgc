@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'dropout-to-tee', date: '2026-10-07', help: 'tags', who: 'tags',
+    title: 'Drop out until tee time',
+    body: 'Jump-ins on a challenge round can now **DROP OUT** (My Tag → MATCHUPS) right up to tee time. Jumping in still closes 2 hours before tee.',
+  },
+  {
     id: 'cards-of-10', date: '2026-10-07', help: 'tags', who: 'all',
     title: 'Supergroups: cards of 10',
     body: 'Casual cards go up to **10**: the Scorecard (and its live view), manual tag round submissions, casual round invites (invite up to 9) and challenge rounds (8 jump-ins). Tournament cards from the card builder stay 3 to 5.',

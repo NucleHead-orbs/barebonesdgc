@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react';
 import * as tagApi from '../../lib/tags/api';
-import { MAX_JUMP_INS, canJumpIn, roundStep, slotLabel, toLocalInput, type ChallengeRound, type LibCourseLite, type RoundPerson } from '../../lib/tags/board';
+import { MAX_JUMP_INS, canDropOut, canJumpIn, roundStep, slotLabel, toLocalInput, type ChallengeRound, type LibCourseLite, type RoundPerson } from '../../lib/tags/board';
 import { display, tagMessage } from '../../lib/tags/tags';
 import './board.css';
 
@@ -100,7 +100,7 @@ export function JumpIns({ rounds, token, act, now }: { rounds: ChallengeRound[];
   return (
     <section className="td-panel cr-jump">
       <h2>Jump in</h2>
-      <p className="td-hint">Locked challenge rounds in your tag sets. Up to {MAX_JUMP_INS} jump-ins each; your tag goes on the line too. Closes 2 hours before tee time.</p>
+      <p className="td-hint">Locked challenge rounds in your tag sets. Up to {MAX_JUMP_INS} jump-ins each; your tag goes on the line too. Jump in until 2 hours before tee time; drop out any time before tee.</p>
       {[...mine, ...open].map((r) => {
         const spots = MAX_JUMP_INS - r.joins.length;
         return (
@@ -111,7 +111,7 @@ export function JumpIns({ rounds, token, act, now }: { rounds: ChallengeRound[];
               <span className="td-hint">{r.joins.length ? `In: ${r.joins.map(who).join(', ')}. ` : ''}{spots > 0 ? `${spots} spot${spots === 1 ? '' : 's'} left` : 'Card full'} · closes {closesLabel(r)}</span>
             </div>
             {r.role === 'joined'
-              ? (roundStep(r, now) === 'open'
+              ? (canDropOut(r, now)
                 ? <button className="td-btn quiet" onClick={() => { if (window.confirm('Drop out? Your spot opens for someone else.')) void act(tagApi.dropOut(token, r.id), 'You dropped out.'); }}>DROP OUT</button>
                 : <span className="td-hint">You're in</span>)
               : <button className="td-btn cta" disabled={!canJumpIn(r, now)} onClick={() => {
