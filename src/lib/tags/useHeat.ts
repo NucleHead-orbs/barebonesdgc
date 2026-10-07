@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import * as tagApi from './api';
 import type { HeatRow } from './heat';
-import type { ChallengeRound, Mention } from './board';
+import type { CasualRound, ChallengeRound, Mention } from './board';
 
 /** Loads tag_heat for this link (again whenever `rev` changes). */
 export function useHeat(token: string, rev: number): HeatRow[] | null {
@@ -53,6 +53,17 @@ export function useMentions(token: string, rev: number): Mention[] {
   useEffect(() => {
     let live = true;
     void (async () => { const r = await tagApi.mentions(token); if (live && r.data) setRows(r.data); })();
+    return () => { live = false; };
+  }, [token, rev]);
+  return rows;
+}
+
+/** Casual round invites in my sets (tag_casuals), again whenever `rev` changes. */
+export function useCasuals(token: string, rev: number): CasualRound[] {
+  const [rows, setRows] = useState<CasualRound[]>([]);
+  useEffect(() => {
+    let live = true;
+    void (async () => { const r = await tagApi.casuals(token); if (live && r.data) setRows(r.data); })();
     return () => { live = false; };
   }, [token, rev]);
   return rows;

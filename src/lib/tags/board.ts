@@ -67,6 +67,8 @@ export function newsTone(event: string | null | undefined): { label: string; ton
     case 'played': return { label: 'SETTLED', tone: 'fight' };
     case 'result': return { label: 'RESULTS', tone: 'fight' };
     case 'matchmaker': return { label: 'MATCHMAKER', tone: 'match' };
+    case 'invite': return { label: 'LET\'S PLAY', tone: 'match' };
+    case 'invite_off': return { label: 'CALLED OFF', tone: 'meh' };
     default: return { label: 'NEWS', tone: 'meh' };
   }
 }
@@ -81,7 +83,8 @@ export interface ChallengeRound {
   role: 'challenger' | 'challenged' | 'joined' | null; tee_at: string | null; course_id: string | null; course: string | null;
   slot_mine: boolean; locked: boolean; closes_at: string | null; due_at: string | null; joins: RoundPerson[];
 }
-export const MAX_JUMP_INS = 2;
+/** Challenge rounds: up to 4 jump-ins, so a card of 6 (migration 20261112). */
+export const MAX_JUMP_INS = 4;
 /** Where a challenge round stands for the player looking at it. */
 export type RoundStep = 'pick' | 'wait_pick' | 'ok' | 'wait_ok' | 'open' | 'closed';
 export function roundStep(r: ChallengeRound, now: number): RoundStep {
@@ -148,4 +151,41 @@ export function mentionParts(body: string, labels: string[]): Array<{ text: stri
   }
   if (last < body.length) out.push({ text: body.slice(last), at: false });
   return out.length ? out : [{ text: body, at: false }];
+}
+
+// ---------- casual round invites (migration 20261112): any distance on the board, up to 6, tags decided at tee-off ----------
+export const CARD_MAX = 6;
+export const MAX_INVITED = 5;
+export type CasualStatus = 'in' | 'invited' | 'out';
+export interface CasualPerson extends RoundPerson { status: CasualStatus; invited: boolean }
+export interface CasualRound {
+  id: string; pool_id: string; pool: string; pool_name: string; host: RoundPerson; tee_at: string; course_id: string | null; course: string | null;
+  note: string | null; mine: CasualStatus | null; host_me: boolean; open: boolean; players: CasualPerson[];
+}
+export const casualIn = (r: CasualRound) => r.players.filter((p) => p.status === 'in');
+export const seatsLeft = (r: CasualRound) => Math.max(0, CARD_MAX - casualIn(r).length);
+/** What I can do on it: host (call off), in (drop out), say yes (invited / declined / open seat), full, or closed. */
+export function casualAction(r: CasualRound): 'host' | 'leave' | 'join' | 'full' | 'closed' {
+  if (!r.open) return 'closed';
+  if (r.host_me) return 'host';
+  if (r.mine === 'in') return 'leave';
+  return seatsLeft(r) > 0 ? 'join' : 'full';
+}
+
+/** Casual-round errors in plain words (same codes as challenge rounds mean different limits here). null = not one of these. */
+export function casualMessage(err: unknown): string | null {
+  const m = (err && typeof err === 'object' && 'message' in err ? String((err as { message?: string }).message) : String(err ?? ''));
+  if (/slot_too_soon/.test(m)) return 'Pick a time at least 15 minutes out.';
+  if (/slot_too_far/.test(m)) return 'Pick a time within the next 30 days.';
+  if (/slot_closed/.test(m)) return 'Too late: it closed at tee time.';
+  if (/not_open/.test(m)) return 'That round was called off.';
+  if (/round_full/.test(m)) return 'That card is full (6).';
+  if (/not_in_set/.test(m)) return 'Everyone you invite needs a tag in this set.';
+  if (/too_many_players/.test(m)) return `Invite up to ${MAX_INVITED} players (a card of ${CARD_MAX}).`;
+  if (/invite_yourself/.test(m)) return "You're already on it: you're the host.";
+  if (/too_many_invites/.test(m)) return 'You already have 3 rounds coming up in this set. Play one (or call one off) first.';
+  if (/host_cancels/.test(m)) return "You're the host: call it off instead.";
+  if (/not_your_invite/.test(m)) return 'Only the host can call it off.';
+  if (/note_too_long/.test(m)) return 'Keep the note under 200 characters.';
+  return null;
 }

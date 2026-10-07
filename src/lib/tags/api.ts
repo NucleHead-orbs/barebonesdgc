@@ -5,7 +5,7 @@
 import { supabase } from '../supabase';
 import type { MatchStatus, PendingSwap, Tag, TagMember, TagPool } from './tags';
 import type { BoardHeat, ChatLine, HeatRow } from './heat';
-import type { BoardRead, ChallengeRound, MatchupSet, Mention, Profile, ReactionKind } from './board';
+import type { BoardRead, CasualRound, ChallengeRound, MatchupSet, Mention, Profile, ReactionKind } from './board';
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
 const wrap = async <T>(fn: () => Promise<T>): Promise<Result<T>> => {
@@ -172,6 +172,12 @@ export const tdChatHide = (id: number, hide: boolean) => wrap(async () => { must
 // ---------- the Board, profiles, Matchups (migration 20261031) ----------
 export const boardRead = (token: string, poolId: string, after: number) =>
   wrap(async (): Promise<BoardRead> => must(await supabase.rpc('tag_board_read', { p_token: token, p_pool: poolId, p_after: after })) as BoardRead);
+/** Casual round invites in my sets (migration 20261112). */
+export const casuals = (token: string) => wrap(async (): Promise<CasualRound[]> => (must(await supabase.rpc('tag_casuals', { p_token: token })) ?? []) as CasualRound[]);
+export const casualCreate = (token: string, poolId: string, teeAt: string, courseId: string, members: string[], note: string) =>
+  wrap(async (): Promise<string> => must(await supabase.rpc('tag_casual_create', { p_token: token, p_pool: poolId, p_tee: teeAt, p_course: courseId, p_members: members, p_note: note || null })) as string);
+export const casualAnswer = (token: string, id: string, inRound: boolean) => wrap(async () => { must(await supabase.rpc('tag_casual_answer', { p_token: token, p_invite: id, p_in: inRound })); });
+export const casualCancel = (token: string, id: string) => wrap(async () => { must(await supabase.rpc('tag_casual_cancel', { p_token: token, p_invite: id })); });
 /** My @mentions, newest first (last 14 days). */
 export const mentions = (token: string) => wrap(async (): Promise<Mention[]> => (must(await supabase.rpc('tag_mentions', { p_token: token })) ?? []) as Mention[]);
 export const react = (token: string, chatId: number, kind: ReactionKind) =>

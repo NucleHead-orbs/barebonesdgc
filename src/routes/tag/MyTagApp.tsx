@@ -12,7 +12,7 @@ import { HeatBell, TagHeat } from '../../components/tags/TagHeat';
 import { TagBoard } from '../../components/tags/TagBoard';
 import { Matchups } from '../../components/tags/Matchups';
 import { asTab, type MyTagTab } from '../../lib/tags/board';
-import { chatSeenKey, readSeen, useHeat, useMentions, useRounds, welcomeSeen, type HeatFocus } from '../../lib/tags/useHeat';
+import { chatSeenKey, readSeen, useCasuals, useHeat, useMentions, useRounds, welcomeSeen, type HeatFocus } from '../../lib/tags/useHeat';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
 import { NewVersionNote } from '../../components/dev/DevReports';
@@ -41,6 +41,7 @@ export default function MyTagApp() {
   const heatRows = useHeat(token, rev);
   const rounds = useRounds(token, rev);
   const mentions = useMentions(token, rev);
+  const casuals = useCasuals(token, rev);
   const [focusChat, setFocusChat] = useState<number | null>(null);
   const [focus, setFocus] = useState<HeatFocus | null>(null);
   const [params, setParams] = useSearchParams();
@@ -121,7 +122,7 @@ export default function MyTagApp() {
       </header>
       <nav className="td-tabs mt-tabs" aria-label="My Tag">
         {([['tags', 'MY TAGS'], ['board', 'BOARD'], ['matchups', 'MATCHUPS']] as Array<[MyTagTab, string]>).map(([t, label]) => {
-          const n = t === 'board' ? Object.values(unread).reduce((a, b) => a + b, 0) : 0;
+          const n = t === 'board' ? Object.values(unread).reduce((a, b) => a + b, 0) : t === 'matchups' ? casuals.filter((c) => c.open && c.mine === 'invited').length : 0;
           return <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => go(t)}>{label}{n > 0 && <b>{n > 99 ? '99+' : n}</b>}</button>;
         })}
       </nav>
@@ -133,7 +134,7 @@ export default function MyTagApp() {
         {!home.holdings.length && <div className="td-warn soft">You don't hold a tag right now. Ask your league TD to issue you one.</div>}
         {tab === 'board' && <TagBoard token={token} meId={meId} rows={heatRows} names={names} pool={boardPool} onPool={setBoardPool}
           unread={unread} seenKey={seenKey} onSeen={onSeen} rosters={home.rosters} focusId={focusChat} />}
-        {tab === 'matchups' && <Matchups token={token} act={act} rev={rev} rounds={rounds} />}
+        {tab === 'matchups' && <Matchups token={token} act={act} rev={rev} rounds={rounds} casuals={casuals} meId={meId} holdings={home.holdings} rosters={home.rosters} />}
         {tab === 'tags' && <>
         <div className="mt-tags">
           {home.holdings.map((h) => TAG_ART[h.pool] ? (

@@ -1,6 +1,6 @@
 /**
  * Challenge rounds (migration 20261103). SlotBox: the two players agree a time + course (the challenged picks first, the
- * other OKs or proposes another). JumpIns: locked rounds in your sets you can jump into (max 2, closes 2 h before tee).
+ * other OKs or proposes another). JumpIns: locked rounds in your sets you can jump into (max 4, a card of 6; closes 2 h before tee).
  */
 import { useEffect, useState } from 'react';
 import * as tagApi from '../../lib/tags/api';
@@ -27,7 +27,7 @@ export function SlotBox({ round, token, act, now }: { round: ChallengeRound; tok
       {step === 'wait_pick' && <p><b>Waiting on {who(other)} to pick a time and course.</b> The challenged player picks first.</p>}
       {step === 'ok' && (
         <>
-          <p><b>{who(other)} picked {slot}.</b> OK it to lock it in and open 2 spots for jump-ins.</p>
+          <p><b>{who(other)} picked {slot}.</b> OK it to lock it in and open {MAX_JUMP_INS} spots for jump-ins.</p>
           <div className="td-row">
             <button className="td-btn cta" onClick={() => void act(tagApi.okSlot(token, round.id), `Locked: ${slot}. Jump-ins are open.`)}>OK, LOCK IT IN</button>
             <button className="td-btn quiet" onClick={() => setEditing(true)}>PROPOSE ANOTHER</button>
@@ -75,7 +75,7 @@ function SlotForm({ round, token, act, now, first, onDone, onCancel }: {
   };
   return (
     <div className="cr-slot cr-form">
-      <p><b>{first ? 'You were challenged: pick when and where.' : 'Propose a time and course.'}</b> The other player OKs it, then 2 spots open for jump-ins.</p>
+      <p><b>{first ? 'You were challenged: pick when and where.' : 'Propose a time and course.'}</b> The other player OKs it, then {MAX_JUMP_INS} spots open for jump-ins.</p>
       <label className="td-field">WHEN<input className="td-input" type="datetime-local" value={when} min={min} max={max} onChange={(e) => setWhen(e.target.value)} /></label>
       <label className="td-field">COURSE
         <select className="td-input" value={course} onChange={(e) => setCourse(e.target.value)}>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyMention, mentionAt, mentionParts, mentionPicks, asTab, canJumpIn, roundStep, slotLabel, whoLine, daysSummary, type ChallengeRound, hasDay, mergeLines, newsTone, pickReasons, toggleDay, type Pick } from './board';
+import { casualAction, seatsLeft, type CasualRound, applyMention, mentionAt, mentionParts, mentionPicks, asTab, canJumpIn, roundStep, slotLabel, whoLine, daysSummary, type ChallengeRound, hasDay, mergeLines, newsTone, pickReasons, toggleDay, type Pick } from './board';
 import type { ChatLine } from './heat';
 
 const line = (id: number): ChatLine => ({ id, member_id: null, name: null, nickname: null, body: String(id), at: '', number: null, hidden: false });
@@ -66,7 +66,8 @@ describe('challenge rounds', () => {
   it('jump in only when open with a spot, and not already on it', () => {
     const open = { ...base, role: null, tee_at: tee, closes_at: closes, locked: true };
     expect(canJumpIn(open, now)).toBe(true);
-    expect(canJumpIn({ ...open, joins: [p, p] }, now)).toBe(false);
+    expect(canJumpIn({ ...open, joins: [p, p, p] }, now)).toBe(true);
+    expect(canJumpIn({ ...open, joins: [p, p, p, p] }, now)).toBe(false); // 4 jump-ins + the pair = a card of 6
     expect(canJumpIn({ ...open, role: 'joined' as const }, now)).toBe(false);
     expect(canJumpIn({ ...open, locked: false }, now)).toBe(false);
   });
@@ -107,5 +108,23 @@ describe('@mentions', () => {
   });
   it('labels the new house posts', () => {
     expect(newsTone('result')).toEqual({ label: 'RESULTS', tone: 'fight' });
+  });
+});
+
+describe('casual rounds', () => {
+  const p = (id: string, status: 'in' | 'invited' | 'out') => ({ id, name: id, nickname: null, number: 1, status, invited: true });
+  const r = (o: Partial<CasualRound>): CasualRound => ({ id: 'r', pool_id: 'p', pool: 'x', pool_name: 'X', host: { id: 'h', name: 'H', nickname: null, number: 9 },
+    tee_at: '', course_id: null, course: null, note: null, mine: null, host_me: false, open: true, players: [p('h', 'in'), p('a', 'invited')], ...o });
+  it('counts open seats out of 6 (invites hold no seat)', () => {
+    expect(seatsLeft(r({}))).toBe(5);
+    expect(seatsLeft(r({ players: ['h', 'a', 'b', 'c', 'd', 'e'].map((x) => p(x, 'in')) }))).toBe(0);
+  });
+  it('says what I can do', () => {
+    expect(casualAction(r({ host_me: true }))).toBe('host');
+    expect(casualAction(r({ mine: 'in' }))).toBe('leave');
+    expect(casualAction(r({ mine: 'invited' }))).toBe('join');
+    expect(casualAction(r({ mine: 'out' }))).toBe('join');
+    expect(casualAction(r({ players: ['h', 'a', 'b', 'c', 'd', 'e'].map((x) => p(x, 'in')) }))).toBe('full');
+    expect(casualAction(r({ open: false, host_me: true }))).toBe('closed');
   });
 });

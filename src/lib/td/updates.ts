@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'casual-rounds', date: '2026-10-07', help: 'tags', who: 'tags',
+    title: 'Casual round invites + cards of 6',
+    body: 'My Tag → MATCHUPS has **INVITE A ROUND**: pick a time, a course and up to 5 players in the set, any spot on the board. Invited players get an @ ping; anyone in the set can grab an open seat, up to 6. No tags on the line unless the scorer puts them on at tee-off. Challenge rounds now take **4 jump-ins** (a card of 6).',
+  },
+  {
     id: 'r2-confirm', date: '2026-10-07', help: 'players', who: 'all',
     title: 'Round 2 confirm',
     body: 'Two-round events now confirm Round 2 separately, so bailers don\'t leave holes in cards. Right after a Round 1 card is submitted, it asks every player **Playing Round 2? IN / OUT**. The check-in table (Players or crew phones) has a **ROUND 2 CONFIRM** switch to set or change anyone. Round 2 cards only take players marked IN, and the Cards tab lists who hasn\'t answered.',

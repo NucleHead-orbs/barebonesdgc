@@ -7,13 +7,19 @@ import * as tagApi from '../../lib/tags/api';
 import { DAYS, MAX_COURSES, daysSummary, hasDay, pickReasons, toggleDay, type MatchupSet, type Profile } from '../../lib/tags/board';
 import { display, tagMessage } from '../../lib/tags/tags';
 import { JumpIns } from './ChallengeRounds';
+import { CasualRounds } from './CasualRounds';
+import type { Holding, RosterEntry } from '../../lib/tags/api';
+import type { CasualRound } from '../../lib/tags/board';
 import type { ChallengeRound } from '../../lib/tags/board';
 import { useNow } from '../../lib/tags/useHeat';
 import './board.css';
 
 type Act = (p: Promise<{ error?: unknown }>, ok?: string) => Promise<boolean>;
 
-export function Matchups({ token, act, rev, rounds }: { token: string; act: Act; rev: number; rounds: ChallengeRound[] }) {
+export function Matchups({ token, act, rev, rounds, casuals, meId, holdings, rosters }: {
+  token: string; act: Act; rev: number; rounds: ChallengeRound[];
+  casuals: CasualRound[]; meId: string; holdings: Holding[]; rosters: Record<string, RosterEntry[]>;
+}) {
   const now = useNow();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sets, setSets] = useState<MatchupSet[] | null>(null);
@@ -34,6 +40,7 @@ export function Matchups({ token, act, rev, rounds }: { token: string; act: Act;
 
   return (
     <div className="mu">
+      <CasualRounds token={token} meId={meId} holdings={holdings} rosters={rosters} rounds={casuals} act={act} now={now} />
       <JumpIns rounds={rounds} token={token} act={act} now={now} />
       {open
         ? <ProfileForm token={token} profile={profile} first={!profile.saved} onDone={async () => { setEditing(false); await load(); }} onCancel={profile.saved ? () => setEditing(false) : undefined} />

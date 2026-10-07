@@ -20,9 +20,9 @@ grant execute on function pg_temp.tee(uuid) to anon;
 grant execute on function pg_temp.pool(), pg_temp.mem(text), pg_temp.tok(text), pg_temp.course(), pg_temp.news(text), pg_temp.v(text), pg_temp.rounds(text) to anon;
 
 insert into tag_pools (slug, name, sort, chat, challenges) values ('rounds-test', 'Rounds Test', 96, true, true);
-insert into tag_members (name) select n from unnest(array['Al Round', 'Bea Round', 'Cal Round', 'Dot Round', 'Eve Round', 'Flo Round', 'Out Round']) n;
+insert into tag_members (name) select n from unnest(array['Al Round', 'Bea Round', 'Cal Round', 'Dot Round', 'Eve Round', 'Flo Round', 'Gus Round', 'Hal Round', 'Out Round']) n;
 insert into tags (pool_id, number, holder_id, status)
-select pg_temp.pool(), i, pg_temp.mem(n), 'held' from unnest(array['Al Round', 'Bea Round', 'Cal Round', 'Dot Round', 'Eve Round', 'Flo Round']) with ordinality as x(n, i);
+select pg_temp.pool(), i, pg_temp.mem(n), 'held' from unnest(array['Al Round', 'Bea Round', 'Cal Round', 'Dot Round', 'Eve Round', 'Flo Round', 'Gus Round', 'Hal Round']) with ordinality as x(n, i);
 insert into courses (name) values ('Round Park');
 select set_config('request.jwt.claims', '', false);
 set client_min_messages = notice;
@@ -55,14 +55,16 @@ select pg_temp.ok(pg_temp.refused(format('select tag_challenge_join(%L, %L)', pg
 select tag_challenge_join(pg_temp.tok('Eve Round'), pg_temp.v('c')::uuid);
 select pg_temp.ok(pg_temp.refused(format('select tag_challenge_join(%L, %L)', pg_temp.tok('Eve Round'), pg_temp.v('c')), 'already_in'), 'once is enough');
 select tag_challenge_join(pg_temp.tok('Al Round'), pg_temp.v('c')::uuid);
-select pg_temp.ok(pg_temp.refused(format('select tag_challenge_join(%L, %L)', pg_temp.tok('Flo Round'), pg_temp.v('c')), 'round_full'), 'two jump-ins max (a card of 4)');
+select tag_challenge_join(pg_temp.tok('Cal Round'), pg_temp.v('c')::uuid);
+select tag_challenge_join(pg_temp.tok('Gus Round'), pg_temp.v('c')::uuid);
+select pg_temp.ok(pg_temp.refused(format('select tag_challenge_join(%L, %L)', pg_temp.tok('Flo Round'), pg_temp.v('c')), 'round_full'), 'four jump-ins max (a card of 6)');
 select tag_challenge_leave(pg_temp.tok('Al Round'), pg_temp.v('c')::uuid);
 select pg_temp.ok(pg_temp.refused(format('select tag_challenge_leave(%L, %L)', pg_temp.tok('Al Round'), pg_temp.v('c')), 'not_in'), 'drop out once');
 select tag_challenge_join(pg_temp.tok('Flo Round'), pg_temp.v('c')::uuid);
-select pg_temp.ok((select jsonb_array_length(r->'joins') = 2 and r->>'role' = 'joined' from jsonb_array_elements(pg_temp.rounds('Flo Round')) r), 'a dropped spot can be taken');
+select pg_temp.ok((select jsonb_array_length(r->'joins') = 4 and r->>'role' = 'joined' from jsonb_array_elements(pg_temp.rounds('Flo Round')) r), 'a dropped spot can be taken');
 reset role;
-select pg_temp.ok(pg_temp.news('scheduled') = 1 and pg_temp.news('jumpin') = 3 and pg_temp.news('dropout') = 1, 'the Board hears about the lock, jump-ins and the drop-out');
-select pg_temp.ok((select body like '%vs%is on: %at Round Park. 2 spots to jump in%' from tag_chat where pool_id = pg_temp.pool() and event = 'scheduled'), 'the lock post has the time and course');
+select pg_temp.ok(pg_temp.news('scheduled') = 1 and pg_temp.news('jumpin') = 5 and pg_temp.news('dropout') = 1, 'the Board hears about the lock, jump-ins and the drop-out');
+select pg_temp.ok((select body like '%vs%is on: %at Round Park. 4 spots to jump in%' from tag_chat where pool_id = pg_temp.pool() and event = 'scheduled'), 'the lock post has the time and course');
 set role anon;
 select pg_temp.ok(pg_temp.refused('select * from tag_challenge_joins', 'permission denied'), 'joins table has no client grants');
 reset role;

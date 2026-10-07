@@ -99,3 +99,14 @@
 .bd-line.is-focus { animation: bd-focus 1.6s ease-out 2; }
 @keyframes bd-focus { 0% { box-shadow: 0 0 0 3px var(--cyan), 0 0 24px var(--cyan); } 100% { box-shadow: 0 0 0 1px var(--cyan), 0 0 0 transparent; } }
 @media (prefers-reduced-motion: reduce) { .bd-line.is-focus { animation: none; } }
+
+/* casual rounds (MATCHUPS) */
+.cs { display: flex; flex-direction: column; gap: 10px; }
+.cs-round { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--page); }
+.cs-round.is-in { border-color: var(--under, #c6ff3d); }
+.cs-round.is-asked { border-color: var(--cyan); box-shadow: 0 0 12px color-mix(in srgb, var(--cyan) 30%, transparent); }
+.cs-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 220px; }
+.cs-flag { margin-left: 8px; padding: 1px 6px; border-radius: 6px; background: var(--cyan); color: #0b0710; font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+.cs-note { font-style: italic; }
+.cs-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.cs-roster { max-height: 220px; overflow: auto; }
