@@ -83,8 +83,8 @@ export interface ChallengeRound {
   role: 'challenger' | 'challenged' | 'joined' | null; tee_at: string | null; course_id: string | null; course: string | null;
   slot_mine: boolean; locked: boolean; closes_at: string | null; due_at: string | null; joins: RoundPerson[];
 }
-/** Challenge rounds: up to 4 jump-ins, so a card of 6 (migration 20261112). */
-export const MAX_JUMP_INS = 4;
+/** Challenge rounds: up to 8 jump-ins, so a card of 10 (migration 20261113). */
+export const MAX_JUMP_INS = 8;
 /** Where a challenge round stands for the player looking at it. */
 export type RoundStep = 'pick' | 'wait_pick' | 'ok' | 'wait_ok' | 'open' | 'closed';
 export function roundStep(r: ChallengeRound, now: number): RoundStep {
@@ -153,9 +153,9 @@ export function mentionParts(body: string, labels: string[]): Array<{ text: stri
   return out.length ? out : [{ text: body, at: false }];
 }
 
-// ---------- casual round invites (migration 20261112): any distance on the board, up to 6, tags decided at tee-off ----------
-export const CARD_MAX = 6;
-export const MAX_INVITED = 5;
+// ---------- casual round invites (migration 20261112): any distance on the board, up to 10 (migration 20261113), tags decided at tee-off ----------
+export const CARD_MAX = 10;
+export const MAX_INVITED = 9;
 export type CasualStatus = 'in' | 'invited' | 'out';
 export interface CasualPerson extends RoundPerson { status: CasualStatus; invited: boolean }
 export interface CasualRound {

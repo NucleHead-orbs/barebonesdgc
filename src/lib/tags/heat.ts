@@ -69,7 +69,7 @@ export function heatMessage(m: string): string | null {
   if (/other_player_oks/.test(m)) return 'The other player has to OK your pick.';
   if (/no_slot/.test(m)) return 'No time picked yet.';
   if (/not_open/.test(m)) return "That round isn't open for jump-ins (it needs a locked time first).";
-  if (/round_full/.test(m)) return 'Card is full: 4 jump-ins max (6 on the card).';
+  if (/round_full/.test(m)) return 'Card is full: 8 jump-ins max (10 on the card).';
   if (/already_in/.test(m)) return "You're already on that round.";
   if (/not_in/.test(m)) return "You're not on that round.";
   if (/invalid_days/.test(m)) return 'Pick days of the week.';

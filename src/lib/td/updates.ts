@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'cards-of-10', date: '2026-10-07', help: 'tags', who: 'all',
+    title: 'Supergroups: cards of 10',
+    body: 'Casual cards go up to **10**: the Scorecard (and its live view), manual tag round submissions, casual round invites (invite up to 9) and challenge rounds (8 jump-ins). Tournament cards from the card builder stay 3 to 5.',
+  },
+  {
     id: 'casual-rounds', date: '2026-10-07', help: 'tags', who: 'tags',
     title: 'Casual round invites + cards of 6',
     body: 'My Tag → MATCHUPS has **INVITE A ROUND**: pick a time, a course and up to 5 players in the set, any spot on the board. Invited players get an @ ping; anyone in the set can grab an open seat, up to 6. No tags on the line unless the scorer puts them on at tee-off. Challenge rounds now take **4 jump-ins** (a card of 6).',

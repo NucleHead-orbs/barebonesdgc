@@ -83,7 +83,7 @@ export function tagMessage(err: unknown): string {
   if (/invalid_link/.test(m)) return "This link doesn't work anymore. Ask your league TD for a new one.";
   if (/no_tag_in_pool/.test(m)) return "Everyone on the round needs a tag in this league. Someone doesn't have one.";
   if (/must_include_you/.test(m)) return 'You can only log rounds you played in.';
-  if (/players_2_to_6/.test(m)) return 'A tag round needs 2 to 6 tag holders.';
+  if (/players_2_to_(6|10)/.test(m)) return 'A tag round needs 2 to 10 tag holders.';
   if (/duplicate_player/.test(m)) return 'Someone is on the round twice.';
   if (/invalid_score/.test(m)) return 'Every player needs a score (whole number).';
   if (/invalid_date/.test(m)) return 'Pick a date in the last two weeks.';

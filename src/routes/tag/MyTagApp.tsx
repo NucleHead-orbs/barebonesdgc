@@ -284,7 +284,7 @@ function LogRound({ home, token, act }: { home: TagHome; token: string; act: Act
   const preview = ready ? swap(rows.map((r) => ({ id: r.id, score: r.score as number, tag: r.tag }))) : [];
   const nameOf = (id: string) => (id === meId ? 'You' : roster.find((r) => r.member_id === id)?.name ?? '?');
 
-  const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= 5 ? p : [...p, id]));
+  const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= 9 ? p : [...p, id]));
   const reset = () => { setPicked([]); setScores({}); setCourse(''); setDay(localDate()); setOpen(false); };
   const submit = async () => {
     setBusy(true);
@@ -305,7 +305,7 @@ function LogRound({ home, token, act }: { home: TagHome; token: string; act: Act
           ))}
         </div>
       )}
-      <div className="td-label">WHO PLAYED (UP TO 5 MORE)</div>
+      <div className="td-label">WHO PLAYED (UP TO 9 MORE)</div>
       <div className="td-chips mt-roster">
         {roster.filter((r) => r.member_id !== meId).map((r) => (
           <button key={r.member_id} className="td-chip" aria-pressed={picked.includes(r.member_id)} onClick={() => toggle(r.member_id)}>#{r.number} {r.name}</button>

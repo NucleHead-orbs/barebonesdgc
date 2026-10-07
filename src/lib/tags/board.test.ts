@@ -66,8 +66,8 @@ describe('challenge rounds', () => {
   it('jump in only when open with a spot, and not already on it', () => {
     const open = { ...base, role: null, tee_at: tee, closes_at: closes, locked: true };
     expect(canJumpIn(open, now)).toBe(true);
-    expect(canJumpIn({ ...open, joins: [p, p, p] }, now)).toBe(true);
-    expect(canJumpIn({ ...open, joins: [p, p, p, p] }, now)).toBe(false); // 4 jump-ins + the pair = a card of 6
+    expect(canJumpIn({ ...open, joins: Array(7).fill(p) }, now)).toBe(true);
+    expect(canJumpIn({ ...open, joins: Array(8).fill(p) }, now)).toBe(false); // 8 jump-ins + the pair = a card of 10
     expect(canJumpIn({ ...open, role: 'joined' as const }, now)).toBe(false);
     expect(canJumpIn({ ...open, locked: false }, now)).toBe(false);
   });
@@ -115,16 +115,16 @@ describe('casual rounds', () => {
   const p = (id: string, status: 'in' | 'invited' | 'out') => ({ id, name: id, nickname: null, number: 1, status, invited: true });
   const r = (o: Partial<CasualRound>): CasualRound => ({ id: 'r', pool_id: 'p', pool: 'x', pool_name: 'X', host: { id: 'h', name: 'H', nickname: null, number: 9 },
     tee_at: '', course_id: null, course: null, note: null, mine: null, host_me: false, open: true, players: [p('h', 'in'), p('a', 'invited')], ...o });
-  it('counts open seats out of 6 (invites hold no seat)', () => {
-    expect(seatsLeft(r({}))).toBe(5);
-    expect(seatsLeft(r({ players: ['h', 'a', 'b', 'c', 'd', 'e'].map((x) => p(x, 'in')) }))).toBe(0);
+  it('counts open seats out of 10 (invites hold no seat)', () => {
+    expect(seatsLeft(r({}))).toBe(9);
+    expect(seatsLeft(r({ players: ['h', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j'].map((x) => p(x, 'in')) }))).toBe(0);
   });
   it('says what I can do', () => {
     expect(casualAction(r({ host_me: true }))).toBe('host');
     expect(casualAction(r({ mine: 'in' }))).toBe('leave');
     expect(casualAction(r({ mine: 'invited' }))).toBe('join');
     expect(casualAction(r({ mine: 'out' }))).toBe('join');
-    expect(casualAction(r({ players: ['h', 'a', 'b', 'c', 'd', 'e'].map((x) => p(x, 'in')) }))).toBe('full');
+    expect(casualAction(r({ players: ['h', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j'].map((x) => p(x, 'in')) }))).toBe('full');
     expect(casualAction(r({ open: false, host_me: true }))).toBe('closed');
   });
 });

@@ -1,6 +1,6 @@
 /**
  * Challenge rounds (migration 20261103). SlotBox: the two players agree a time + course (the challenged picks first, the
- * other OKs or proposes another). JumpIns: locked rounds in your sets you can jump into (max 4, a card of 6; closes 2 h before tee).
+ * other OKs or proposes another). JumpIns: locked rounds in your sets you can jump into (max 8, a card of 10; closes 2 h before tee).
  */
 import { useEffect, useState } from 'react';
 import * as tagApi from '../../lib/tags/api';

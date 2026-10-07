@@ -21,7 +21,7 @@ export const started = (d: Pick<Draft, 'scores'>) => d.scores.some((s) => s.some
 
 /** What hole i (0-based) is called on the course. */
 export const holeName = (d: { labels?: string[] | null }, i: number) => d.labels?.[i] ?? String(i + 1);
-export const MAX_PLAYERS = 8;
+export const MAX_PLAYERS = 10;
 export const HOLE_CHOICES = [9, 18, 19, 20, 21, 24, 27];
 
 export function newDraft(today: string, me?: { id: string; name: string } | null): Draft {
@@ -123,7 +123,7 @@ export function roundMessage(err: unknown): string {
   if (/invalid_labels/.test(m)) return 'The hole names don\'t match the card. Pick the layout again.';
   if (/invalid_date/.test(m)) return 'Rounds have to be from the last two weeks.';
   if (/course_required/.test(m)) return 'Pick or type the course.';
-  if (/players_1_to_8/.test(m)) return 'A round has 1 to 8 players.';
+  if (/players_1_to_(8|10)/.test(m)) return 'A round has 1 to 10 players.';
   if (/duplicate_player/.test(m)) return 'Someone is on the card twice.';
   if (/name_required/.test(m)) return 'Every guest needs a name.';
   if (/too_many_rounds/.test(m)) return "That's 20 rounds today. Save the rest tomorrow.";
