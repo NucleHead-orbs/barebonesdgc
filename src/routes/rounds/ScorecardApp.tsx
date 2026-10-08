@@ -20,6 +20,8 @@ import { LiveFx } from './LiveFx';
 import { Prose } from '../../components/Prose';
 import { SCORECARD_HEAD, useAppHead } from '../../lib/rounds/useInstall';
 import { AppConnect, InstallCard } from './InstallCard';
+import { useGMode } from '../../lib/gmode';
+import { GModeToggle } from '../../components/gmode/GModeToggle';
 import './rounds.css';
 
 const read = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -33,6 +35,7 @@ const loadDraft = (): Draft | null => { try { const d = JSON.parse(read(DRAFT_KE
 
 export default function ScorecardApp() {
   useTheme(null);
+  const [gmode, setGMode] = useGMode();
   useAppHead(SCORECARD_HEAD);
   const nav = useNavigate();
   const [params] = useSearchParams();
@@ -132,7 +135,10 @@ export default function ScorecardApp() {
     <div className="sc">
       <header className="sc-top">
         <Link to="/rounds" className="sc-brand" aria-label="Boner Rounds">BARE BONES <span>SCORECARD</span></Link>
-        <div className="sc-who">{me ? <>Saving as <b>{display(me.me)}</b> · <button className="sc-link" onClick={forget}>not you?</button></> : 'Keeping score on this phone'}</div>
+        <div className="sc-tools">
+          <div className="sc-who">{me ? <>Saving as <b>{display(me.me)}</b> · <button className="sc-link" onClick={forget}>not you?</button></> : 'Keeping score on this phone'}</div>
+          <GModeToggle on={gmode} onChange={setGMode} />
+        </div>
       </header>
       {err && <div className="sc-warn" role="alert">{err} <button className="sc-link" onClick={() => setErr('')}>OK</button></div>}
       {me && me.to_confirm.length > 0 && (

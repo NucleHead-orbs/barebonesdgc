@@ -1,0 +1,226 @@
+/*
+ * G-Mode (Grandpa mode): My Tag + Scorecard in daylight (Mike, 2026-10-08). Not an inverted dark mode: a printed clubhouse
+ * scorecard. Cream card stock on ruled paper, a hunter-green header band with a mustard rule, ink text, club type
+ * (Luckiest Guy + Rubik) a size up, chunky ink-shadow buttons instead of neon, and the card marks scores the way a pencil
+ * would: birdies circled, bogeys boxed. Lives on <html data-gmode> only while those pages are mounted (src/lib/gmode.ts).
+ * html[data-gmode] (0,1,1) outranks [data-theme] / [data-palette] (0,1,0), so the tokens below win on both pages.
+ * Every pair here is AA: ink on cream 14:1, fg-3 on cream 5.9:1, cream on green 6.6:1, green text on cream 6.4:1.
+ */
+
+/* ---------- the switch (both modes) ---------- */
+.gm-toggle { display: inline-flex; align-items: center; gap: 7px; height: 44px; padding: 0 13px; border-radius: 999px; flex: none;
+  border: 2px solid var(--border); background: transparent; color: var(--fg-2); cursor: pointer; white-space: nowrap;
+  font-family: var(--font-label); font-weight: var(--label-weight, 800); font-size: 12px; letter-spacing: 1.5px; }
+.gm-toggle svg { width: 26px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.gm-toggle:hover { border-color: var(--fg-3); }
+.gm-toggle:focus-visible { outline: 3px solid var(--accent-gold); outline-offset: 2px; }
+.gm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.mt-headtools { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+.mt-headtools .ht-bell { margin-left: 0; }
+.sc-tools { display: flex; align-items: center; gap: 10px; flex: 1 1 100%; justify-content: space-between; }
+.sc-tools .sc-who { min-width: 0; }
+
+/* ---------- tokens ---------- */
+html[data-gmode] {
+  color-scheme: light;
+  --gm-paper: #f2ead5; --gm-card: #fffdf6; --gm-ink: #1d2a22; --gm-green: #2f6b3a; --gm-band: #1f4a2a;
+  --gm-mustard: #f2cf5b; --gm-hilite: #f7e08a; --gm-red: #b3261e; --gm-rule: rgba(47, 107, 58, .075);
+  --bg-page: var(--gm-paper); --bg-app: var(--gm-band); --bg-surface: var(--gm-card); --bg-raised: #f4eedd;
+  --border: #c9bc98; --border-subtle: #e3d9bf;
+  --fg-1: var(--gm-ink); --fg-2: #33413a; --fg-3: #56625a; --fg-placeholder: #868b80;
+  --accent-a: var(--gm-green); --accent-b: #6c4486; --accent-c: #a3401d; --accent-gold: #8f650a;
+  --on-accent: var(--gm-card); --cta-bg: var(--gm-green); --cta-fg: var(--gm-card);
+  --header-bg: var(--gm-band); --header-rule: var(--gm-mustard); --header-rule-w: 4px;
+  --score-under: #1d7537; --score-even: var(--gm-ink); --score-over: var(--gm-red); --error: var(--gm-red);
+  --ink: var(--gm-ink); --bone: var(--gm-card);
+  --font-display: 'Luckiest Guy', 'Rubik', system-ui, sans-serif;
+  --font-label: 'Rubik', system-ui, sans-serif;
+  --font-body: 'Rubik', system-ui, sans-serif;
+  --label-weight: 800; --display-case: uppercase;
+  --btn-shadow: 0 3px 0 var(--gm-ink);
+  --hit: 48px; --hit-score: 60px;
+  /* legacy names td.css / board.css still read */
+  --under: #1d7537; --over: var(--gm-red); --text: var(--gm-ink); --text-muted: #56625a; --control-muted: #b4a885;
+  --loud-glow: transparent; --loud-glow-2: transparent;
+  --gm-lift: 0 1px 0 rgba(29, 42, 34, .05), 0 8px 18px -12px rgba(29, 42, 34, .45);
+}
+html[data-gmode] body { background: var(--gm-paper); }
+/* ruled paper under everything */
+html[data-gmode] :is(.td, .sc) { background-color: var(--gm-paper);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--gm-rule) 31px 32px); color: var(--gm-ink); font-size: 17px; }
+
+/* ---------- header band ---------- */
+html[data-gmode] .td-top { background: var(--gm-band); border-bottom: 4px solid var(--gm-mustard); color: var(--gm-card); }
+html[data-gmode] .td-title { color: var(--gm-card); font-size: 32px; letter-spacing: .5px; }
+html[data-gmode] .td-sub { color: var(--gm-mustard); font-size: 12px; letter-spacing: 1.5px; }
+html[data-gmode] .sc-top { background: var(--gm-band); border-bottom: 4px solid var(--gm-mustard); }
+html[data-gmode] .sc-brand { color: var(--gm-mustard); font-size: 22px; }
+html[data-gmode] .sc-brand span { color: var(--gm-card); }
+html[data-gmode] .sc-who { color: rgba(255, 253, 246, .82); font-size: 15px; }
+html[data-gmode] .sc-who b { color: var(--gm-card); }
+html[data-gmode] .sc-top .sc-link { color: var(--gm-mustard); }
+html[data-gmode] :is(.td-top, .sc-top) .gm-toggle { border-color: rgba(255, 253, 246, .4); color: var(--gm-card); }
+html[data-gmode] .gm-toggle[aria-pressed='true'] { background: var(--gm-mustard); border-color: var(--gm-mustard); color: var(--gm-ink); }
+html[data-gmode] :is(.td-top, .sc-top) :focus-visible { outline-color: var(--gm-mustard); }
+/* the bell icons sit on the band */
+html[data-gmode] .ht-icon { background: rgba(255, 253, 246, .08); border-color: rgba(255, 253, 246, .4); color: var(--gm-card); }
+html[data-gmode] .ht-icon.is-on, html[data-gmode] .ht-icon.is-at { border-color: var(--gm-mustard); color: var(--gm-mustard); box-shadow: none; }
+html[data-gmode] .ht-icon.is-hot { border-color: #ff8f80; color: #ffb3a8; }
+html[data-gmode] .ht-icon b { background: #d6402f; color: #fff; }
+html[data-gmode] .ht-icon.is-at b { background: var(--gm-mustard); color: var(--gm-ink); }
+/* tabs continue the band */
+html[data-gmode] .td-tabs { background: var(--gm-band); border-bottom: 0; box-shadow: 0 4px 0 var(--gm-mustard); margin-bottom: 4px; }
+html[data-gmode] .td-tabs button { color: rgba(255, 253, 246, .72); font-size: 13px; }
+html[data-gmode] .td-tabs button[aria-current='page'] { color: var(--gm-card); border-bottom-color: var(--gm-mustard); }
+html[data-gmode] .mt-tabs b { background: var(--gm-mustard); color: var(--gm-ink); }
+
+/* ---------- type: a size up, no faded grey ---------- */
+html[data-gmode] .td-hint { font-size: 14px; line-height: 1.45; opacity: 1; color: var(--fg-3); }
+html[data-gmode] .td-label { font-size: 12px; letter-spacing: 1.5px; opacity: 1; color: var(--fg-3); font-weight: 800; }
+html[data-gmode] .td-empty { color: var(--fg-3); }
+html[data-gmode] .td-panel h2, html[data-gmode] .td-h2 { color: var(--gm-ink); }
+html[data-gmode] :is(.mt-tag-meta, .mt-dtag-meta span, .mt-round-head span, .mr-l small, .mr-r small, .bd-line time, .bd-set span, .mu-dh, .mu-dl) { opacity: 1; color: var(--fg-3); }
+html[data-gmode] .td-sub, html[data-gmode] .td-tabs button { font-family: var(--font-label); }
+
+/* ---------- surfaces: card stock with a soft lift ---------- */
+html[data-gmode] :is(.td-panel, .sc-panel, .sc-hole, .sc-st, .mr-round, .wt, .dev-note, .ht-bomb) { box-shadow: var(--gm-lift); }
+html[data-gmode] .td-panel { background: var(--gm-card); border-color: var(--border); }
+html[data-gmode] .mt-round { background: var(--bg-raised); border-color: var(--border-subtle); }
+html[data-gmode] .bd-lines { background: var(--bg-raised); }
+html[data-gmode] .bd-line { background: var(--gm-card); }
+
+/* ---------- buttons: printed, chunky, ink shadow ---------- */
+html[data-gmode] .td-btn { border: 2px solid var(--gm-ink); background: var(--gm-card); color: var(--gm-ink); min-height: 44px; font-size: 14px; font-weight: 800; }
+html[data-gmode] .td-btn.cyan { border-color: var(--gm-green); color: var(--gm-green); box-shadow: 0 3px 0 var(--gm-green); }
+html[data-gmode] .td-btn.gold { border-color: var(--accent-gold); color: var(--accent-gold); }
+html[data-gmode] .td-btn.quiet { border-color: var(--control-muted); color: var(--fg-2); background: transparent; font-size: 13px; min-height: 40px; }
+html[data-gmode] .td-btn.danger { background: var(--gm-red); border-color: var(--gm-red); color: #fff; }
+html[data-gmode] .td-btn:active:not(:disabled) { transform: translateY(2px); }
+html[data-gmode] .td-link, html[data-gmode] .mt-dtag-meta a, html[data-gmode] .mr-link, html[data-gmode] .td a:not([class]), html[data-gmode] .sc a:not([class]) { color: var(--gm-green); font-weight: 700; }
+/* the LOUD buttons (index.css): no neon in daylight. Solid green, cream type, ink outline + press shadow. */
+html[data-gmode] :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)) {
+  background: var(--gm-green); border: 2px solid var(--gm-ink) !important; color: var(--gm-card) !important;
+  font-style: normal; text-shadow: none; box-shadow: 0 4px 0 var(--gm-ink); }
+html[data-gmode] :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet))::before,
+html[data-gmode] :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet))::after { display: none; }
+html[data-gmode] :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):not(:disabled):hover { transform: none; filter: brightness(1.08); }
+html[data-gmode] :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):not(:disabled):active { transform: translateY(3px); box-shadow: 0 1px 0 var(--gm-ink); }
+html[data-gmode] :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):disabled {
+  background: #d9d1bb; color: #6f7468 !important; border-color: #b4a885 !important; box-shadow: none; }
+
+/* ---------- controls ---------- */
+html[data-gmode] :is(.td-input, .td-select, .td-search) { background: var(--gm-card); color: var(--gm-ink); border-color: var(--control-muted); min-height: 46px; font-size: 16px; }
+html[data-gmode] :is(.td-input, .td-select, .sc-input, .sc select)::placeholder { color: var(--fg-placeholder); }
+html[data-gmode] .td-chip { border-color: var(--accent-b); color: var(--accent-b); background: var(--gm-card); font-size: 12px; padding: 7px 12px; }
+html[data-gmode] .td-chip[aria-pressed='true'] { background: var(--accent-b); color: #fff; }
+html[data-gmode] .td-seg button { color: var(--gm-ink); }
+html[data-gmode] .td-seg button[aria-pressed='true'] { color: #fff; }
+html[data-gmode] .td-seg.cyan button[aria-pressed='true'], html[data-gmode] .td-sizes button[aria-pressed='true'] { color: #fff; }
+html[data-gmode] :is(.td-sizes button, .td-toggle) { color: var(--gm-ink); }
+html[data-gmode] .td-player { color: var(--gm-ink); }
+html[data-gmode] :is(.td-player[aria-pressed='true'], .td-moving) { background: var(--gm-hilite); color: var(--gm-ink); }
+
+/* ---------- banners ---------- */
+html[data-gmode] .td-warn { background: #fbe4df; border-color: var(--gm-red); color: #6e1610; }
+html[data-gmode] .td-warn.soft { background: #fbf1cf; border-color: var(--accent-gold); color: var(--gm-ink); }
+html[data-gmode] .td-ok { background: #e2efd9; border-color: var(--under); color: #173f20; }
+html[data-gmode] .td-ok.td-float { box-shadow: var(--gm-lift); }
+html[data-gmode] .dev-note { background: var(--gm-card); border-color: var(--gm-green); }
+
+/* ---------- My Tag ---------- */
+html[data-gmode] .mt-tag { background: var(--gm-card); color: var(--gm-ink); border-color: var(--gm-green); box-shadow: var(--gm-lift); }
+html[data-gmode] .mt-dtag-meta b { color: var(--gm-ink); font-size: 28px; }
+/* the face box is squarer than the art's corners: a box-shadow would show a ghost rim on paper. The art's own outline carries it. */
+html[data-gmode] .dt-face { box-shadow: none; }
+html[data-gmode] .mt-round-table td { border-top-color: var(--border-subtle); }
+html[data-gmode] .mt-round-table, html[data-gmode] .mt-preview-row { font-size: 15px; }
+html[data-gmode] .mt-preview { border-color: var(--gm-green); background: var(--gm-card); }
+html[data-gmode] .mt-ea-lines li { border-bottom-color: var(--border-subtle); }
+html[data-gmode] .mt-score { font-size: 14px; }
+/* board + matchups */
+html[data-gmode] .bd-set { background: var(--gm-card); font-size: 13px; }
+html[data-gmode] .bd-set.on { border-color: var(--gm-green); background: #e2efd9; }
+html[data-gmode] :is(.bd-dot, .td-badge) { background: var(--accent-c); color: #fff; }
+html[data-gmode] .bd-line p { font-size: 16px; }
+html[data-gmode] .bd-tag { color: #fff !important; }
+html[data-gmode] .bd-line.t-boom { border-color: #c4283f; } html[data-gmode] .bd-line.t-boom .bd-tag { background: #c4283f; }
+html[data-gmode] .bd-line.t-match { background: #eef5e8; }
+html[data-gmode] .bd-new { color: var(--accent-c); } html[data-gmode] .bd-new::before, html[data-gmode] .bd-new::after { background: var(--accent-c); }
+html[data-gmode] .bd-at-pick { color: var(--gm-ink); }
+html[data-gmode] :is(.bd-at.me, .cs-flag) { color: #fff; }
+html[data-gmode] .mu-day { color: var(--gm-ink); background: var(--gm-card); }
+html[data-gmode] .mu-day.on { color: #fff; }
+html[data-gmode] .mu-best { color: #fff; }
+html[data-gmode] .ht-bomb { border-color: #c4283f; background: #fbe8e6; }
+html[data-gmode] .wt-back { background: rgba(29, 42, 34, .55); }
+html[data-gmode] .wt { background: var(--gm-card); color: var(--gm-ink); border-color: var(--gm-green); }
+html[data-gmode] .wt-btn.quiet { color: var(--gm-ink); border-color: var(--gm-ink); }
+
+/* ---------- Scorecard: a pencil on a printed card ---------- */
+html[data-gmode] .sc { font-size: 17px; }
+html[data-gmode] .sc-hint { font-size: 15px; }
+html[data-gmode] :is(.sc select, .sc-input) { background: var(--gm-card); border-color: var(--control-muted); color: var(--gm-ink); min-height: 48px; font-size: 17px; }
+html[data-gmode] .sc-btn { background: var(--gm-card); border-color: var(--gm-ink); color: var(--gm-ink); box-shadow: 0 3px 0 var(--gm-ink); font-weight: 800; }
+html[data-gmode] .sc-btn:disabled { box-shadow: none; }
+html[data-gmode] .sc-btn.danger { border-color: var(--gm-red); color: var(--gm-red); box-shadow: 0 3px 0 var(--gm-red); }
+html[data-gmode] .sc-link { color: var(--gm-green); font-weight: 700; }
+html[data-gmode] .sc-warn { background: #fbe4df; color: #6e1610; }
+html[data-gmode] .sc-note { background: var(--gm-card); }
+html[data-gmode] .sc-online { background: var(--gm-hilite); color: var(--gm-ink); border: 2px solid var(--gm-ink); }
+html[data-gmode] .sc-course b { font-family: var(--font-display); font-weight: 400; font-size: 22px; letter-spacing: .5px; }
+html[data-gmode] .sc-label, html[data-gmode] .sc-field > span { font-size: 12px; color: var(--fg-3); }
+/* standings: little score tickets, the leader highlighted like a marker swipe */
+html[data-gmode] .sc-st { border-color: var(--border); border-top: 5px solid var(--gm-green); padding: 8px 12px 10px; }
+html[data-gmode] .sc-st.is-lead { border-color: var(--accent-gold); border-top-color: var(--accent-gold); background: linear-gradient(180deg, #fbf0c4, var(--gm-card) 70%); }
+html[data-gmode] .sc-st b { font-size: 17px; }
+html[data-gmode] .sc-tp { font-size: 30px; }
+/* the hole: header strip like a printed card */
+html[data-gmode] .sc-hole { border: 2px solid var(--gm-ink); padding: 0 14px 14px; overflow: hidden; }
+html[data-gmode] .sc-hhead { margin: 0 -14px; padding: 12px 14px; background: var(--gm-green); color: var(--gm-card); }
+html[data-gmode] .sc-hhead .sc-label { color: rgba(255, 253, 246, .8); }
+html[data-gmode] .sc-hnum { color: var(--gm-card); font-size: 44px; }
+html[data-gmode] .sc-hnum small { color: rgba(255, 253, 246, .8); }
+html[data-gmode] .sc-par span { color: var(--gm-mustard); font-size: 20px; font-family: var(--font-display); font-weight: 400; letter-spacing: .5px; }
+html[data-gmode] .sc-round { border-color: rgba(255, 253, 246, .6); color: var(--gm-card); }
+html[data-gmode] .sc-prow { border-top-color: var(--border-subtle); }
+html[data-gmode] .sc-hhead + .sc-prow { border-top: 0; }
+html[data-gmode] .sc-pname b { font-size: 20px; line-height: 1.1; white-space: normal; overflow-wrap: anywhere; }  /* wrap, never "Grandpa …" */
+html[data-gmode] .sc-ctl { gap: 6px; }
+html[data-gmode] .sc-pname small { font-size: 14px; }
+html[data-gmode] .sc-big { background: var(--gm-card); border-color: var(--gm-ink); color: var(--gm-ink); box-shadow: 0 3px 0 var(--gm-ink); }
+html[data-gmode] .sc-big.plus { background: var(--gm-green); border-color: var(--gm-ink); color: var(--gm-card); }
+html[data-gmode] .sc-big:active { transform: translateY(3px); box-shadow: 0 0 0 var(--gm-ink); }
+/* scores in "pencil": birdies circled, bogeys boxed, aces starred gold */
+html[data-gmode] .sc-score { display: grid; place-items: center; width: 58px; height: 58px; font-family: var(--font-hand); font-size: 36px; line-height: 1; color: var(--gm-ink); border: 3px solid transparent; }
+html[data-gmode] .sc-score.under { color: var(--score-under); border-color: var(--score-under); border-radius: 50%; }
+html[data-gmode] .sc-score.over { color: var(--score-over); border-color: var(--score-over); border-radius: 4px; }
+html[data-gmode] .sc-score.even { color: var(--gm-ink); }
+html[data-gmode] .sc-score.ace { color: var(--accent-gold); border-color: var(--accent-gold); border-radius: 50%; box-shadow: 0 0 0 3px var(--gm-card), 0 0 0 5px var(--accent-gold); }
+html[data-gmode] .sc-score.unset { color: var(--border); }
+/* hole strip */
+html[data-gmode] .sc-strip button { width: 42px; height: 42px; background: var(--gm-card); border-color: var(--border); color: var(--fg-3); }
+html[data-gmode] .sc-strip button.done { background: #e2efd9; border-color: #9cbf95; color: var(--gm-ink); }
+html[data-gmode] .sc-strip button[aria-current='true'] { background: var(--gm-ink); border-color: var(--gm-ink); color: var(--gm-card); }
+/* the full card reads like the printed one */
+html[data-gmode] .sc-table { font-size: 15px; background: var(--gm-card); }
+html[data-gmode] .sc-table th, html[data-gmode] .sc-table td { border-color: var(--border); }
+html[data-gmode] .sc-table tr:first-child th { background: var(--gm-green); color: var(--gm-card); border-color: var(--gm-band); }
+html[data-gmode] .sc-table tr:nth-child(2) :is(th, td) { background: var(--bg-raised); color: var(--fg-3); }
+html[data-gmode] .sc-table th:first-child { white-space: nowrap; }
+html[data-gmode] :is(.sc-table, .mr-table) td.under { background: radial-gradient(circle, transparent 0 10px, var(--score-under) 10.5px 12px, transparent 12.5px); color: var(--score-under); font-weight: 800; }
+html[data-gmode] :is(.sc-table, .mr-table) td.over { background: none; box-shadow: inset 0 0 0 3px var(--gm-card), inset 0 0 0 5px var(--score-over); color: var(--score-over); font-weight: 800; }
+html[data-gmode] .sc-swap { background: var(--gm-card); }
+html[data-gmode] .sc-swap input { accent-color: var(--gm-green); }
+html[data-gmode] .sc-swap.is-on { border-color: var(--gm-green); background: #eef5e8; }
+html[data-gmode] .sc-swap small.sc-swap-why { color: var(--gm-red); }
+html[data-gmode] .sc-swap.is-blocked.is-on { border-color: var(--gm-red); }
+html[data-gmode] :is(.sc-live, .lv-live) { color: #b8203a; }
+html[data-gmode] .sc-live-dot { background: #b8203a; }
+html[data-gmode] .sc-players li { border-top-color: var(--border-subtle); }
+/* home-screen app card */
+html[data-gmode] .sc-install, html[data-gmode] .sc-install.is-mytag { border-color: var(--gm-green); box-shadow: var(--gm-lift); }
+html[data-gmode] .sc-install.is-mytag { border-color: var(--accent-b); }
+html[data-gmode] .sc-install-head img { box-shadow: 0 2px 6px rgba(29, 42, 34, .35); }
+html[data-gmode] .sc-steps li::marker, html[data-gmode] .sc-install.is-mytag .sc-steps li::marker { color: var(--gm-green); }
+
+@media (max-width: 480px) { html[data-gmode] .td-title { font-size: 28px; } }

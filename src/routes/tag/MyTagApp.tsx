@@ -21,6 +21,8 @@ import { WelcomeTour } from '../../components/tags/WelcomeTour';
 import { InstallCard } from '../rounds/InstallCard';
 import { MYTAG_HEAD, isStandalone, useAppHead } from '../../lib/rounds/useInstall';
 import { platformOf } from '../../lib/rounds/install';
+import { useGMode } from '../../lib/gmode';
+import { GModeToggle } from '../../components/gmode/GModeToggle';
 import '../td/td.css';
 import './mytag.css';
 
@@ -35,6 +37,7 @@ export default function MyTagApp() {
   const [rev, setRev] = useState(0);
   const [toConfirm, setToConfirm] = useState<Array<{ id: string; course: string; played_on: string }>>([]);
   useTheme('event', 'bone');
+  const [gmode, setGMode] = useGMode();
   useAppHead(MYTAG_HEAD);
   /** Home-screen buttons: phones only, and never inside the home-screen app itself. */
   const [canAdd] = useState(() => platformOf(navigator.userAgent, navigator.maxTouchPoints, navigator.platform) !== 'other' && !isStandalone());
@@ -116,10 +119,13 @@ export default function MyTagApp() {
           <div className="td-title">My Tag</div>
           <div className="td-sub">BARE BONES BAG TAGS · {display(home.me).toUpperCase()}</div>
         </div>
-        <HeatBell rows={heatRows} unread={unread} atMe={atMe}
-          onMention={(m) => { setBoardPool(m.pool); setFocusChat(m.chat_id); go('board'); }}
-          onChat={(pool) => { setBoardPool(pool); go('board'); }}
-          onChallenge={(pool) => { go('tags'); setFocus((f) => ({ kind: 'challenge', pool, n: (f?.n ?? 0) + 1 })); }} />
+        <div className="mt-headtools">
+          <GModeToggle on={gmode} onChange={setGMode} />
+          <HeatBell rows={heatRows} unread={unread} atMe={atMe}
+            onMention={(m) => { setBoardPool(m.pool); setFocusChat(m.chat_id); go('board'); }}
+            onChat={(pool) => { setBoardPool(pool); go('board'); }}
+            onChallenge={(pool) => { go('tags'); setFocus((f) => ({ kind: 'challenge', pool, n: (f?.n ?? 0) + 1 })); }} />
+        </div>
       </header>
       <nav className="td-tabs mt-tabs" aria-label="My Tag">
         {([['tags', 'MY TAGS'], ['board', 'BOARD'], ['matchups', 'MATCHUPS'], ['rounds', 'MY ROUNDS']] as Array<[MyTagTab, string]>).map(([t, label]) => {
