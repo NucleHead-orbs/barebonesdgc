@@ -143,6 +143,7 @@ export const MUSIC = {
         { slug: 'lumen-limit-city', title: 'Lumen Limit City', length: '5:07', lyrics: true },
         { slug: 'get-rolley', title: 'Get Rolley', length: '5:29', lyrics: true },
         { slug: 'lazy-boners', title: 'Lazy Boners', length: '4:56', lyrics: true },
+        { slug: 'boner-nation-jewel-xi', title: 'Boner Nation', length: '4:41' },
         { slug: 'legends-of-root-beer', title: 'Legends of Root Beer', cover: '/music/bhb-logo.webp' },
         { slug: 'gone-but-still-hard', title: 'Gone But Still Hard', cover: '/music/bhb-logo.webp' },
       ],
@@ -151,8 +152,6 @@ export const MUSIC = {
       title: 'Singles', kicker: 'More from the Boners',
       tracks: [
         { slug: 'the-jewel-x', title: 'The Jewel X', length: '3:10' },
-        { slug: 'boner-nation', title: 'Boner Nation', length: '2:14' },
-        { slug: 'boners-rise', title: 'Boners Rise!', note: 'Cover', length: '2:40' },
       ],
     },
   ] as MusicRelease[],
