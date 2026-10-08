@@ -18,6 +18,8 @@ export interface HeatRow {
 export interface ChatLine {
   id: number; member_id: string | null; name: string | null; nickname: string | null; body: string; at: string; number: number | null; hidden: boolean;
   kind?: 'chat' | 'system'; event?: string | null; mentions?: Array<{ id: string; label: string }>;
+  /** the thread's first message (migration 20261116) */
+  reply_to?: number | null;
 }
 export interface BoardHeat {
   bombs: boolean; challenges: boolean; chat: boolean;
@@ -60,6 +62,7 @@ export function heatMessage(m: string): string | null {
   if (/cannot_cancel/.test(m)) return "It's already been answered, so it can't be cancelled.";
   if (/chat_off/.test(m)) return 'The chat is off for this tag set.';
   if (/slow_down/.test(m)) return 'Easy, tiger. One message every few seconds.';
+  if (/reply_gone/.test(m)) return 'That message is gone (hidden or deleted), so you can\'t reply to it.';
   if (/invalid_message/.test(m)) return 'Messages are 1 to 500 characters.';
   if (/needs_challenge/.test(m)) return 'Early Access tag rounds need 3 Jewel players, or 2 with a challenge you\'ve accepted.';
   if (/defender_picks/.test(m)) return 'The challenged player picks the time and course first.';

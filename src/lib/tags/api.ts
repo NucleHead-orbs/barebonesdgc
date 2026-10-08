@@ -7,6 +7,7 @@ import type { MatchStatus, PendingSwap, Tag, TagMember, TagPool } from './tags';
 import type { BoardHeat, ChatLine, HeatRow } from './heat';
 import type { BoardRead, CasualRound, ChallengeRound, MatchupSet, Mention, Profile, ReactionKind } from './board';
 import type { TdRound, TdRoundKind } from './tdRounds';
+import type { MyRoundsPage } from './myRounds';
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
 const wrap = async <T>(fn: () => Promise<T>): Promise<Result<T>> => {
@@ -162,13 +163,16 @@ export const cancelChallenge = (token: string, id: string) =>
   wrap(async () => { must(await supabase.rpc('tag_challenge_cancel', { p_token: token, p_challenge: id })); });
 export const chatRead = (token: string, poolId: string, after: number) =>
   wrap(async (): Promise<ChatLine[]> => (must(await supabase.rpc('tag_chat_read', { p_token: token, p_pool: poolId, p_after: after })) ?? []) as ChatLine[]);
-export const chatPost = (token: string, poolId: string, body: string) =>
-  wrap(async () => { must(await supabase.rpc('tag_chat_post', { p_token: token, p_pool: poolId, p_body: body })); });
+export const chatPost = (token: string, poolId: string, body: string, replyTo: number | null = null) =>
+  wrap(async () => { must(await supabase.rpc('tag_chat_post', { p_token: token, p_pool: poolId, p_body: body, ...(replyTo ? { p_reply: replyTo } : {}) })); });
 export const boardHeat = (slug: string) => wrap(async (): Promise<BoardHeat | null> => (must(await supabase.rpc('tag_board_heat', { p_slug: slug })) ?? null) as BoardHeat | null);
 export const tdHeatSet = (poolId: string, bombs: boolean, challenges: boolean, chat: boolean) =>
   wrap(async () => { must(await supabase.rpc('td_tag_heat_set', { p_pool: poolId, p_bombs: bombs, p_challenges: challenges, p_chat: chat })); });
 export const tdChat = (poolId: string) => wrap(async (): Promise<ChatLine[]> => (must(await supabase.rpc('td_tag_chat', { p_pool: poolId })) ?? []) as ChatLine[]);
 export const tdChatHide = (id: number, hide: boolean) => wrap(async () => { must(await supabase.rpc('td_tag_chat_hide', { p_id: id, p_hide: hide })); });
+/** My Tag → MY ROUNDS (migration 20261117): my Scorecard cards + tag rounds, newest first, 25 a page. */
+export const myRounds = (token: string, offset = 0) =>
+  wrap(async (): Promise<MyRoundsPage> => must(await supabase.rpc('tag_my_rounds', { p_token: token, p_offset: offset })) as MyRoundsPage);
 /** TD ROUNDS (migration 20261115): every upcoming tag round in a set + add / remove by hand. */
 export const tdRounds = (poolId: string) => wrap(async (): Promise<TdRound[]> => (must(await supabase.rpc('td_tag_rounds', { p_pool: poolId })) ?? []) as TdRound[]);
 export const tdRoundAdd = (kind: TdRoundKind, id: string, memberId: string) =>

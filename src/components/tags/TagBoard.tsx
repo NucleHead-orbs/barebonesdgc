@@ -4,7 +4,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as tagApi from '../../lib/tags/api';
-import { REACTIONS, applyMention, mentionAt, mentionParts, mentionPicks, mergeLines, newsTone, whoLine, type MentionPerson, type ReactionKind, type Reactions } from '../../lib/tags/board';
+import { REACTIONS, applyMention, mentionAt, mentionParts, mentionPicks, mergeLines, newsTone, threads, THREAD_PEEK, whoLine, type MentionPerson, type ReactionKind, type Reactions } from '../../lib/tags/board';
 import type { ChatLine, HeatRow } from '../../lib/tags/heat';
 import type { RosterEntry } from '../../lib/tags/api';
 import { readSeen, writeSeen } from '../../lib/tags/useHeat';
@@ -67,6 +67,8 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen, people, focusId
   const [firstNew] = useState(() => readSeen(seenKey));
   const [who, setWho] = useState<{ id: number; kind: ReactionKind } | null>(null); // whose names are showing (tap a count)
   const [caret, setCaret] = useState(0);
+  const [replyTo, setReplyTo] = useState<ChatLine | null>(null);
+  const [open, setOpen] = useState<Record<number, boolean>>({}); // long threads opened
   const input = useRef<HTMLInputElement>(null);
   const at = mentionAt(text, caret);
   const picks = at ? mentionPicks(people, at.query, meId) : [];
@@ -126,7 +128,18 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen, people, focusId
     });
   };
 
-  const newestFirst = (lines ?? []).slice().reverse();
+  const list = threads(lines ?? []);
+  const sendReply = async (to: number, body: string, thread: number) => {
+    const b = body.trim();
+    if (!b) return false;
+    setBusy(true); setErr('');
+    const r = await tagApi.chatPost(token, poolId, b, to);
+    setBusy(false);
+    if (r.error) { setErr(tagMessage(r.error)); return false; }
+    setReplyTo(null); setOpen((o) => ({ ...o, [thread]: true })); await pull();
+    return true;
+  };
+  const lineProps = { meId, focusId, rx, who, setWho, react: (id: number, k: ReactionKind) => void react(id, k), onReply: (l: ChatLine) => setReplyTo(l) };
   return (
     <div className="bd-feed">
       <div className="bd-head"><b>{name} Board</b><span className="td-hint">Everyone holding a tag in this set. Challenges, results and explosions post here on their own.</span></div>
@@ -148,52 +161,89 @@ function BoardFeed({ token, meId, poolId, name, seenKey, onSeen, people, focusId
       <div className="bd-lines">
         {lines === null && <p className="td-hint">Loading…</p>}
         {lines?.length === 0 && <p className="td-hint">Quiet in here. Talk some trash, set up a round.</p>}
-        {newestFirst.map((l, i) => {
-          const r = rx[l.id];
-          const mine = l.member_id === meId;
-          const atMe = !!l.mentions?.some((m) => m.id === meId);
-          const news = l.kind === 'system';
-          const tone = news ? newsTone(l.event) : null;
-          // newest on top: a line under everything new since this phone last looked
-          const newMark = firstNew > 0 && l.id <= firstNew && i > 0 && newestFirst[i - 1].id > firstNew;
+        {list.map((t, i) => {
+          const key = t.root?.id ?? t.replies[0].id;
+          // newest activity on top: a line under everything new since this phone last looked
+          const newMark = firstNew > 0 && t.last <= firstNew && i > 0 && list[i - 1].last > firstNew;
+          const all = open[key] || t.replies.length <= THREAD_PEEK || t.replies.some((r) => r.id === focusId);
+          const shown = all ? t.replies : t.replies.slice(-THREAD_PEEK);
+          const replying = replyTo && (replyTo.id === t.root?.id || t.replies.some((r) => r.id === replyTo.id));
           return (
-            <div key={l.id}>
+            <div key={key} className="bd-thread">
               {newMark && <div className="bd-new"><span>NEW ABOVE</span></div>}
-              <article id={`bd-${l.id}`} className={`bd-line${news ? ` is-news t-${tone!.tone}` : ''}${mine ? ' is-mine' : ''}${atMe ? ' is-at-me' : ''}${l.id === focusId ? ' is-focus' : ''}`}>
-                <header>
-                  {news ? <b className="bd-tag">{tone!.label}</b>
-                    : <b>{l.name ? display({ name: l.name, nickname: l.nickname }) : 'Former member'}{l.number ? <span> #{l.number}</span> : null}</b>}
-                  <time>{new Date(l.at).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</time>
-                </header>
-                <p>{l.mentions?.length
-                  ? mentionParts(l.body, l.mentions.map((m) => m.label)).map((x, j) => (x.at
-                    ? <b key={j} className={`bd-at${l.mentions!.some((m) => m.id === meId && x.text.slice(1).toLowerCase() === m.label.toLowerCase()) ? ' me' : ''}`}>{x.text}</b>
-                    : <span key={j}>{x.text}</span>))
-                  : l.body}</p>
-                <div className="bd-rx">
-                  {REACTIONS.map((x) => {
-                    const n = r?.counts[x.kind] ?? 0;
-                    const on = r?.mine.includes(x.kind) ?? false;
-                    const showing = who?.id === l.id && who.kind === x.kind;
-                    return (
-                      <span key={x.kind} className={`bd-rxw${on ? ' on' : ''}${n ? ' has' : ''}`}>
-                        <button type="button" className="bd-rxb" aria-pressed={on} aria-label={on ? `Remove ${x.label}` : x.label} title={x.label}
-                          onClick={() => void react(l.id, x.kind)}><ReactionIcon kind={x.kind} /></button>
-                        {n > 0 && <button type="button" className={`bd-rxn${showing ? ' open' : ''}`} aria-expanded={showing} aria-label={`${n} ${x.label}: who?`}
-                          onClick={() => setWho(showing ? null : { id: l.id, kind: x.kind })}>{n}</button>}
-                      </span>
-                    );
-                  })}
+              {t.root ? <BoardLine l={t.root} {...lineProps} /> : <p className="bd-gone">Replying to a message that was taken down</p>}
+              {t.replies.length > 0 && (
+                <div className="bd-replies">
+                  {!all && <button type="button" className="bd-more" onClick={() => setOpen((o) => ({ ...o, [key]: true }))}>VIEW ALL {t.replies.length} REPLIES</button>}
+                  {shown.map((r) => <BoardLine key={r.id} l={r} {...lineProps} reply />)}
                 </div>
-                {who?.id === l.id && (r?.who?.[who.kind]?.length ?? 0) > 0 && (
-                  <p className="bd-who" role="status"><ReactionIcon kind={who.kind} /> {whoLine(r!.who![who.kind]!)}</p>
-                )}
-              </article>
+              )}
+              {replying && <ReplyBox to={replyTo!} busy={busy} onCancel={() => setReplyTo(null)} onSend={(b) => sendReply(replyTo!.id, b, key)} />}
             </div>
           );
         })}
       </div>
       {err && <div className="td-warn" role="alert">{err} <button className="td-btn quiet" onClick={() => setErr('')}>OK</button></div>}
     </div>
+  );
+}
+
+type LineProps = {
+  l: ChatLine; meId: string; focusId: number | null; rx: Record<string, Reactions>; reply?: boolean;
+  who: { id: number; kind: ReactionKind } | null; setWho: (w: { id: number; kind: ReactionKind } | null) => void;
+  react: (id: number, kind: ReactionKind) => void; onReply: (l: ChatLine) => void;
+};
+
+function BoardLine({ l, meId, focusId, rx, reply, who, setWho, react, onReply }: LineProps) {
+  const r = rx[l.id];
+  const mine = l.member_id === meId;
+  const atMe = !!l.mentions?.some((m) => m.id === meId);
+  const news = l.kind === 'system';
+  const tone = news ? newsTone(l.event) : null;
+  return (
+    <article id={`bd-${l.id}`} className={`bd-line${reply ? ' is-reply' : ''}${news ? ` is-news t-${tone!.tone}` : ''}${mine ? ' is-mine' : ''}${atMe ? ' is-at-me' : ''}${l.id === focusId ? ' is-focus' : ''}`}>
+      <header>
+        {news ? <b className="bd-tag">{tone!.label}</b>
+          : <b>{l.name ? display({ name: l.name, nickname: l.nickname }) : 'Former member'}{l.number ? <span> #{l.number}</span> : null}</b>}
+        <time>{new Date(l.at).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</time>
+      </header>
+      <p>{l.mentions?.length
+        ? mentionParts(l.body, l.mentions.map((m) => m.label)).map((x, j) => (x.at
+          ? <b key={j} className={`bd-at${l.mentions!.some((m) => m.id === meId && x.text.slice(1).toLowerCase() === m.label.toLowerCase()) ? ' me' : ''}`}>{x.text}</b>
+          : <span key={j}>{x.text}</span>))
+        : l.body}</p>
+      <div className="bd-rx">
+        {REACTIONS.map((x) => {
+          const n = r?.counts[x.kind] ?? 0;
+          const on = r?.mine.includes(x.kind) ?? false;
+          const showing = who?.id === l.id && who.kind === x.kind;
+          return (
+            <span key={x.kind} className={`bd-rxw${on ? ' on' : ''}${n ? ' has' : ''}`}>
+              <button type="button" className="bd-rxb" aria-pressed={on} aria-label={on ? `Remove ${x.label}` : x.label} title={x.label}
+                onClick={() => react(l.id, x.kind)}><ReactionIcon kind={x.kind} /></button>
+              {n > 0 && <button type="button" className={`bd-rxn${showing ? ' open' : ''}`} aria-expanded={showing} aria-label={`${n} ${x.label}: who?`}
+                onClick={() => setWho(showing ? null : { id: l.id, kind: x.kind })}>{n}</button>}
+            </span>
+          );
+        })}
+        <button type="button" className="bd-reply" onClick={() => onReply(l)}>REPLY</button>
+      </div>
+      {who?.id === l.id && (r?.who?.[who.kind]?.length ?? 0) > 0 && (
+        <p className="bd-who" role="status"><ReactionIcon kind={who.kind} /> {whoLine(r!.who![who.kind]!)}</p>
+      )}
+    </article>
+  );
+}
+
+function ReplyBox({ to, busy, onCancel, onSend }: { to: ChatLine; busy: boolean; onCancel: () => void; onSend: (body: string) => Promise<boolean> }) {
+  const [text, setText] = useState('');
+  const who = to.kind === 'system' ? 'the house' : to.name ? display({ name: to.name, nickname: to.nickname }) : 'them';
+  return (
+    <form className="bd-send bd-replybox" onSubmit={(e) => { e.preventDefault(); void onSend(text).then((ok) => { if (ok) setText(''); }); }}>
+      <input className="td-input" autoFocus value={text} maxLength={500} placeholder={`Reply to ${who}…`} aria-label={`Reply to ${who}`}
+        onChange={(e) => setText(e.target.value)} autoComplete="off" />
+      <button className="td-btn cta" type="submit" disabled={busy || !text.trim()}>SEND</button>
+      <button className="td-btn quiet" type="button" onClick={onCancel}>CANCEL</button>
+    </form>
   );
 }

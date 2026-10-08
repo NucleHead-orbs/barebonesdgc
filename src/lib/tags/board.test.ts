@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canDropOut, casualAction, seatsLeft, type CasualRound, applyMention, mentionAt, mentionParts, mentionPicks, asTab, canJumpIn, roundStep, slotLabel, whoLine, daysSummary, type ChallengeRound, hasDay, mergeLines, newsTone, pickReasons, toggleDay, type Pick } from './board';
+import { threads, canDropOut, casualAction, seatsLeft, type CasualRound, applyMention, mentionAt, mentionParts, mentionPicks, asTab, canJumpIn, roundStep, slotLabel, whoLine, daysSummary, type ChallengeRound, hasDay, mergeLines, newsTone, pickReasons, toggleDay, type Pick } from './board';
 import type { ChatLine } from './heat';
 
 const line = (id: number): ChatLine => ({ id, member_id: null, name: null, nickname: null, body: String(id), at: '', number: null, hidden: false });
@@ -133,4 +133,19 @@ describe('casual rounds', () => {
     expect(casualAction(r({ players: ['h', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j'].map((x) => p(x, 'in')) }))).toBe('full');
     expect(casualAction(r({ open: false, host_me: true }))).toBe('closed');
   });
+});
+
+describe('board threads', () => {
+  const L = (id: number, reply_to: number | null = null) => ({ ...line(id), reply_to });
+  it('replies nest under their first message; fresh replies bump the thread', () => {
+    const t = threads([L(1), L(2), L(3, 1), L(4), L(5, 1)]);
+    expect(t.map((x) => x.root?.id)).toEqual([1, 4, 2]);
+    expect(t[0].replies.map((r) => r.id)).toEqual([3, 5]);
+    expect(t[0].last).toBe(5);
+  });
+  it('a reply whose first message is not loaded stands alone', () => {
+    const t = threads([L(10, 2), L(11)]);
+    expect(t.map((x) => [x.root?.id ?? null, x.replies.map((r) => r.id)])).toEqual([[11, []], [null, [10]]]);
+  });
+  it('tabs', () => { expect(asTab('rounds')).toBe('rounds'); });
 });

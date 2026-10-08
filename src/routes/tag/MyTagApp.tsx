@@ -11,6 +11,7 @@ import { EarlyMyTag } from '../../components/early/EarlyMyTag';
 import { HeatBell, TagHeat } from '../../components/tags/TagHeat';
 import { TagBoard } from '../../components/tags/TagBoard';
 import { Matchups } from '../../components/tags/Matchups';
+import { MyRounds } from '../../components/tags/MyRounds';
 import { asTab, type MyTagTab } from '../../lib/tags/board';
 import { chatSeenKey, readSeen, useCasuals, useHeat, useMentions, useRounds, welcomeSeen, type HeatFocus } from '../../lib/tags/useHeat';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
@@ -121,7 +122,7 @@ export default function MyTagApp() {
           onChallenge={(pool) => { go('tags'); setFocus((f) => ({ kind: 'challenge', pool, n: (f?.n ?? 0) + 1 })); }} />
       </header>
       <nav className="td-tabs mt-tabs" aria-label="My Tag">
-        {([['tags', 'MY TAGS'], ['board', 'BOARD'], ['matchups', 'MATCHUPS']] as Array<[MyTagTab, string]>).map(([t, label]) => {
+        {([['tags', 'MY TAGS'], ['board', 'BOARD'], ['matchups', 'MATCHUPS'], ['rounds', 'MY ROUNDS']] as Array<[MyTagTab, string]>).map(([t, label]) => {
           const n = t === 'board' ? Object.values(unread).reduce((a, b) => a + b, 0) : t === 'matchups' ? casuals.filter((c) => c.open && c.mine === 'invited').length : 0;
           return <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => go(t)}>{label}{n > 0 && <b>{n > 99 ? '99+' : n}</b>}</button>;
         })}
@@ -135,6 +136,7 @@ export default function MyTagApp() {
         {tab === 'board' && <TagBoard token={token} meId={meId} rows={heatRows} names={names} pool={boardPool} onPool={setBoardPool}
           unread={unread} seenKey={seenKey} onSeen={onSeen} rosters={home.rosters} focusId={focusChat} />}
         {tab === 'matchups' && <Matchups token={token} act={act} rev={rev} rounds={rounds} casuals={casuals} meId={meId} holdings={home.holdings} rosters={home.rosters} />}
+        {tab === 'rounds' && <MyRounds token={token} meId={meId} rev={rev} />}
         {tab === 'tags' && <>
         <div className="mt-tags">
           {home.holdings.map((h) => TAG_ART[h.pool] ? (

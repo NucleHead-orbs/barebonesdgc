@@ -110,3 +110,13 @@
 .cs-note { font-style: italic; }
 .cs-acts { display: flex; gap: 8px; flex-wrap: wrap; }
 .cs-roster { max-height: 220px; overflow: auto; }
+
+/* ---------- reply threads (migration 20261116) ---------- */
+.bd-thread { display: flex; flex-direction: column; gap: 6px; }
+.bd-replies { display: flex; flex-direction: column; gap: 6px; margin-left: 18px; padding-left: 10px; border-left: 2px solid var(--border); }
+.bd-line.is-reply { padding-top: 8px; padding-bottom: 8px; }
+.bd-reply { margin-left: auto; background: none; border: 0; color: inherit; opacity: .7; font: inherit; font-size: 12px; letter-spacing: 1px; padding: 6px 8px; cursor: pointer; min-height: 32px; }
+.bd-reply:hover, .bd-reply:focus-visible { color: var(--cyan); }
+.bd-more { align-self: flex-start; background: none; border: 0; color: var(--cyan); font: inherit; font-size: 12px; letter-spacing: 1px; padding: 4px 0; cursor: pointer; }
+.bd-replybox { margin-left: 18px; }
+.bd-gone { margin: 0; font-size: 13px; opacity: .6; font-style: italic; }

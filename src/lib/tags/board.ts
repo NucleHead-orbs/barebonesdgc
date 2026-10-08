@@ -58,6 +58,30 @@ export function mergeLines(prev: ChatLine[], got: ChatLine[], keep = 200): ChatL
   return [...prev, ...got.filter((l) => !seen.has(l.id))].sort((a, b) => a.id - b.id).slice(-keep);
 }
 
+/**
+ * Board threads (migration 20261116): a message + the replies pointing at it (reply_to is always the thread's first
+ * message). Newest activity first, so a fresh reply brings its thread back to the top. A reply whose first message
+ * isn't loaded (hidden) stands alone with root = null.
+ */
+export interface Thread { root: ChatLine | null; replies: ChatLine[]; last: number }
+export function threads(lines: ChatLine[]): Thread[] {
+  const byId = new Map(lines.map((l) => [l.id, l]));
+  const out = new Map<number, Thread>();
+  for (const l of [...lines].sort((a, b) => a.id - b.id)) {
+    const rootId = l.reply_to && byId.has(l.reply_to) ? l.reply_to : null;
+    if (rootId === null) {
+      if (!out.has(l.id)) out.set(l.id, { root: l.reply_to ? null : l, replies: l.reply_to ? [l] : [], last: l.id });
+      continue;
+    }
+    const t = out.get(rootId) ?? { root: byId.get(rootId)!, replies: [], last: rootId };
+    t.replies.push(l); t.last = Math.max(t.last, l.id);
+    out.set(rootId, t);
+  }
+  return [...out.values()].sort((a, b) => b.last - a.last);
+}
+/** Long threads show the last few replies until opened. */
+export const THREAD_PEEK = 3;
+
 /** House posts get a label + tone by event. */
 export function newsTone(event: string | null | undefined): { label: string; tone: 'boom' | 'fight' | 'match' | 'meh' } {
   switch (event) {
@@ -73,8 +97,8 @@ export function newsTone(event: string | null | undefined): { label: string; ton
   }
 }
 
-export type MyTagTab = 'tags' | 'board' | 'matchups';
-export const asTab = (s: string | null): MyTagTab => (s === 'board' || s === 'matchups' ? s : 'tags');
+export type MyTagTab = 'tags' | 'board' | 'matchups' | 'rounds';
+export const asTab = (s: string | null): MyTagTab => (s === 'board' || s === 'matchups' || s === 'rounds' ? s : 'tags');
 
 // ---------- challenge rounds (migration 20261103): a slot (time + course) and up to 2 jump-ins ----------
 export interface RoundPerson { id: string; name: string; nickname: string | null; number: number | null }
@@ -107,7 +131,7 @@ export const canJumpIn = (r: ChallengeRound, now: number) => r.role === null && 
 
 // ---------- @mentions (migration 20261109): the database decides who was mentioned; these only help type and show it ----------
 export interface MentionPerson { id: string; label: string; number: number | null }
-export interface Mention { chat_id: number; pool_id: string; pool: string; from: string | null; body: string; at: string }
+export interface Mention { chat_id: number; pool_id: string; pool: string; from: string | null; body: string; at: string; /** a reply to my message (not an @) */ reply?: boolean }
 
 /** The "@som" being typed right before the caret: where its "@" is and what's typed after it. Not inside an email. */
 export function mentionAt(text: string, caret: number): { start: number; query: string } | null {

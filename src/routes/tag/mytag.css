@@ -1,5 +1,5 @@
 /* My Tag (/tag/:token): mobile first, rides td.css. */
-.mt-app { max-width: 640px; margin: 0 auto; }
+.mt-app { max-width: 640px; width: 100%; box-sizing: border-box; margin: 0 auto; }
 .mt-tags { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
 .mt-tag { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: var(--r-card); border: 3px solid var(--cyan); background: var(--surface); color: #fff; text-decoration: none; }
 .mt-tag.is-top { border-color: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 30%, transparent); }
@@ -41,3 +41,43 @@
 /* home-screen buttons: full width so the long labels never squeeze on a phone */
 .mt-add .td-btn { flex: 1 1 100%; justify-content: center; text-align: center; white-space: normal; }
 .mt-add + .sc-install { margin-top: 4px; }
+
+/* ---------- MY ROUNDS (migration 20261117) ---------- */
+.mr { display: flex; flex-direction: column; gap: 10px; min-width: 0; max-width: 100%; }
+.mr-round, .mr-detail, .mr-l { min-width: 0; }
+.mr-head { display: flex; flex-direction: column; gap: 2px; }
+.mr-head b { font-family: var(--font-display); font-size: 22px; }
+.mr-round { border: 2px solid var(--border); border-radius: 12px; background: var(--bg-surface); overflow: hidden; }
+.mr-round.is-open { border-color: var(--cyan); }
+.mr-sum { display: flex; width: 100%; gap: 10px; align-items: center; justify-content: space-between; text-align: left; padding: 12px; background: none; border: 0; color: inherit; font: inherit; cursor: pointer; min-height: 56px; }
+.mr-l { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mr-l small { opacity: .75; font-size: 13px; }
+.mr-r { display: flex; align-items: baseline; gap: 6px; flex: none; }
+.mr-r b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.mr-r small { opacity: .7; }
+.mr-r i { font-style: normal; font-size: 20px; opacity: .6; width: 14px; text-align: center; }
+.mr-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.mr-chip { font-size: 11px; letter-spacing: .5px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); }
+.mr-chip.win { border-color: var(--gold, #ffcf3f); color: var(--gold, #ffcf3f); }
+.mr-chip.tag { border-color: var(--cyan); color: var(--cyan); }
+.mr-chip.under { border-color: var(--score-under); color: var(--score-under); }
+.mr .under { color: var(--score-under); }
+.mr .over { color: var(--score-over); }
+.mr-detail { display: flex; flex-direction: column; gap: 8px; padding: 0 12px 12px; }
+.mr-tablewrap { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.mr-table { border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
+.mr-table th, .mr-table td { border: 1px solid var(--border); padding: 4px 6px; text-align: center; min-width: 26px; }
+.mr-table th:first-child { text-align: left; position: sticky; left: 0; background: var(--bg-surface); white-space: nowrap; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+.mr-table td.under { background: color-mix(in srgb, var(--score-under) 16%, transparent); color: inherit; }
+.mr-table td.over { background: color-mix(in srgb, var(--score-over) 12%, transparent); color: inherit; }
+.mr-table tr.mr-par td { opacity: .7; }
+.mr-table tr.is-me th { color: var(--cyan); }
+.mr-players { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.mr-players li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; padding: 6px 0; border-top: 1px solid var(--border); align-items: baseline; }
+.mr-players li.is-me span:first-child { color: var(--cyan); font-weight: 700; }
+.mr-link { color: var(--cyan); font-size: 14px; }
+/* four tabs fit a phone */
+@media (max-width: 480px) {
+  .mt-tabs { padding: 0 6px; gap: 0; }
+  .mt-tabs button { padding: 12px 8px; font-size: 12px; letter-spacing: .5px; }
+}

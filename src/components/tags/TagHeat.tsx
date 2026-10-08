@@ -153,7 +153,7 @@ export function HeatBell({ rows, unread, onChat, onChallenge, atMe = [], onMenti
     <div className="ht-bell">
       {atMe.length > 0 && onMention && (
         <button type="button" className="ht-icon is-on is-at" onClick={() => onMention(atMe[0])}
-          aria-label={`${atMe.length} new mention${atMe.length === 1 ? '' : 's'}: ${atMe[0].from ?? 'someone'} mentioned you`}>
+          aria-label={`${atMe.length} new mention${atMe.length === 1 ? '' : 's'}: ${atMe[0].from ?? 'someone'} ${atMe[0].reply ? 'replied to' : 'mentioned'} you`}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.6" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M15.6 12v1.4a2.6 2.6 0 0 0 5.2 0V12A8.8 8.8 0 1 0 17 19.2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
           <b>{atMe.length > 99 ? '99+' : atMe.length}</b>
         </button>
