@@ -105,7 +105,7 @@ export default function GalleryPanel({ onBack }: { onBack: () => void }) {
         <div className="td-title">Club Gallery</div>
         <div className="td-stat"><b>{all.length}</b><span>TOTAL</span></div>
         <div className="td-stat"><b style={{ color: 'var(--under)' }}>{all.length - waiting}</b><span>VISIBLE</span></div>
-        <div className="td-stat"><b style={{ color: waiting ? 'var(--gold)' : '#fff' }}>{waiting}</b><span>WAITING</span></div>
+        <div className="td-stat"><b style={{ color: waiting ? 'var(--gold)' : 'var(--fg-1)' }}>{waiting}</b><span>WAITING</span></div>
         <div style={{ flex: 1 }} />
         <a className="td-btn cyan" href="/gallery" target="_blank" rel="noreferrer">VIEW PUBLIC PAGE</a>
       </div>

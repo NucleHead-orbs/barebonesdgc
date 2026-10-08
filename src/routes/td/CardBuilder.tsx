@@ -258,7 +258,7 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
   } else if (ev.use_checkin && notIn > 0) soft.push(`${notIn} registered player${notIn === 1 ? " isn't" : "s aren't"} checked in and won't be put on cards. Check them in on the Players tab, then regenerate.`);
   if (!players.length) soft.push(r2Asks && allPlayers.length ? 'Nobody has confirmed Round 2 yet. Players confirm from their Round 1 card after it\'s submitted, or on Players → ROUND 2.' : ev.use_checkin && allPlayers.length ? 'Nobody is checked in yet. Check players in on the Players tab.' : 'No players yet. Add or import them on the Players tab.');
 
-  const status = !scopeCards.length ? ['NONE', '#fff'] : !isPublished ? ['DRAFT', 'var(--over)'] : unpublished ? ['EDITED', 'var(--gold)'] : ['LIVE', 'var(--under)'];
+  const status = !scopeCards.length ? ['NONE', 'var(--fg-1)'] : !isPublished ? ['DRAFT', 'var(--over)'] : unpublished ? ['EDITED', 'var(--gold)'] : ['LIVE', 'var(--under)'];
 
   return (
     <>
@@ -365,7 +365,7 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
             )}
             <Stat v={inWave.length} k="PLAYERS" />
             <Stat v={waveCards.length} k="CARDS" color="var(--cyan)" />
-            <Stat v={doubled} k="DOUBLED HOLES" color={doubled ? 'var(--gold)' : '#fff'} />
+            <Stat v={doubled} k="DOUBLED HOLES" color={doubled ? 'var(--gold)' : 'var(--fg-1)'} />
             <div style={{ flex: 1 }} />
             <input className="td-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find player…" aria-label="Find player" />
           </div>
@@ -430,7 +430,7 @@ export default function CardBuilder({ setup, players: allPlayers, requests, priv
   );
 }
 
-const Stat = ({ v, k, color = '#fff' }: { v: string | number; k: string; color?: string }) => (
+const Stat = ({ v, k, color = 'var(--fg-1)' }: { v: string | number; k: string; color?: string }) => (
   <div className="td-stat"><b style={{ color }}>{v}</b><span>{k}</span></div>
 );
 

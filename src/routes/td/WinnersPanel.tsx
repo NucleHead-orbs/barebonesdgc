@@ -167,7 +167,7 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
           <Stat v={`$${totals.pool.toLocaleString()}`} k="TOTAL POOL" />
           <Stat v={`$${totals.cash.toLocaleString()}`} k="CASH OUT" color="var(--under)" />
           <Stat v={totals.credit.toLocaleString()} k={label.toUpperCase()} color="var(--cyan)" />
-          <Stat v={`$${totals.leftover.toLocaleString()}`} k="LEFTOVER" color={totals.leftover ? 'var(--gold)' : '#fff'} />
+          <Stat v={`$${totals.leftover.toLocaleString()}`} k="LEFTOVER" color={totals.leftover ? 'var(--gold)' : 'var(--fg-1)'} />
         </div>
         {w.overBy > 0 && <div className="td-warn">Fixed division amounts add up to ${w.overBy} more than the added total.</div>}
       </section>
@@ -184,7 +184,7 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
   );
 }
 
-const Stat = ({ v, k, color = '#fff' }: { v: string | number; k: string; color?: string }) => (
+const Stat = ({ v, k, color = 'var(--fg-1)' }: { v: string | number; k: string; color?: string }) => (
   <div className="td-stat"><b style={{ color }}>{v}</b><span>{k}</span></div>
 );
 

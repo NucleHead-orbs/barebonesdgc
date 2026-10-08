@@ -98,7 +98,7 @@ interface Ctx {
   crew: CrewMember[]; notes: api.TaskNote[]; addNote: (taskId: string, body: string) => Promise<boolean>;
 }
 
-const Stat = ({ v, k, color = '#fff' }: { v: string | number; k: string; color?: string }) => (
+const Stat = ({ v, k, color = 'var(--fg-1)' }: { v: string | number; k: string; color?: string }) => (
   <div className="td-stat"><b style={{ color }}>{v}</b><span>{k}</span></div>
 );
 
@@ -114,8 +114,8 @@ function Dashboard({ ctx, tally, go }: { ctx: Ctx; tally: ReturnType<typeof shir
           <div className="td-counts">
             <Stat v={r.daysOut > 0 ? r.daysOut : r.daysOut === 0 ? 'TODAY' : 'DONE'} k={r.daysOut > 0 ? 'DAYS OUT' : 'EVENT'} color="var(--cyan)" />
             <Stat v={`${r.tasks.pct}%`} k={`${r.tasks.done}/${r.tasks.total} TASKS`} color="var(--under)" />
-            <Stat v={r.tasks.overdue} k="OVERDUE" color={r.tasks.overdue ? 'var(--error)' : '#fff'} />
-            <Stat v={r.tasks.soon} k="DUE THIS WEEK" color={r.tasks.soon ? 'var(--gold)' : '#fff'} />
+            <Stat v={r.tasks.overdue} k="OVERDUE" color={r.tasks.overdue ? 'var(--error)' : 'var(--fg-1)'} />
+            <Stat v={r.tasks.soon} k="DUE THIS WEEK" color={r.tasks.soon ? 'var(--gold)' : 'var(--fg-1)'} />
           </div>
         </div>
         <div className="td-progress" role="progressbar" aria-label="Tasks done" aria-valuemin={0} aria-valuemax={100} aria-valuenow={r.tasks.pct}>
@@ -142,7 +142,7 @@ function Dashboard({ ctx, tally, go }: { ctx: Ctx; tally: ReturnType<typeof shir
       <div className="td-grid">
         <button className="td-panel td-tile" onClick={() => go('shirts')}>
           <h2>Shirts</h2>
-          <div className="td-counts"><Stat v={r.shirts.total} k="TO ORDER" color="var(--cyan)" /><Stat v={r.shirts.missing} k="NO SIZE" color={r.shirts.missing ? 'var(--gold)' : '#fff'} /></div>
+          <div className="td-counts"><Stat v={r.shirts.total} k="TO ORDER" color="var(--cyan)" /><Stat v={r.shirts.missing} k="NO SIZE" color={r.shirts.missing ? 'var(--gold)' : 'var(--fg-1)'} /></div>
           <span className="td-hint">{r.shirts.ordered ? `Ordered ${new Date(data.order.ordered_at!).toLocaleDateString()}` : 'Not ordered yet'}{r.shirts.unknown ? ` · ${r.shirts.unknown} odd size${r.shirts.unknown === 1 ? '' : 's'} to check` : ''}</span>
         </button>
         <button className="td-panel td-tile" onClick={() => go('designs')}>
@@ -348,7 +348,7 @@ function Shirts({ ctx, tally, players, onPlayers }: {
       <section className="td-panel">
         <div className="td-row">
           <h2>Order</h2>
-          <div className="td-counts"><Stat v={tally.total} k="TOTAL" color="var(--cyan)" /><Stat v={tally.missing} k="NO SIZE" color={tally.missing ? 'var(--gold)' : '#fff'} /></div>
+          <div className="td-counts"><Stat v={tally.total} k="TOTAL" color="var(--cyan)" /><Stat v={tally.missing} k="NO SIZE" color={tally.missing ? 'var(--gold)' : 'var(--fg-1)'} /></div>
           <div style={{ flex: 1 }} />
           <button className="td-btn cyan" onClick={exportCsv} disabled={!tally.total}>DOWNLOAD CSV</button>
           <button className={`td-btn ${o.ordered_at ? 'quiet' : 'cta'}`} onClick={() => void save({ ...o, ordered_at: o.ordered_at ? null : new Date().toISOString() })}>
@@ -669,7 +669,7 @@ function Packs({ ev, players, divisions }: { ev: api.EventSetup['event']; player
       <section className="td-panel td-noprint">
         <div className="td-row">
           <h2>Player pack bags</h2>
-          <div className="td-counts"><Stat v={count.total} k="BAGS" color="var(--cyan)" /><Stat v={count.noShirt} k="DISC ONLY" color={count.noShirt ? 'var(--gold)' : '#fff'} /></div>
+          <div className="td-counts"><Stat v={count.total} k="BAGS" color="var(--cyan)" /><Stat v={count.noShirt} k="DISC ONLY" color={count.noShirt ? 'var(--gold)' : 'var(--fg-1)'} /></div>
           <div style={{ flex: 1 }} />
           <button className="td-btn cta" onClick={print} disabled={!rows.length}>PRINT BAG LABELS</button>
         </div>

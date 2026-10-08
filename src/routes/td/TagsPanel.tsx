@@ -66,7 +66,7 @@ export default function TagsPanel({ admin, onBack, onlyPool, eventId }: { admin:
         <div className="td-title">{onlyPool && pool ? `${pool.name} tags` : 'Bag Tags'}</div>
         {pool && <>
           <div className="td-stat"><b>{held.length}</b><span>TAGS OUT</span></div>
-          <div className="td-stat"><b style={{ color: open.length ? 'var(--gold)' : '#fff' }}>{open.length}</b><span>ROUNDS OPEN</span></div>
+          <div className="td-stat"><b style={{ color: open.length ? 'var(--gold)' : 'var(--fg-1)' }}>{open.length}</b><span>ROUNDS OPEN</span></div>
         </>}
         <div style={{ flex: 1 }} />
         {pool && <a className="td-btn cyan" href={`/tags/${pool.slug}`} target="_blank" rel="noreferrer">VIEW BOARD</a>}

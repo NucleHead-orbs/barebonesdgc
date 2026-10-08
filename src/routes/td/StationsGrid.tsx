@@ -101,7 +101,7 @@ export default function StationsGrid({ eventId, eventName, startsOn, endsOn, cre
         <div className="td-counts">
           <div className="td-stat"><b style={{ color: sum.open ? 'var(--gold)' : 'var(--under)' }}>{sum.filled}/{sum.need}</b><span>SPOTS FILLED</span></div>
           <div className="td-stat"><b>{sum.shortCells}</b><span>SHORT</span></div>
-          <div className="td-stat"><b style={{ color: sum.conflicts ? 'var(--error)' : '#fff' }}>{sum.conflicts}</b><span>DOUBLE-BOOKED</span></div>
+          <div className="td-stat"><b style={{ color: sum.conflicts ? 'var(--error)' : 'var(--fg-1)' }}>{sum.conflicts}</b><span>DOUBLE-BOOKED</span></div>
           <div className="td-stat"><b>{sum.people}/{live.length}</b><span>CREW PLACED</span></div>
         </div>
         <div className="td-row">

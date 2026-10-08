@@ -63,7 +63,7 @@ export default function SponsorsPanel({ eventId, holeCount, sponsors, onChange, 
         <div className="td-title">Sponsors</div>
         <div className="td-stat"><b>{sponsors.length}</b><span>TOTAL</span></div>
         <div className="td-stat"><b style={{ color: 'var(--under)' }}>{visible}</b><span>VISIBLE</span></div>
-        <div className="td-stat"><b style={{ color: sponsors.length - visible ? 'var(--gold)' : '#fff' }}>{sponsors.length - visible}</b><span>WAITING</span></div>
+        <div className="td-stat"><b style={{ color: sponsors.length - visible ? 'var(--gold)' : 'var(--fg-1)' }}>{sponsors.length - visible}</b><span>WAITING</span></div>
         <div style={{ flex: 1 }} />
         <a className="td-btn cyan" href="/jewel#info" target="_blank" rel="noreferrer">VIEW PUBLIC PAGE</a>
       </div>

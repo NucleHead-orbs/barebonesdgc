@@ -65,7 +65,7 @@ export default function ContactsPanel({ eventId, email, useSponsors }: { eventId
       {err && <div className="td-warn" role="alert">{err} <button className="td-btn quiet" onClick={() => setErr('')}>DISMISS</button></div>}
       <section className="td-panel">
         <div className="td-counts">
-          <div className="td-stat"><b style={{ color: r.leads ? 'var(--gold)' : '#fff' }}>{r.leads}</b><span>NEW LEADS</span></div>
+          <div className="td-stat"><b style={{ color: r.leads ? 'var(--gold)' : 'var(--fg-1)' }}>{r.leads}</b><span>NEW LEADS</span></div>
           <div className="td-stat"><b>{r.open}</b><span>IN PROGRESS</span></div>
           <div className="td-stat"><b style={{ color: 'var(--under)' }}>{r.sponsorsYes}</b><span>SPONSORS YES</span></div>
           <div className="td-stat"><b>${r.pledged.toLocaleString()}</b><span>PLEDGED</span></div>

@@ -1,5 +1,5 @@
 /*
- * G-Mode (Grandpa mode): My Tag + Scorecard in daylight (Mike, 2026-10-08). Not an inverted dark mode: a printed clubhouse
+ * G-Mode (Grandpa mode): My Tag, the Scorecard and the TD Builder in daylight (Mike, 2026-10-08). Not an inverted dark mode: a printed clubhouse
  * scorecard. Cream card stock on ruled paper, a hunter-green header band with a mustard rule, ink text, club type
  * (Luckiest Guy + Rubik) a size up, chunky ink-shadow buttons instead of neon, and the card marks scores the way a pencil
  * would: birdies circled, bogeys boxed. Lives on <html data-gmode> only while those pages are mounted (src/lib/gmode.ts).
@@ -51,8 +51,9 @@ html[data-gmode] :is(.td, .sc) { background-color: var(--gm-paper);
 
 /* ---------- header band ---------- */
 html[data-gmode] .td-top { background: var(--gm-band); border-bottom: 4px solid var(--gm-mustard); color: var(--gm-card); }
-html[data-gmode] .td-title { color: var(--gm-card); font-size: 32px; letter-spacing: .5px; }
-html[data-gmode] .td-sub { color: var(--gm-mustard); font-size: 12px; letter-spacing: 1.5px; }
+html[data-gmode] .td-top .td-title { color: var(--gm-card); font-size: 32px; letter-spacing: .5px; }
+html[data-gmode] .td-top .td-sub { color: var(--gm-mustard); font-size: 12px; letter-spacing: 1.5px; }
+html[data-gmode] .td-title { color: var(--gm-ink); }
 html[data-gmode] .sc-top { background: var(--gm-band); border-bottom: 4px solid var(--gm-mustard); }
 html[data-gmode] .sc-brand { color: var(--gm-mustard); font-size: 22px; }
 html[data-gmode] .sc-brand span { color: var(--gm-card); }
@@ -81,6 +82,7 @@ html[data-gmode] .td-empty { color: var(--fg-3); }
 html[data-gmode] .td-panel h2, html[data-gmode] .td-h2 { color: var(--gm-ink); }
 html[data-gmode] :is(.mt-tag-meta, .mt-dtag-meta span, .mt-round-head span, .mr-l small, .mr-r small, .bd-line time, .bd-set span, .mu-dh, .mu-dl) { opacity: 1; color: var(--fg-3); }
 html[data-gmode] .td-sub, html[data-gmode] .td-tabs button { font-family: var(--font-label); }
+html[data-gmode] .td-sub { color: var(--accent-b); }
 
 /* ---------- surfaces: card stock with a soft lift ---------- */
 html[data-gmode] :is(.td-panel, .sc-panel, .sc-hole, .sc-st, .mr-round, .wt, .dev-note, .ht-bomb) { box-shadow: var(--gm-lift); }
@@ -223,4 +225,87 @@ html[data-gmode] .sc-install.is-mytag { border-color: var(--accent-b); }
 html[data-gmode] .sc-install-head img { box-shadow: 0 2px 6px rgba(29, 42, 34, .35); }
 html[data-gmode] .sc-steps li::marker, html[data-gmode] .sc-install.is-mytag .sc-steps li::marker { color: var(--gm-green); }
 
-@media (max-width: 480px) { html[data-gmode] .td-title { font-size: 28px; } }
+
+/* ---------- TD Builder (/td): same card stock, desk-sized ---------- */
+html[data-gmode] .td-top { row-gap: 10px; }
+html[data-gmode] .td-top .td-btn.quiet { border-color: rgba(255, 253, 246, .45); color: var(--gm-card); }
+html[data-gmode] .td-login h1 { color: var(--gm-ink); }
+html[data-gmode] .td-login label { font-size: 13px; color: var(--fg-2); }
+html[data-gmode] .td-side { background: var(--gm-card); border-color: var(--border-subtle); box-shadow: var(--gm-lift); }
+html[data-gmode] .td-toast { background: #e2efd9; color: #173f20; border-bottom-color: var(--border); }
+html[data-gmode] .td-stat span, html[data-gmode] .td-table th, html[data-gmode] .td-hole.hdr, html[data-gmode] .td-st-count { opacity: 1; color: var(--fg-3); }
+html[data-gmode] .td-stat b { color: var(--gm-ink); }
+html[data-gmode] .td-table { font-size: 14px; }
+html[data-gmode] .td-table td, html[data-gmode] .td-stations th, html[data-gmode] .td-stations td { border-color: var(--border-subtle); }
+html[data-gmode] :is(.td-search, .io-step input, .td-title-input) { background: var(--gm-card); color: var(--gm-ink); }
+html[data-gmode] .td-title-input { background: transparent; }
+/* cards (groups) + rings */
+html[data-gmode] .td-card { background: var(--gm-card); box-shadow: var(--gm-lift); }
+html[data-gmode] .td-card-head { background: var(--bg-raised); }
+html[data-gmode] .td-card.locked .td-card-head { background: #e2efd9; }
+html[data-gmode] .td-ring { background: var(--gm-card); color: var(--gm-ink); border-color: var(--gm-green); }
+html[data-gmode] .td-ring.mixed { border-color: var(--accent-gold); }
+html[data-gmode] .td-lock { color: var(--gm-ink); }
+html[data-gmode] .td-lock[aria-pressed='true'] { color: #fff; }
+html[data-gmode] .td-player.match { background: #fbf1cf; }
+html[data-gmode] .td-player[aria-pressed='true'] .d { color: var(--gm-ink); }
+html[data-gmode] .td-drop { background: var(--gm-card); }
+/* check-in roster: big obvious states */
+html[data-gmode] .td-roster-row { background: var(--gm-card); }
+html[data-gmode] .td-roster-row.is-in { background: #eef5e8; }
+html[data-gmode] .td-checkin { background: var(--gm-card); border-color: var(--gm-ink); color: var(--gm-ink); box-shadow: 0 3px 0 var(--gm-ink); font-weight: 800; }
+html[data-gmode] .td-checkin[aria-pressed='true'] { background: var(--gm-green); border-color: var(--gm-ink); color: #fff; }
+html[data-gmode] .td-checkin.is-outbtn[aria-pressed='true'] { background: var(--gm-red); color: #fff; }
+html[data-gmode] .td-checkin:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--gm-ink); }
+html[data-gmode] :is(.td-bagsize, .td-req-warn) { color: var(--accent-gold); border-color: var(--accent-gold); }
+html[data-gmode] :is(.td-picker-hits button, .td-divpick button, .td-swatch, .td-vibe.is-star, .td-vibe.is-easy, .td-home-step) { color: var(--gm-ink); }
+html[data-gmode] .td-picker-hits button { background: var(--gm-card); }
+html[data-gmode] .td-swatch[aria-pressed='true'] { border-color: var(--gm-ink); background: var(--gm-card); }
+html[data-gmode] .td-divpick .td-wave.PM { color: #fff; }
+html[data-gmode] :is(.td-list li, .td-sizerow, .td-pcts, .td-library, .td-home-updates li, .td-update, .td-st-person) { background: var(--bg-raised); }
+html[data-gmode] :is(.td-req, .td-task, .td-sponsor, .td-checklist li, .td-vote-opt, .td-private) { background: var(--gm-card); }
+html[data-gmode] .td-home-step { background: var(--gm-card); box-shadow: 0 3px 0 var(--border); }
+html[data-gmode] .td-home-updates p b { color: var(--gm-ink); }
+html[data-gmode] .td-home a, html[data-gmode] .td-help-sec h3 { color: var(--gm-green); }
+html[data-gmode] .td-thumb { background: var(--bg-raised); }
+/* volunteer grid */
+html[data-gmode] .td-stations thead th { background: var(--gm-green); color: var(--gm-card); }
+html[data-gmode] :is(.td-st-name, .td-st-cell) { background: var(--gm-card); }
+html[data-gmode] .td-st-cell.is-short { background: #fbf1cf; }
+html[data-gmode] .td-st-cell.is-full { background: #eef5e8; }
+html[data-gmode] .td-st-cell.is-over { background: #e8eef7; }
+/* printables shown on screen: white sheets need an edge on paper */
+html[data-gmode] :is(.td-qr-card, .td-sign, .td-crew-qr) { box-shadow: 0 0 0 1px var(--border), var(--gm-lift); }
+/* overlays + floats that used the app colour */
+html[data-gmode] .td-help { background: rgba(29, 42, 34, .5); }
+html[data-gmode] .td-help-inner { background: var(--gm-card); border-color: var(--gm-green); color: var(--gm-ink); box-shadow: 0 20px 50px -20px rgba(29, 42, 34, .6); }
+html[data-gmode] .td-ok.td-float { background: #e2efd9; }
+/* disc order */
+html[data-gmode] .td-chip.io-t.putter[aria-pressed='true'], html[data-gmode] .td-chip.io-mine[aria-pressed='true'], html[data-gmode] .td-chip.io-t.mid[aria-pressed='true'], html[data-gmode] .td-chip.io-t.novelty[aria-pressed='true'] { color: #fff; }
+html[data-gmode] .td-chip.io-t.distance { color: var(--accent-b); }
+html[data-gmode] :is(.io-card-top, .io-flight dd, .io-step button) { color: var(--gm-ink); }
+html[data-gmode] .io-badges em.io-orange { border-color: #b8571a; color: #b8571a; }
+html[data-gmode] .io-badges em.io-yellow { border-color: #8f650a; color: #8f650a; }
+html[data-gmode] .io-problem { color: var(--gm-red); }
+html[data-gmode] .io-issues.warn { border-color: var(--accent-gold); }
+html[data-gmode] .io-w.low { box-shadow: inset 0 3px 0 var(--accent-gold); }
+/* bug squasher (owner) */
+html[data-gmode] :is(.bsq-stat, .bsq-card) { background: var(--gm-card); border-color: var(--border); }
+html[data-gmode] .bsq-head h2, html[data-gmode] .bsq-stat.s-squashed b, html[data-gmode] :is(.bsq-ship, .bsq-note) { color: var(--gm-green); }
+html[data-gmode] .bsq-stat.s-open b, html[data-gmode] .bsq-gh.k-bug { color: var(--gm-red); }
+html[data-gmode] .bsq-gh.k-idea { color: var(--accent-gold); } html[data-gmode] .bsq-gh.k-feedback { color: #1f5f99; }
+html[data-gmode] .bsq-card.k-bug { border-left-color: #d6402f; } html[data-gmode] .bsq-card.k-idea { border-left-color: #d9a520; } html[data-gmode] .bsq-card.k-feedback { border-left-color: #2f7fc4; }
+html[data-gmode] :is(.bsq-bump, .bsq-preview, .bsq-photo img) { border-color: var(--border); }
+html[data-gmode] .bsq-bump.on { border-color: var(--gm-green); background: #eef5e8; }
+html[data-gmode] .bsq-history details { border-top-color: var(--border-subtle); }
+
+@media (max-width: 640px) {
+  html[data-gmode] .td-top .td-title { font-size: 26px; }
+  html[data-gmode] .td-top { padding: 12px 16px; gap: 10px; }
+  html[data-gmode] .td-top :is(.td-btn, .gm-toggle) { min-height: 38px; height: auto; padding-top: 0; padding-bottom: 0; }
+  html[data-gmode] .td-top .gm-toggle { height: 38px; }
+  /* check-in on a phone: the name gets its own full line, buttons underneath. Never "T…" */
+  html[data-gmode] .td-roster-row { flex-wrap: wrap; row-gap: 8px; padding: 10px; }
+  html[data-gmode] .td-roster-name { order: -1; flex: 1 1 100%; white-space: normal; font-size: 18px; }
+  html[data-gmode] .td-roster-row > .td-btn.quiet { margin-left: auto; }
+}

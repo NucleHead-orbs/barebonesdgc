@@ -58,10 +58,10 @@ export default function ImportReview({ fileName, text, divCodes, existing, exist
       {!parsed.blocking.length && (
         <div className="td-counts">
           <Stat v={diff.inserts.length} k="NEW" color="var(--under)" />
-          <Stat v={diff.updates.length} k="CHANGED" color={diff.updates.length ? 'var(--gold)' : '#fff'} />
-          <Stat v={diff.unchanged.length} k="UNCHANGED" color="#fff" />
-          <Stat v={parsed.skipped.length} k="SKIPPED" color={parsed.skipped.length ? 'var(--over)' : '#fff'} />
-          {withSponsors && <Stat v={newSponsors.length} k="NEW SPONSORS" color={newSponsors.length ? 'var(--gold)' : '#fff'} />}
+          <Stat v={diff.updates.length} k="CHANGED" color={diff.updates.length ? 'var(--gold)' : 'var(--fg-1)'} />
+          <Stat v={diff.unchanged.length} k="UNCHANGED" color="var(--fg-1)" />
+          <Stat v={parsed.skipped.length} k="SKIPPED" color={parsed.skipped.length ? 'var(--over)' : 'var(--fg-1)'} />
+          {withSponsors && <Stat v={newSponsors.length} k="NEW SPONSORS" color={newSponsors.length ? 'var(--gold)' : 'var(--fg-1)'} />}
         </div>
       )}
 

@@ -9,6 +9,7 @@ import { DIVISION_PRESETS, addDays, dateRange, daysBetween, divisionsProblem, is
 import { useTheme } from '../../lib/theme';
 import EventWorkspace from './EventWorkspace';
 import { HelpButton } from './Help';
+import { GModeToggle } from '../../components/gmode/GModeToggle';
 import TdHome from './TdHome';
 import { LayoutSelect } from './CourseLibrary';
 import { findLayout, sortLibrary, type LibCourse } from '../../lib/courses/courses';
@@ -159,6 +160,7 @@ function HubShell({ email, admin, onSignOut, children }: { email: string; admin:
         </div>
         <div style={{ flex: 1 }} />
         <div className="td-actions">
+          <GModeToggle />
           <HelpButton />
           <button className="td-btn quiet" onClick={onSignOut}>SIGN OUT</button>
         </div>

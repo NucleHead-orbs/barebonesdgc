@@ -163,8 +163,8 @@ export default function PlayersPanel({ setup, players, sponsors, priv, onPlayers
       <div className="td-row">
         <div className="td-stat"><b>{players.length}</b><span>REGISTERED</span></div>
         {ev.use_checkin && <div className="td-stat"><b style={{ color: 'var(--under)' }}>{inCount}</b><span>{r2 ? 'IN FOR R2' : 'CHECKED IN'}</span></div>}
-        {r2 && <div className="td-stat"><b style={{ color: outCount ? 'var(--over)' : '#fff' }}>{outCount}</b><span>OUT</span></div>}
-        {ev.use_checkin && <div className="td-stat"><b style={{ color: players.length - inCount - outCount ? 'var(--gold)' : '#fff' }}>{players.length - inCount - outCount}</b><span>{r2 ? 'NO ANSWER' : 'NOT YET'}</span></div>}
+        {r2 && <div className="td-stat"><b style={{ color: outCount ? 'var(--over)' : 'var(--fg-1)' }}>{outCount}</b><span>OUT</span></div>}
+        {ev.use_checkin && <div className="td-stat"><b style={{ color: players.length - inCount - outCount ? 'var(--gold)' : 'var(--fg-1)' }}>{players.length - inCount - outCount}</b><span>{r2 ? 'NO ANSWER' : 'NOT YET'}</span></div>}
         <div style={{ flex: 1 }} />
         <label className="td-btn cyan td-file">IMPORT DGS CSV<input type="file" accept=".csv,text/csv" onChange={onFile} disabled={!!busy} /></label>
         {ev.use_checkin && !r2 && <button className="td-btn" onClick={() => void checkInAll()} disabled={!!busy || !shown.some((p) => !p.checked_in)}>CHECK IN {query ? 'MATCHES' : 'ALL'}</button>}
