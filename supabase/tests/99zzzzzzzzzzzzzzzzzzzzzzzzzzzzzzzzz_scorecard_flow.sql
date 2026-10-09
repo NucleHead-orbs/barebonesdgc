@@ -45,6 +45,8 @@ select tag_confirm(pg_temp.tok('Cy Flow'), pg_temp.v('m')::uuid, true);
 reset role;
 select pg_temp.ok((select array_agg(p.name order by t.number) from tags t join tag_members p on p.id = t.holder_id where t.pool_id = pg_temp.pool()) = '{Al Flow,Cy Flow,Salty Flow}',
   'tags: a DNF finishes last, behind a worse total');
+select pg_temp.ok(_tag_round_story(pg_temp.v('m')::uuid) like '%Salty Flow pulled out way before climax, safe from child support, but not from last place.%'
+  and _tag_round_story(pg_temp.v('m')::uuid) not like '%Salty Flow brought up the rear%' and _tag_round_story(pg_temp.v('m')::uuid) not like '%Salty Flow finished last%', 'the story calls out the DNF (and not with the usual last-place line)');
 -- one card per scheduled round
 set role anon;
 select pg_temp.ok(pg_temp.refused(format('select round_save(%L, %L)', pg_temp.tok('Cy Flow'), pg_temp.card(pg_temp.v('src'), '[2,2,2,2]')), 'already_saved:' || pg_temp.v('r')), 'a second card for the same round is refused (with the saved round)');

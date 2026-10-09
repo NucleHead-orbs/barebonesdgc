@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'confirm-in-my-rounds', date: '2026-10-09', help: 'rounds', who: 'all',
+    title: 'Confirm cards in MY ROUNDS + DNF roast',
+    body: 'Players confirm Scorecard rounds right in My Tag → **MY ROUNDS** now (the card opens with **CONFIRM** / **DISPUTE**; the confirm alert lands there and the tab shows a count). Manual tag rounds confirm there too. A settled challenge now reads "took #5 from …, who drops to #7" (no more "higher tag"), and anyone who pulled out gets their own line in the round story.',
+  },
+  {
     id: 'scorecard-flow', date: '2026-10-09', help: 'rounds', who: 'all',
     title: 'START THE CARD, tee order + the box, PULL OUT',
     body: 'Scheduled casual and challenge rounds get **START THE CARD** on My Tag from 3 hours before tee: course, layout and every player already on it (one saved card per round). Each hole now lists players in **tee order** with a gold **BOX** badge on whoever owns it. **Pull out** marks a player DNF after the holes they finished: par +3 on the rest, last on tags.',

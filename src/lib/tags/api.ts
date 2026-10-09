@@ -25,6 +25,8 @@ export interface MatchPlayer {
 export interface Match {
   id: string; pool: string; pool_name: string; source: 'casual' | 'event'; status: MatchStatus; course: string | null;
   played_on: string; created_at: string; applied_at: string | null; expired?: boolean; created_by: string | null; mine?: boolean;
+  /** came off a Scorecard card: confirmed on the card (My Tag → MY ROUNDS), migration 20261121 */
+  round_id?: string | null;
   players: MatchPlayer[];
 }
 export interface HistoryLine { id: number; number: number; kind: 'issued' | 'moved' | 'released' | 'retired' | 'undo' | 'bomb' | 'penalty'; member_id: string | null; prev_id: string | null; match_id: string | null; at: string }

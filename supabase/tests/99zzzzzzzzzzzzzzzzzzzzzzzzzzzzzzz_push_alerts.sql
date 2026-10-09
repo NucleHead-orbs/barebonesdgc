@@ -85,7 +85,7 @@ select pg_temp.ok(pg_temp.q('Bo Push', 'confirm') = 1 and pg_temp.q('Al Push', '
 insert into club_rounds (course, played_on, pars, created_by) values ('Card Push', current_date, '{3}', pg_temp.mem('Al Push'));
 insert into club_round_players (round_id, seq, member_id, scores, strokes, to_par, confirmed_at) select id, 1, pg_temp.mem('Al Push'), '{3}', 3, 0, now() from club_rounds where course = 'Card Push';
 insert into club_round_players (round_id, seq, member_id, scores, strokes, to_par) select id, 2, pg_temp.mem('Bo Push'), '{4}', 4, 1 from club_rounds where course = 'Card Push';
-select pg_temp.ok(pg_temp.q('Bo Push', 'confirm') = 2 and (pg_temp.last('Bo Push', 'confirm')).url like '/rounds/%', 'Scorecard round: confirm on the card');
+select pg_temp.ok(pg_temp.q('Bo Push', 'confirm') = 2 and (pg_temp.last('Bo Push', 'confirm')).url like '/tag/%?tab=rounds&round=%', 'Scorecard round: confirm opens MY ROUNDS on My Tag');
 
 -- ---------- fuse sweep ----------
 insert into tag_fuse (pool_id, member_id, top_since) values (pg_temp.pool(), pg_temp.mem('Cy Push'), now() - interval '6 days 2 hours');

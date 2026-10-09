@@ -56,6 +56,8 @@ export default function MyTagApp() {
   const [params, setParams] = useSearchParams();
   const tab = asTab(params.get('tab'));
   const go = useCallback((t: MyTagTab) => { setParams(t === 'tags' ? {} : { tab: t }, { replace: true }); window.scrollTo(0, 0); }, [setParams]);
+  // a confirm alert opens ?tab=rounds&round=<id>: open that card
+  const [focusRound] = useState<string | null>(() => new URLSearchParams(window.location.search).get('round'));
   const [boardPool, setBoardPool] = useState<string | null>(() => new URLSearchParams(window.location.search).get('pool'));
   const [tour, setTour] = useState<boolean | null>(null); // null = not decided yet (decided once we know who this is)
   const [unread, setUnread] = useState<Record<string, number>>({});
@@ -114,6 +116,9 @@ export default function MyTagApp() {
   const meId = home.me.id;
   const showTour = tour ?? !welcomeSeen(meId);
   const needsMe = home.open.filter((m) => m.status === 'pending' && !m.expired && !m.players.find((p) => p.member_id === meId)?.confirmed);
+  // Scorecard cards confirm on the card in MY ROUNDS (that confirms their tag swaps too); manual tag rounds confirm here
+  const tagNeeds = needsMe.filter((m) => !m.round_id);
+  const waitingOk = tagNeeds.length + toConfirm.length;
   const waiting = home.open.filter((m) => !needsMe.includes(m));
   const names = Object.fromEntries(home.holdings.map((h) => [h.pool, h.pool_name]));
 
@@ -134,7 +139,7 @@ export default function MyTagApp() {
       </header>
       <nav className="td-tabs mt-tabs" aria-label="My Tag">
         {([['tags', 'MY TAGS'], ['board', 'BOARD'], ['matchups', 'MATCHUPS'], ['rounds', 'MY ROUNDS']] as Array<[MyTagTab, string]>).map(([t, label]) => {
-          const n = t === 'board' ? Object.values(unread).reduce((a, b) => a + b, 0) : t === 'matchups' ? casuals.filter((c) => c.open && c.mine === 'invited').length : 0;
+          const n = t === 'board' ? Object.values(unread).reduce((a, b) => a + b, 0) : t === 'matchups' ? casuals.filter((c) => c.open && c.mine === 'invited').length : t === 'rounds' ? waitingOk : 0;
           return <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => go(t)}>{label}{n > 0 && <b>{n > 99 ? '99+' : n}</b>}</button>;
         })}
       </nav>
@@ -147,7 +152,24 @@ export default function MyTagApp() {
         {tab === 'board' && <TagBoard token={token} meId={meId} rows={heatRows} names={names} pool={boardPool} onPool={setBoardPool}
           unread={unread} seenKey={seenKey} onSeen={onSeen} rosters={home.rosters} focusId={focusChat} />}
         {tab === 'matchups' && <Matchups token={token} act={act} rev={rev} rounds={rounds} casuals={casuals} meId={meId} holdings={home.holdings} rosters={home.rosters} />}
-        {tab === 'rounds' && <MyRounds token={token} meId={meId} rev={rev} />}
+        {tab === 'rounds' && <>
+        {tagNeeds.length > 0 && (
+          <section className="td-panel mt-needs">
+            <h2>Confirm {tagNeeds.length === 1 ? 'this round' : 'these rounds'}</h2>
+            <p className="td-hint">Check the scores. <b>Confirm</b> if they're right. When everyone confirms, the tags swap. Wrong? <b>Dispute</b> and your league TD settles it.</p>
+            {tagNeeds.map((m) => (
+              <RoundCard key={m.id} m={m} meId={meId} preview>
+                <div className="td-row">
+                  <button className="td-btn cta" onClick={() => void act(tagApi.confirm(token, m.id, true), 'Confirmed.')}>CONFIRM</button>
+                  <button className="td-btn quiet" onClick={() => void act(tagApi.confirm(token, m.id, false), 'Disputed. Your league TD will sort it out.')}>DISPUTE</button>
+                </div>
+              </RoundCard>
+            ))}
+          </section>
+        )}
+
+        <MyRounds token={token} meId={meId} rev={rev} act={act} focus={focusRound} />
+        </>}
         {tab === 'tags' && <>
         <div className="mt-tags">
           {home.holdings.map((h) => TAG_ART[h.pool] ? (
@@ -179,26 +201,11 @@ export default function MyTagApp() {
 
         <EarlyMyTag token={token} rev={rev} />
 
-        {needsMe.length > 0 && (
+        {waitingOk > 0 && (
           <section className="td-panel mt-needs">
-            <h2>Confirm {needsMe.length === 1 ? 'this round' : 'these rounds'}</h2>
-            <p className="td-hint">Check the scores. <b>Confirm</b> if they're right. When everyone confirms, the tags swap. Wrong? <b>Dispute</b> and your league TD settles it.</p>
-            {needsMe.map((m) => (
-              <RoundCard key={m.id} m={m} meId={meId} preview>
-                <div className="td-row">
-                  <button className="td-btn cta" onClick={() => void act(tagApi.confirm(token, m.id, true), 'Confirmed.')}>CONFIRM</button>
-                  <button className="td-btn quiet" onClick={() => void act(tagApi.confirm(token, m.id, false), 'Disputed. Your league TD will sort it out.')}>DISPUTE</button>
-                </div>
-              </RoundCard>
-            ))}
-          </section>
-        )}
-
-        {toConfirm.length > 0 && (
-          <section className="td-panel mt-needs">
-            <h2>Boner Rounds to confirm</h2>
-            <p className="td-hint">Someone saved a round you played. Open it, check your score, and confirm.</p>
-            {toConfirm.map((x) => <Link key={x.id} className="td-btn" to={`/rounds/${x.id}`}>{x.course} · {niceDate(x.played_on)} ›</Link>)}
+            <h2>{waitingOk === 1 ? 'A round is' : `${waitingOk} rounds are`} waiting on your OK</h2>
+            <p className="td-hint">Check your score and confirm it in MY ROUNDS. Tags swap once everyone on the card confirms.</p>
+            <button className="td-btn cta" onClick={() => go('rounds')}>CONFIRM IN MY ROUNDS</button>
           </section>
         )}
 

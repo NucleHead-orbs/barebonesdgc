@@ -32,9 +32,9 @@ const STEPS: Step[] = [
     body: [
       'Add everyone on your card (up to 10, guests too). Before the first score, tick the tag sets that are on the line.',
       'Best score takes the lowest number on the card. Ties keep the order they started in. Tags only swap between holders on the same card, so keep every tag holder on one card.',
-      'On the last hole tap FINISH + SAVE. If something\'s missing, it tells you exactly what. Everyone else on the card confirms from their My Tag link, then the tags swap.',
+      'On the last hole tap FINISH + SAVE. If something\'s missing, it tells you exactly what. Everyone else on the card confirms in MY ROUNDS on their My Tag, then the tags swap.',
     ],
-    tip: 'Kept score on paper? Use + MANUAL TAG ROUND SUBMISSION on My Tag. Everyone still confirms.',
+    tip: 'Kept score on paper? Use + MANUAL TAG ROUND SUBMISSION on My Tag. Everyone still confirms. Both on iPhones? Touch tips to pass the card link along. Yes, really.',
   },
   {
     n: 4, kick: 'Climb', title: 'Challenge somebody (or just invite them)',

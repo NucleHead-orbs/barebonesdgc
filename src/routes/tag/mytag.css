@@ -107,3 +107,8 @@
 .lb-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb-you { font-family: var(--font-label); font-size: 11px; letter-spacing: 1px; color: var(--cyan); border: 1px solid var(--cyan); border-radius: 10px; padding: 1px 7px; }
 .lb-more { display: block; padding: 12px 16px; color: var(--cyan); font-size: 14px; border-top: 1px solid var(--border); }
+/* confirm cards in MY ROUNDS (2026-10-09) */
+.mr-wait { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-left: 3px solid var(--gold); background: color-mix(in srgb, var(--gold) 8%, transparent); }
+.mr-round.is-wait { border-color: var(--gold); }
+.mr-chip.wait { border-color: var(--gold); color: var(--gold); }
+.mr-confirm { padding: 0 12px 12px; }

@@ -68,7 +68,7 @@ insert into b_ctx select 'm1', tag_log(pg_temp.tok('Fi Board'), pg_temp.pool(), 
   jsonb_build_object('member_id', pg_temp.mem('Cy Board'), 'score', 55)), 'Test', current_date)::text;
 select tag_confirm(pg_temp.tok('Cy Board'), pg_temp.v('m1')::uuid, true);
 reset role;
-select pg_temp.ok((select body like 'Challenge settled: Fi Board (#3) took the higher tag from Cyclops (#6). %5%Fi Board climbs from #6 to #3.' from tag_chat where pool_id = pg_temp.pool() and event = 'played'), 'the result posts with the new numbers');
+select pg_temp.ok((select body like 'Challenge settled: Fi Board took #3 from Cyclops, who drops to #6. %5%Fi Board climbs from #6 to #3.' from tag_chat where pool_id = pg_temp.pool() and event = 'played'), 'the result posts with the new numbers');
 set role anon;
 insert into b_ctx select 'c2', tag_challenge(pg_temp.tok('Ed Board'), pg_temp.pool(), pg_temp.mem('Bo Board'))::text;
 select tag_challenge_respond(pg_temp.tok('Bo Board'), pg_temp.v('c2')::uuid, false);
