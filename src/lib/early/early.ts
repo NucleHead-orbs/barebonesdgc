@@ -27,6 +27,8 @@ export interface EaClaim {
 /** A joined player. via 'invite' = invited by a TD (not a registrant); token = their My Tag link, for re-sending (invites only). */
 export interface EaLinked { claim_id: string; player: string; member_id: string; member: string; nickname: string | null; via: 'page' | 'mytag' | 'invite'; at: string; tag: number | null; token?: string | null }
 export interface EaInvite { member_id: string; name: string; number: number; token: string }
+/** A member who looks like the name being typed into Invites: their tags, and whether they're already in. */
+export interface EaMatch { id: string; name: string; nickname: string | null; tags: string[]; joined: boolean }
 
 /** The text message a TD sends with an invite. First name only, plain words, the link on its own line. */
 export function inviteText(name: string, eventName: string, url: string): string {

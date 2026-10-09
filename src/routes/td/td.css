@@ -453,6 +453,8 @@ button.td-vote-opt:disabled { cursor: default; }
 /* EARLY ACCESS → Invites + the printed invite card */
 .ea-inv-form { flex-wrap: wrap; }
 .ea-inv-form .td-input { flex: 1 1 180px; min-width: 0; }
+.ea-match { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 2px solid var(--gold); border-radius: 10px; }
+.ea-match-row { flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 6px; }
 .ea-inv { padding: 10px 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
 .ea-inv-text { white-space: pre-wrap; font-size: 13px; margin: 6px 0 0; }
 .ea-print { display: none; }

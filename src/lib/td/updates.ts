@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'ea-invite-match', date: '2026-10-09', help: 'early', who: 'all',
+    title: 'Early Access invites find the person first',
+    body: 'Typing a name in Early Access → **INVITES** now lists anyone who already has a tag and looks like that name, with the tags they hold. Tap **INVITE <NAME>** and they keep one My Tag link for every set, instead of getting a second person and a second link.',
+  },
+  {
     id: 'finish-check-leaderboard', date: '2026-10-09', help: 'tags', who: 'all',
     title: 'Scorecard says what\'s holding the save up + My Tag leaderboard',
     body: 'On the Scorecard\'s last hole, **FINISH** now saves the round when it\'s ready. When it isn\'t, it says exactly why: which player is missing which holes (with a GO TO HOLE button), not connected, tags that can\'t go on the line, or a card older than two weeks. If tags were on the line but the other holders left the card, it warns that nothing will swap. My Tag has a **LEADERBOARD** button under each tag: everyone in that set by number, you highlighted.',

@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import * as ea from '../../lib/early/api';
-import { inviteText, smsHref, type EaLinked } from '../../lib/early/early';
+import { inviteText, smsHref, type EaLinked, type EaMatch } from '../../lib/early/early';
 import { myTagUrl } from '../../lib/tags/tags';
 
 type Run = (key: string, p: () => Promise<{ error?: unknown }>, ok?: string) => Promise<boolean>;
@@ -18,6 +18,23 @@ export function EaInvites({ eventId, eventName, linked, busy, run }: { eventId: 
   const [nick, setNick] = useState('');
   const [open, setOpen] = useState<string | null>(null); // token whose send box is open
   const invites: Invitee[] = linked.filter((l) => l.via === 'invite' && l.token).map((l) => ({ name: l.member, nickname: l.nickname, tag: l.tag, token: l.token! }));
+  // members who already look like this name: pick them so one person keeps one link (migration 20261119)
+  const [matches, setMatches] = useState<EaMatch[]>([]);
+  useEffect(() => {
+    const q = name.trim();
+    let live = true;
+    const t = window.setTimeout(() => { void (async () => {
+      const r = q.length >= 2 ? await ea.tdInviteMatches(eventId, q) : { data: [] as EaMatch[] };
+      if (live) setMatches(r.data ?? []);
+    })(); }, 250);
+    return () => { live = false; window.clearTimeout(t); };
+  }, [name, eventId]);
+  const inviteMember = async (m: EaMatch) => {
+    let token = '';
+    const ok = await run('invite', async () => { const r = await ea.tdInviteMember(eventId, m.id); if (r.data) token = r.data.token; return r; },
+      `${m.name} is in, on the same link as their other tags. Send them their link.`);
+    if (ok) { setName(''); setNick(''); setMatches([]); setOpen(token); }
+  };
 
   const invite = async () => {
     let token = '';
@@ -32,8 +49,23 @@ export function EaInvites({ eventId, eventName, linked, busy, run }: { eventId: 
       <form className="td-row ea-inv-form" onSubmit={(e) => { e.preventDefault(); if (name.trim()) void invite(); }}>
         <input className="td-input" placeholder="Full name (Greg Wood)" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} aria-label="Name" />
         <input className="td-input" placeholder="Nickname (optional)" value={nick} maxLength={40} onChange={(e) => setNick(e.target.value)} aria-label="Nickname" />
-        <button className="td-btn cta" type="submit" disabled={!name.trim() || busy === 'invite'}>{busy === 'invite' ? 'INVITING…' : 'INVITE'}</button>
+        <button className={`td-btn ${matches.some((m) => !m.joined) ? 'quiet' : 'cta'}`} type="submit" disabled={!name.trim() || busy === 'invite'}>
+          {busy === 'invite' ? 'INVITING…' : matches.length ? 'NEW PERSON' : 'INVITE'}</button>
       </form>
+      {matches.length > 0 && (
+        <div className="ea-match" role="status">
+          <b>Already have a tag? Pick them so they keep one link for every set:</b>
+          {matches.map((m) => (
+            <div key={m.id} className="td-row ea-match-row">
+              <span style={{ flex: 1, minWidth: 0 }}><b>{m.name}</b>{m.nickname ? ` "${m.nickname}"` : ''}
+                <small className="td-hint"> · {m.tags.length ? m.tags.join(', ') : 'no tags yet'}</small></span>
+              {m.joined ? <span className="td-hint">ALREADY IN</span>
+                : <button className="td-btn cta" disabled={busy === 'invite'} onClick={() => void inviteMember(m)}>INVITE {m.name.split(/\s+/)[0].toUpperCase()}</button>}
+            </div>
+          ))}
+          <span className="td-hint">Not them? Tap NEW PERSON.</span>
+        </div>
+      )}
       {invites.map((i) => (
         <div key={i.token} className="ea-inv">
           <div className="td-row">

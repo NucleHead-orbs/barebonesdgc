@@ -3,7 +3,7 @@
  * ea_* are public or checked against a My Tag link / claim secret; td_ea_* are checked by can_td(event).
  */
 import { supabase } from '../supabase';
-import type { EaClaimStatus, EaInvite, EaMine, EaPublic, EaTd } from './early';
+import type { EaMatch, EaClaimStatus, EaInvite, EaMine, EaPublic, EaTd } from './early';
 
 type Result<T> = { data: T; error?: undefined } | { data?: undefined; error: unknown };
 const rpc = async <T>(fn: string, args: Record<string, unknown>): Promise<Result<T>> => {
@@ -33,6 +33,9 @@ export const tdApprove = (claimId: string, memberId: string | null) =>
   rpc<{ member_id: string; number: number }>('td_ea_approve', { p_claim: claimId, p_member: memberId });
 export const tdDecline = (claimId: string) => rpc<null>('td_ea_decline', { p_claim: claimId });
 export const tdInvite = (eventId: string, name: string, nickname: string) => rpc<EaInvite>('td_ea_invite', { p_event: eventId, p_name: name, p_nickname: nickname || null });
+/** Existing members who look like the typed name (migration 20261119), and inviting one of them by id. */
+export const tdInviteMatches = (eventId: string, name: string) => rpc<EaMatch[]>('td_ea_invite_matches', { p_event: eventId, p_name: name });
+export const tdInviteMember = (eventId: string, memberId: string) => rpc<EaInvite>('td_ea_invite_member', { p_event: eventId, p_member: memberId });
 export const tdRemove = (claimId: string) => rpc<null>('td_ea_remove', { p_claim: claimId });
 export const tdBonus = (eventId: string, memberId: string, n: number, reason: string) =>
   rpc<null>('td_ea_bonus', { p_event: eventId, p_member: memberId, p_tickets: n, p_reason: reason });
