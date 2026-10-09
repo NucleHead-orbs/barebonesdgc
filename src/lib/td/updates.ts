@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'skins', date: '2026-10-08', who: 'all',
+    title: 'Skins: pick your look',
+    body: 'The **SKIN** button (My Tag, the Scorecard and here) picks the look for your phone: **Night Card** (the new dark), **G-Mode** (daylight, bigger print), **Spooky Season**, **Ugly Sweater** or **Jewel Electric**. Super admins set the **club skin** on this page for a season, with an end date, and phones that picked their own keep theirs.',
+  },
+  {
     id: 'phone-alerts', date: '2026-10-08', help: 'tags', who: 'all',
     title: 'Phone alerts',
     body: 'My Tag has **PHONE ALERTS**: push notifications for challenges (sent, answered, tee times picked and locked), @mentions and replies, casual round invites, rounds waiting on a confirm, and a fuse with under 24 hours left. Each player picks which ones. Android: tap TURN ON. iPhone: add My Tag to the home screen first (the icon now opens straight to their own page as a real app), open it from there, then TURN ON.',

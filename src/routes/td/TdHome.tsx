@@ -8,6 +8,7 @@ import { UPDATES, unseenCount, updatesFor } from '../../lib/td/updates';
 import { niceDate } from '../../lib/leagues/leagues';
 import { HelpPanel } from './Help';
 import { TdDevReports } from '../../components/dev/DevReports';
+import ClubSkinPanel from './ClubSkinPanel';
 
 const SEEN_KEY = 'bb-td-updates-seen';
 const readSeen = () => { try { return localStorage.getItem(SEEN_KEY); } catch { return null; } };
@@ -64,6 +65,8 @@ export default function TdHome({ admin, tagAdmin }: { admin: boolean; tagAdmin: 
       </section>
 
       <TdDevReports />
+
+      {admin && <ClubSkinPanel />}
 
       <section className="td-panel">
         <h2>Help topics</h2>

@@ -13,7 +13,7 @@ import SetupPanel from './SetupPanel';
 import SponsorsPanel from './SponsorsPanel';
 import EarlyPanel from './EarlyPanel';
 import { HelpButton } from './Help';
-import { GModeToggle } from '../../components/gmode/GModeToggle';
+import { SkinPicker } from '../../components/skins/SkinPicker';
 const TagsPanel = lazy(() => import('./TagsPanel'));
 
 const TAB_LABEL: Record<Tab, string> = { setup: 'SETUP', prep: 'PREP', crew: 'CREW', early: 'EARLY ACCESS', tags: 'TAGS', players: 'PLAYERS', requests: 'REQUESTS', cards: 'CARDS & QR', winners: 'WINNERS', sponsors: 'SPONSORS' };
@@ -131,7 +131,7 @@ function Frame({ title, sub, email, onSignOut, onBack, links, children }: {
         <div style={{ flex: 1 }} />
         <div className="td-actions">
           {links}
-          <GModeToggle />
+          <SkinPicker />
           <HelpButton />
           <button className="td-btn quiet" onClick={onSignOut} title={email}>SIGN OUT</button>
         </div>

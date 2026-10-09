@@ -1,0 +1,430 @@
+/*
+ * Skins for My Tag, the Scorecard and the TD Builder (Mike, 2026-10-08). The phone picks; a super admin can set the club default
+ * for a season (src/lib/skins.ts, migration 20261119 skins). They live on <html data-skin="…"> only while one of those screens is
+ * mounted, so the rest of the site never sees them.
+ *   Card family (data-card): a printed clubhouse scorecard. Card stock on ruled paper, a header band with a rule, ink type,
+ *   club fonts a size up, chunky press-shadow buttons, and scores marked like a pencil would: birdies circled, bogeys boxed.
+ *     night   Night Card: the default. Green-black card stock, bone ink, lime.
+ *     gmode   G-Mode (Grandpa mode): cream daylight card, hunter green, mustard.
+ *     spooky  Spooky Season: charcoal and witch purple, glowing pumpkin buttons.
+ *     sweater Ugly Sweater: snow cards, cranberry band with a knit stripe, pine buttons.
+ *   Electric (no card structure): the Jewel XI look, navy with cyan, violet and magenta glow.
+ * A card skin only sets --sk-* colours; the card rules below map them onto the site's semantic tokens.
+ * html[data-card] / html[data-skin] (0,1,1) outrank [data-theme] / [data-palette] (0,1,0), so the skin wins on every screen.
+ * Contrast is AA for every text pair in every skin (body text 7:1 or better; text on fills 4.5:1 or better).
+ */
+
+/* ---------- the picker (every skin) ---------- */
+.sk-btn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 13px 0 9px; border-radius: 999px; flex: none;
+  border: 2px solid var(--border); background: transparent; color: var(--fg-2); cursor: pointer; white-space: nowrap;
+  font-family: var(--font-label); font-weight: var(--label-weight, 800); font-size: 12px; letter-spacing: 1.5px; }
+.sk-btn:hover { border-color: var(--fg-3); }
+.sk-btn:focus-visible { outline: 3px solid var(--accent-gold); outline-offset: 2px; }
+.sk-dots { display: inline-flex; }
+.sk-dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(0, 0, 0, .35); margin-left: -5px; }
+.sk-dots i:first-child { margin-left: 0; }
+.sk-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.mt-headtools { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+.mt-headtools .ht-bell { margin-left: 0; }
+.sc-tools { display: flex; align-items: center; gap: 10px; flex: 1 1 100%; justify-content: space-between; }
+.sc-tools .sc-who { min-width: 0; }
+
+.sk-scrim { position: fixed; inset: 0; z-index: 70; display: flex; align-items: flex-end; justify-content: center; padding: 12px;
+  background: rgba(0, 0, 0, .55); }
+@media (min-width: 640px) { .sk-scrim { align-items: center; } }
+.sk-sheet { width: min(460px, 100%); max-height: calc(100dvh - 24px); overflow: auto; display: flex; flex-direction: column; gap: 10px;
+  padding: 16px; border-radius: 16px; background: var(--bg-surface); color: var(--fg-1); border: 2px solid var(--border);
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, .6); font-family: var(--font-body); }
+.sk-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sk-sheet-head h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 26px; }
+.sk-x { min-width: 44px; height: 44px; border-radius: 10px; border: 2px solid var(--border); background: transparent; color: var(--fg-1); font-size: 20px; cursor: pointer; }
+.sk-opt { display: grid; grid-template-columns: 76px minmax(0, 1fr) 24px; gap: 12px; align-items: center; width: 100%; padding: 8px; text-align: left;
+  border-radius: 12px; border: 2px solid var(--border); background: transparent; color: var(--fg-1); font: inherit; cursor: pointer; }
+.sk-opt:hover { border-color: var(--fg-3); }
+.sk-opt[aria-checked='true'] { border-color: var(--accent-a); box-shadow: 0 0 0 2px var(--accent-a); }
+.sk-opt:focus-visible { outline: 3px solid var(--accent-gold); outline-offset: 2px; }
+.sk-opt b { display: block; font-size: 16px; }
+.sk-opt small { display: block; font-size: 13px; color: var(--fg-3); line-height: 1.3; }
+.sk-check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); display: grid; place-items: center; font-weight: 900; font-size: 14px; }
+.sk-opt[aria-checked='true'] .sk-check { background: var(--accent-a); border-color: var(--accent-a); color: var(--on-accent); }
+/* a mini card: header band + rule, card stock with ink lines, a button chip */
+.sk-mini { position: relative; height: 52px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(0, 0, 0, .3); }
+.sk-mini > span { position: absolute; }
+.sk-mini .b { left: 0; right: 0; top: 0; height: 14px; }
+.sk-mini .r { left: 0; right: 0; top: 14px; height: 3px; }
+.sk-mini .c { left: 8px; right: 8px; top: 22px; bottom: 6px; border-radius: 4px; }
+.sk-mini .l { left: 14px; top: 28px; width: 30px; height: 3px; border-radius: 2px; box-shadow: 0 6px 0 currentColor; }
+.sk-mini .a { right: 13px; top: 30px; width: 14px; height: 10px; border-radius: 3px; }
+.sk-default { font-size: 13px; color: var(--fg-3); margin: 0; }
+
+/* ---------- card family: map the skin's --sk-* colours onto the site's tokens ---------- */
+html[data-card] {
+  --bg-page: var(--sk-paper); --bg-app: var(--sk-band); --bg-surface: var(--sk-card); --bg-raised: var(--sk-raised);
+  --border: var(--sk-border); --border-subtle: var(--sk-border-subtle);
+  --fg-1: var(--sk-ink); --fg-2: var(--sk-ink-2); --fg-3: var(--sk-ink-3); --fg-placeholder: var(--sk-placeholder);
+  --accent-a: var(--sk-accent); --accent-b: var(--sk-accent-2); --accent-c: var(--sk-accent-3); --accent-gold: var(--sk-gold);
+  --on-accent: var(--sk-on); --cta-bg: var(--sk-accent); --cta-fg: var(--sk-on);
+  --header-bg: var(--sk-band); --header-rule: var(--sk-mark); --header-rule-w: 4px;
+  --score-under: var(--sk-under); --score-even: var(--sk-ink); --score-over: var(--sk-over); --error: var(--sk-red);
+  --ink: var(--sk-ink); --bone: var(--sk-card);
+  --font-display: var(--sk-display);
+  --font-label: 'Rubik', system-ui, sans-serif;
+  --font-body: 'Rubik', system-ui, sans-serif;
+  --label-weight: 800; --display-case: uppercase;
+  --btn-shadow: 0 3px 0 var(--sk-press);
+  --hit: 48px; --hit-score: 60px;
+  /* legacy names td.css / board.css still read */
+  --under: var(--sk-under); --over: var(--sk-over); --text: var(--sk-ink); --text-muted: var(--sk-ink-3); --control-muted: var(--sk-line-strong);
+  --loud-glow: transparent; --loud-glow-2: transparent;
+  --sk-lift: 0 1px 0 color-mix(in srgb, var(--sk-shadow) 5%, transparent), 0 8px 18px -12px color-mix(in srgb, var(--sk-shadow) 45%, transparent);
+  --sk-glow: 0 0 0 transparent;
+  --sk-display: 'Luckiest Guy', 'Rubik', system-ui, sans-serif;
+}
+
+/* Night Card: the default. Green-black card stock, bone ink, lime. */
+html[data-skin='night'] {
+  color-scheme: dark;
+  --sk-paper: #0f1512; --sk-rule: rgba(166, 217, 59, .045); --sk-card: #18221c; --sk-raised: #1f2b24;
+  --sk-border: #3a4b40; --sk-border-subtle: #27342c; --sk-line-strong: #536657;
+  --sk-ink: #efe8cf; --sk-ink-2: #dcd4b8; --sk-ink-3: #a7b3aa; --sk-placeholder: #75837a;
+  --sk-band: #0a0f0c; --sk-band-ink: #efe8cf; --sk-band-hot: #ff9a8a; --sk-mark: #a6d93b; --sk-mark-ink: #17201c;
+  --sk-accent: #a6d93b; --sk-on: #17201c; --sk-accent-2: #c9a2e6; --sk-accent-3: #ffa06e; --sk-gold: #f2c230;
+  --sk-under: #a6d93b; --sk-over: #ff8a7a; --sk-red: #ff6b5e; --sk-hot: #ff6b7d; --sk-live: #ff6b7d; --sk-orange: #ffa25c; --sk-blue: #74c6ff;
+  --sk-warn-bg: #3a1c19; --sk-warn-ink: #ffd8d1; --sk-ok-bg: #1d3320; --sk-ok-ink: #d8f5c4;
+  --sk-tint-good: #1a291d; --sk-tint-gold: #2f2a16; --sk-tint-red: #33191a; --sk-tint-blue: #172633; --sk-good-line: #557d3c;
+  --sk-hilite: #f2c230; --sk-hilite-ink: #17201c; --sk-disabled-bg: #26322b; --sk-disabled-ink: #7f8c83;
+  --sk-shadow: #000; --sk-press: #000;
+}
+
+/* G-Mode (Grandpa mode): daylight. Cream card, hunter green, mustard. */
+html[data-skin='gmode'] {
+  color-scheme: light;
+  --sk-paper: #f2ead5; --sk-rule: rgba(47, 107, 58, .075); --sk-card: #fffdf6; --sk-raised: #f4eedd;
+  --sk-border: #c9bc98; --sk-border-subtle: #e3d9bf; --sk-line-strong: #b4a885;
+  --sk-ink: #1d2a22; --sk-ink-2: #33413a; --sk-ink-3: #56625a; --sk-placeholder: #868b80;
+  --sk-band: #1f4a2a; --sk-band-ink: #fffdf6; --sk-band-hot: #ffb3a8; --sk-mark: #f2cf5b; --sk-mark-ink: #1d2a22;
+  --sk-accent: #2f6b3a; --sk-on: #fffdf6; --sk-accent-2: #6c4486; --sk-accent-3: #a3401d; --sk-gold: #8f650a;
+  --sk-under: #1d7537; --sk-over: #b3261e; --sk-red: #b3261e; --sk-hot: #c4283f; --sk-live: #b8203a; --sk-orange: #b8571a; --sk-blue: #1f5f99;
+  --sk-warn-bg: #fbe4df; --sk-warn-ink: #6e1610; --sk-ok-bg: #e2efd9; --sk-ok-ink: #173f20;
+  --sk-tint-good: #eef5e8; --sk-tint-gold: #fbf1cf; --sk-tint-red: #fbe8e6; --sk-tint-blue: #e8eef7; --sk-good-line: #9cbf95;
+  --sk-hilite: #f7e08a; --sk-hilite-ink: #1d2a22; --sk-disabled-bg: #d9d1bb; --sk-disabled-ink: #6f7468;
+  --sk-shadow: #1d2a22; --sk-press: #1d2a22;
+}
+
+/* Spooky Season: charcoal and witch purple, glowing pumpkin buttons, Metal Mania titles. */
+html[data-skin='spooky'] {
+  color-scheme: dark;
+  --sk-paper: #15111a; --sk-rule: rgba(255, 138, 31, .05); --sk-card: #201a28; --sk-raised: #2a2233;
+  --sk-border: #4a3c55; --sk-border-subtle: #32293b; --sk-line-strong: #64536f;
+  --sk-ink: #f4ead6; --sk-ink-2: #e0d3be; --sk-ink-3: #b8abc3; --sk-placeholder: #7e7189;
+  --sk-band: #0d0911; --sk-band-ink: #f4ead6; --sk-band-hot: #ff9ab0; --sk-mark: #ff8a1f; --sk-mark-ink: #1a0e04;
+  --sk-accent: #ff8a1f; --sk-on: #1a0e04; --sk-accent-2: #bb94ff; --sk-accent-3: #9be15d; --sk-gold: #ffc23a;
+  --sk-under: #9be15d; --sk-over: #ff6b8a; --sk-red: #ff5f5f; --sk-hot: #ff5c86; --sk-live: #ff5c86; --sk-orange: #ffa64d; --sk-blue: #7cc8ff;
+  --sk-warn-bg: #3d1720; --sk-warn-ink: #ffd3dc; --sk-ok-bg: #1f3318; --sk-ok-ink: #dcf7c4;
+  --sk-tint-good: #1e2a1a; --sk-tint-gold: #33241a; --sk-tint-red: #33171f; --sk-tint-blue: #18243a; --sk-good-line: #567f33;
+  --sk-hilite: #ff8a1f; --sk-hilite-ink: #1a0e04; --sk-disabled-bg: #2f2738; --sk-disabled-ink: #85788f;
+  --sk-shadow: #000; --sk-press: #000;
+  --sk-glow: 0 0 18px rgba(255, 138, 31, .5);
+  --sk-display: 'Metal Mania', 'Luckiest Guy', cursive;
+}
+
+/* Ugly Sweater: snow cards, cranberry band with a knit stripe, pine buttons, candy-cane focus. */
+html[data-skin='sweater'] {
+  color-scheme: light;
+  --sk-paper: #f3eee6; --sk-rule: rgba(165, 28, 48, .06); --sk-card: #fffdfb; --sk-raised: #f5efe6;
+  --sk-border: #d2c3b0; --sk-border-subtle: #e8ddcf; --sk-line-strong: #b9a790;
+  --sk-ink: #24201c; --sk-ink-2: #3e3630; --sk-ink-3: #5f554d; --sk-placeholder: #8f857b;
+  --sk-band: #9e1b2e; --sk-band-ink: #fffaf3; --sk-band-hot: #ffd0c8; --sk-mark: #f6e7c1; --sk-mark-ink: #7a1424;
+  --sk-accent: #1f6b3a; --sk-on: #ffffff; --sk-accent-2: #9e1b2e; --sk-accent-3: #9c5418; --sk-gold: #8f650a;
+  --sk-under: #1d7537; --sk-over: #b3261e; --sk-red: #b3261e; --sk-hot: #c4283f; --sk-live: #b8203a; --sk-orange: #b8571a; --sk-blue: #1f5f99;
+  --sk-warn-bg: #fbe4df; --sk-warn-ink: #6e1610; --sk-ok-bg: #e2efd9; --sk-ok-ink: #173f20;
+  --sk-tint-good: #eef5e8; --sk-tint-gold: #fbf1cf; --sk-tint-red: #fbe8e6; --sk-tint-blue: #e8eef7; --sk-good-line: #9cbf95;
+  --sk-hilite: #ffe08a; --sk-hilite-ink: #24201c; --sk-disabled-bg: #e2d8ca; --sk-disabled-ink: #756b62;
+  --sk-shadow: #3a1a1a; --sk-press: #24201c;
+  --sk-knit: repeating-linear-gradient(135deg, #fffaf3 0 5px, #1f6b3a 5px 10px);
+}
+html[data-card][data-skin='sweater'] :is(.td-top, .sc-top) { border-bottom: 6px solid; border-image: var(--sk-knit) 6; }
+html[data-card][data-skin='sweater'] .td-tabs { box-shadow: none; border-bottom: 6px solid; border-image: var(--sk-knit) 6; }
+html[data-skin='sweater'] :focus-visible { outline: 3px dashed #c4283f !important; outline-offset: 2px; }
+
+/* Jewel Electric: the Jewel XI look (no card structure). Navy, cyan / violet / magenta glow, Metal Mania. */
+html[data-skin='electric'] {
+  color-scheme: dark;
+  --bg-page: #0b1020; --bg-app: #141c2e; --bg-surface: #101728; --bg-raised: #1d2746;
+  --border: #2a3558; --border-subtle: #222c4a;
+  --fg-1: #ffffff; --fg-2: #ffffff; --fg-3: #8f98b5; --fg-placeholder: #6b7596;
+  --accent-a: #29e1ff; --accent-b: #7b5cff; --accent-c: #ff3ad1; --accent-gold: #ffd23f;
+  --on-accent: #000; --cta-fg: #000; --cta-bg: linear-gradient(90deg, #29e1ff, #7b5cff, #ff3ad1);
+  --header-bg: linear-gradient(180deg, #1b2440, #141c2e); --header-rule: #7b5cff; --header-rule-w: 2px;
+  --score-under: #c6ff3d; --score-even: #ffffff; --score-over: #ff8a7a; --error: #ff4b3e;
+  --font-display: 'Metal Mania', cursive; --font-label: 'Archivo Black', 'Arial Black', sans-serif; --font-body: 'Archivo', system-ui, sans-serif;
+  --label-weight: 400; --display-case: none; --btn-shadow: none;
+  --loud-glow: #29e1ff; --loud-glow-2: #ff3ad1;
+  --under: #c6ff3d; --over: #ff8a7a; --text: #ffffff; --text-muted: #8f98b5; --control-muted: #3a4568;
+}
+
+/* ---------- card family: the printed card ---------- */
+html[data-card] body { background: var(--sk-paper); }
+/* ruled paper under everything */
+html[data-card] :is(.td, .sc) { background-color: var(--sk-paper);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--sk-rule) 31px 32px); color: var(--sk-ink); font-size: 17px; }
+
+/* ---------- header band ---------- */
+html[data-card] .td-top { background: var(--sk-band); border-bottom: 4px solid var(--sk-mark); color: var(--sk-band-ink); }
+html[data-card] .td-top .td-title { color: var(--sk-band-ink); font-size: 32px; letter-spacing: .5px; }
+html[data-card] .td-top .td-sub { color: var(--sk-mark); font-size: 12px; letter-spacing: 1.5px; }
+html[data-card] .td-title { color: var(--sk-ink); }
+html[data-card] .sc-top { background: var(--sk-band); border-bottom: 4px solid var(--sk-mark); }
+html[data-card] .sc-brand { color: var(--sk-mark); font-size: 22px; }
+html[data-card] .sc-brand span { color: var(--sk-band-ink); }
+html[data-card] .sc-who { color: color-mix(in srgb, var(--sk-band-ink) 82%, transparent); font-size: 15px; }
+html[data-card] .sc-who b { color: var(--sk-band-ink); }
+html[data-card] .sc-top .sc-link { color: var(--sk-mark); }
+html[data-card] :is(.td-top, .sc-top) .sk-btn { border-color: color-mix(in srgb, var(--sk-band-ink) 40%, transparent); color: var(--sk-band-ink); }
+html[data-card] :is(.td-top, .sc-top) :focus-visible { outline-color: var(--sk-mark); }
+/* the bell icons sit on the band */
+html[data-card] .ht-icon { background: color-mix(in srgb, var(--sk-band-ink) 8%, transparent); border-color: color-mix(in srgb, var(--sk-band-ink) 40%, transparent); color: var(--sk-band-ink); }
+html[data-card] .ht-icon.is-on, html[data-card] .ht-icon.is-at { border-color: var(--sk-mark); color: var(--sk-mark); box-shadow: none; }
+html[data-card] .ht-icon.is-hot { border-color: var(--sk-band-hot); color: var(--sk-band-hot); }
+html[data-card] .ht-icon b { background: var(--sk-hot); color: var(--sk-on); }
+html[data-card] .ht-icon.is-at b { background: var(--sk-mark); color: var(--sk-mark-ink); }
+/* tabs continue the band */
+html[data-card] .td-tabs { background: var(--sk-band); border-bottom: 0; box-shadow: 0 4px 0 var(--sk-mark); margin-bottom: 4px; }
+html[data-card] .td-tabs button { color: color-mix(in srgb, var(--sk-band-ink) 72%, transparent); font-size: 13px; }
+html[data-card] .td-tabs button[aria-current='page'] { color: var(--sk-band-ink); border-bottom-color: var(--sk-mark); }
+html[data-card] .mt-tabs b { background: var(--sk-mark); color: var(--sk-mark-ink); }
+
+/* ---------- type: a size up, no faded grey ---------- */
+html[data-card] .td-hint { font-size: 14px; line-height: 1.45; opacity: 1; color: var(--fg-3); }
+html[data-card] .td-label { font-size: 12px; letter-spacing: 1.5px; opacity: 1; color: var(--fg-3); font-weight: 800; }
+html[data-card] .td-empty { color: var(--fg-3); }
+html[data-card] .td-panel h2, html[data-card] .td-h2 { color: var(--sk-ink); }
+html[data-card] :is(.mt-tag-meta, .mt-dtag-meta span, .mt-round-head span, .mr-l small, .mr-r small, .bd-line time, .bd-set span, .mu-dh, .mu-dl) { opacity: 1; color: var(--fg-3); }
+html[data-card] .td-sub, html[data-card] .td-tabs button { font-family: var(--font-label); }
+html[data-card] .td-sub { color: var(--accent-b); }
+
+/* ---------- surfaces: card stock with a soft lift ---------- */
+html[data-card] :is(.td-panel, .sc-panel, .sc-hole, .sc-st, .mr-round, .wt, .dev-note, .ht-bomb) { box-shadow: var(--sk-lift); }
+html[data-card] .td-panel { background: var(--sk-card); border-color: var(--border); }
+html[data-card] .mt-round { background: var(--bg-raised); border-color: var(--border-subtle); }
+html[data-card] .bd-lines { background: var(--bg-raised); }
+html[data-card] .bd-line { background: var(--sk-card); }
+
+/* ---------- buttons: printed, chunky, ink shadow ---------- */
+html[data-card] .td-btn { border: 2px solid var(--sk-ink); background: var(--sk-card); color: var(--sk-ink); min-height: 44px; font-size: 14px; font-weight: 800; }
+html[data-card] .td-btn.cyan { border-color: var(--sk-accent); color: var(--sk-accent); box-shadow: 0 3px 0 var(--sk-accent); }
+html[data-card] .td-btn.gold { border-color: var(--accent-gold); color: var(--accent-gold); }
+html[data-card] .td-btn.quiet { border-color: var(--control-muted); color: var(--fg-2); background: transparent; font-size: 13px; min-height: 40px; }
+html[data-card] .td-btn.danger { background: var(--sk-red); border-color: var(--sk-red); color: var(--sk-on); }
+html[data-card] .td-btn:active:not(:disabled) { transform: translateY(2px); }
+html[data-card] .td-link, html[data-card] .mt-dtag-meta a, html[data-card] .mr-link, html[data-card] .td a:not([class]), html[data-card] .sc a:not([class]) { color: var(--sk-accent); font-weight: 700; }
+/* the LOUD buttons (index.css): no neon in daylight. Solid green, cream type, ink outline + press shadow. */
+html[data-card] :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)) {
+  background: var(--sk-accent); border: 2px solid var(--sk-ink) !important; color: var(--sk-on) !important;
+  font-style: normal; text-shadow: none; box-shadow: 0 4px 0 var(--sk-press), var(--sk-glow); }
+html[data-card] :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet))::before,
+html[data-card] :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet))::after { display: none; }
+html[data-card] :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):not(:disabled):hover { transform: none; filter: brightness(1.08); }
+html[data-card] :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):not(:disabled):active { transform: translateY(3px); box-shadow: 0 1px 0 var(--sk-press); }
+html[data-card] :is(.ds-btn-cta, .td-btn.cta, .td-generate, .sc-btn.cta, .br-btn.cta, .skr-send, .wt-btn:not(.quiet)):disabled {
+  background: var(--sk-disabled-bg); color: var(--sk-disabled-ink) !important; border-color: var(--sk-line-strong) !important; box-shadow: none; }
+
+/* ---------- controls ---------- */
+html[data-card] :is(.td-input, .td-select, .td-search) { background: var(--sk-card); color: var(--sk-ink); border-color: var(--control-muted); min-height: 46px; font-size: 16px; }
+html[data-card] :is(.td-input, .td-select, .sc-input, .sc select)::placeholder { color: var(--fg-placeholder); }
+html[data-card] .td-chip { border-color: var(--accent-b); color: var(--accent-b); background: var(--sk-card); font-size: 12px; padding: 7px 12px; }
+html[data-card] .td-chip[aria-pressed='true'] { background: var(--accent-b); color: var(--sk-on); }
+html[data-card] .td-seg button { color: var(--sk-ink); }
+html[data-card] .td-seg button[aria-pressed='true'] { color: var(--sk-on); }
+html[data-card] .td-seg.cyan button[aria-pressed='true'], html[data-card] .td-sizes button[aria-pressed='true'] { color: var(--sk-on); }
+html[data-card] :is(.td-sizes button, .td-toggle) { color: var(--sk-ink); }
+html[data-card] .td-player { color: var(--sk-ink); }
+html[data-card] :is(.td-player[aria-pressed='true'], .td-moving) { background: var(--sk-hilite); color: var(--sk-hilite-ink); }
+
+/* ---------- banners ---------- */
+html[data-card] .td-warn { background: var(--sk-warn-bg); border-color: var(--sk-red); color: var(--sk-warn-ink); }
+html[data-card] .td-warn.soft { background: var(--sk-tint-gold); border-color: var(--accent-gold); color: var(--sk-ink); }
+html[data-card] .td-ok { background: var(--sk-ok-bg); border-color: var(--under); color: var(--sk-ok-ink); }
+html[data-card] .td-ok.td-float { box-shadow: var(--sk-lift); }
+html[data-card] .dev-note { background: var(--sk-card); border-color: var(--sk-accent); }
+
+/* ---------- My Tag ---------- */
+html[data-card] .mt-tag { background: var(--sk-card); color: var(--sk-ink); border-color: var(--sk-accent); box-shadow: var(--sk-lift); }
+html[data-card] .mt-dtag-meta b { color: var(--sk-ink); font-size: 28px; }
+/* the face box is squarer than the art's corners: a box-shadow would show a ghost rim on paper. The art's own outline carries it. */
+html[data-card] .dt-face { box-shadow: none; }
+html[data-card] .mt-round-table td { border-top-color: var(--border-subtle); }
+html[data-card] .mt-round-table, html[data-card] .mt-preview-row { font-size: 15px; }
+html[data-card] .mt-preview { border-color: var(--sk-accent); background: var(--sk-card); }
+html[data-card] .mt-ea-lines li { border-bottom-color: var(--border-subtle); }
+html[data-card] .mt-score { font-size: 14px; }
+/* board + matchups */
+html[data-card] .bd-set { background: var(--sk-card); font-size: 13px; }
+html[data-card] .bd-set.on { border-color: var(--sk-accent); background: var(--sk-ok-bg); }
+html[data-card] :is(.bd-dot, .td-badge) { background: var(--accent-c); color: var(--sk-on); }
+html[data-card] .bd-line p { font-size: 16px; }
+html[data-card] .bd-tag { color: var(--sk-on) !important; }
+html[data-card] .bd-line.t-boom { border-color: var(--sk-hot); } html[data-card] .bd-line.t-boom .bd-tag { background: var(--sk-hot); }
+html[data-card] .bd-line.t-match { background: var(--sk-tint-good); }
+html[data-card] .bd-new { color: var(--accent-c); } html[data-card] .bd-new::before, html[data-card] .bd-new::after { background: var(--accent-c); }
+html[data-card] .bd-at-pick { color: var(--sk-ink); }
+html[data-card] :is(.bd-at.me, .cs-flag) { color: var(--sk-on); }
+html[data-card] .mu-day { color: var(--sk-ink); background: var(--sk-card); }
+html[data-card] .mu-day.on { color: var(--sk-on); }
+html[data-card] .mu-best { color: var(--sk-on); }
+html[data-card] .ht-bomb { border-color: var(--sk-hot); background: var(--sk-tint-red); }
+html[data-card] .wt-back { background: color-mix(in srgb, var(--sk-shadow) 55%, transparent); }
+html[data-card] .wt { background: var(--sk-card); color: var(--sk-ink); border-color: var(--sk-accent); }
+html[data-card] .wt-btn.quiet { color: var(--sk-ink); border-color: var(--sk-ink); }
+
+/* ---------- Scorecard: a pencil on a printed card ---------- */
+html[data-card] .sc { font-size: 17px; }
+html[data-card] .sc-hint { font-size: 15px; }
+html[data-card] :is(.sc select, .sc-input) { background: var(--sk-card); border-color: var(--control-muted); color: var(--sk-ink); min-height: 48px; font-size: 17px; }
+html[data-card] .sc-btn { background: var(--sk-card); border-color: var(--sk-ink); color: var(--sk-ink); box-shadow: 0 3px 0 var(--sk-press); font-weight: 800; }
+html[data-card] .sc-btn:disabled { box-shadow: none; }
+html[data-card] .sc-btn.danger { border-color: var(--sk-red); color: var(--sk-red); box-shadow: 0 3px 0 var(--sk-red); }
+html[data-card] .sc-link { color: var(--sk-accent); font-weight: 700; }
+html[data-card] .sc-warn { background: var(--sk-warn-bg); color: var(--sk-warn-ink); }
+html[data-card] .sc-note { background: var(--sk-card); }
+html[data-card] .sc-online { background: var(--sk-hilite); color: var(--sk-hilite-ink); border: 2px solid var(--sk-press); }
+html[data-card] .sc-course b { font-family: var(--font-display); font-weight: 400; font-size: 22px; letter-spacing: .5px; }
+html[data-card] .sc-label, html[data-card] .sc-field > span { font-size: 12px; color: var(--fg-3); }
+/* standings: little score tickets, the leader highlighted like a marker swipe */
+html[data-card] .sc-st { border-color: var(--border); border-top: 5px solid var(--sk-accent); padding: 8px 12px 10px; }
+html[data-card] .sc-st.is-lead { border-color: var(--accent-gold); border-top-color: var(--accent-gold); background: linear-gradient(180deg, var(--sk-tint-gold), var(--sk-card) 70%); }
+html[data-card] .sc-st b { font-size: 17px; }
+html[data-card] .sc-tp { font-size: 30px; }
+/* the hole: header strip like a printed card */
+html[data-card] .sc-hole { border: 2px solid var(--sk-ink); padding: 0 14px 14px; overflow: hidden; }
+html[data-card] .sc-hhead { margin: 0 -14px; padding: 12px 14px; background: var(--sk-band); color: var(--sk-band-ink); }
+html[data-card] .sc-hhead .sc-label { color: color-mix(in srgb, var(--sk-band-ink) 80%, transparent); }
+html[data-card] .sc-hnum { color: var(--sk-band-ink); font-size: 44px; }
+html[data-card] .sc-hnum small { color: color-mix(in srgb, var(--sk-band-ink) 80%, transparent); }
+html[data-card] .sc-par span { color: var(--sk-mark); font-size: 20px; font-family: var(--font-display); font-weight: 400; letter-spacing: .5px; }
+html[data-card] .sc-round { border-color: color-mix(in srgb, var(--sk-band-ink) 60%, transparent); color: var(--sk-band-ink); }
+html[data-card] .sc-prow { border-top-color: var(--border-subtle); }
+html[data-card] .sc-hhead + .sc-prow { border-top: 0; }
+html[data-card] .sc-pname b { font-size: 20px; line-height: 1.1; white-space: normal; overflow-wrap: anywhere; }  /* wrap, never "Grandpa …" */
+html[data-card] .sc-ctl { gap: 6px; }
+html[data-card] .sc-pname small { font-size: 14px; }
+html[data-card] .sc-big { background: var(--sk-card); border-color: var(--sk-ink); color: var(--sk-ink); box-shadow: 0 3px 0 var(--sk-press); }
+html[data-card] .sc-big.plus { background: var(--sk-accent); border-color: var(--sk-ink); color: var(--sk-on); }
+html[data-card] .sc-big:active { transform: translateY(3px); box-shadow: 0 0 0 var(--sk-press); }
+/* scores in "pencil": birdies circled, bogeys boxed, aces starred gold */
+html[data-card] .sc-score { display: grid; place-items: center; width: 58px; height: 58px; font-family: var(--font-hand); font-size: 36px; line-height: 1; color: var(--sk-ink); border: 3px solid transparent; }
+html[data-card] .sc-score.under { color: var(--score-under); border-color: var(--score-under); border-radius: 50%; }
+html[data-card] .sc-score.over { color: var(--score-over); border-color: var(--score-over); border-radius: 4px; }
+html[data-card] .sc-score.even { color: var(--sk-ink); }
+html[data-card] .sc-score.ace { color: var(--accent-gold); border-color: var(--accent-gold); border-radius: 50%; box-shadow: 0 0 0 3px var(--sk-card), 0 0 0 5px var(--accent-gold); }
+html[data-card] .sc-score.unset { color: var(--border); }
+/* hole strip */
+html[data-card] .sc-strip button { width: 42px; height: 42px; background: var(--sk-card); border-color: var(--border); color: var(--fg-3); }
+html[data-card] .sc-strip button.done { background: var(--sk-ok-bg); border-color: var(--sk-good-line); color: var(--sk-ink); }
+html[data-card] .sc-strip button[aria-current='true'] { background: var(--sk-ink); border-color: var(--sk-ink); color: var(--sk-card); }
+/* the full card reads like the printed one */
+html[data-card] .sc-table { font-size: 15px; background: var(--sk-card); }
+html[data-card] .sc-table th, html[data-card] .sc-table td { border-color: var(--border); }
+html[data-card] .sc-table tr:first-child th { background: var(--sk-band); color: var(--sk-band-ink); border-color: var(--sk-band); }
+html[data-card] .sc-table tr:nth-child(2) :is(th, td) { background: var(--bg-raised); color: var(--fg-3); }
+html[data-card] .sc-table th:first-child { white-space: nowrap; }
+html[data-card] :is(.sc-table, .mr-table) td.under { background: radial-gradient(circle, transparent 0 10px, var(--score-under) 10.5px 12px, transparent 12.5px); color: var(--score-under); font-weight: 800; }
+html[data-card] :is(.sc-table, .mr-table) td.over { background: none; box-shadow: inset 0 0 0 3px var(--sk-card), inset 0 0 0 5px var(--score-over); color: var(--score-over); font-weight: 800; }
+html[data-card] .sc-swap { background: var(--sk-card); }
+html[data-card] .sc-swap input { accent-color: var(--sk-accent); }
+html[data-card] .sc-swap.is-on { border-color: var(--sk-accent); background: var(--sk-tint-good); }
+html[data-card] .sc-swap small.sc-swap-why { color: var(--sk-red); }
+html[data-card] .sc-swap.is-blocked.is-on { border-color: var(--sk-red); }
+html[data-card] :is(.sc-live, .lv-live) { color: var(--sk-live); }
+html[data-card] .sc-live-dot { background: var(--sk-live); }
+html[data-card] .sc-players li { border-top-color: var(--border-subtle); }
+/* home-screen app card */
+html[data-card] .sc-install, html[data-card] .sc-install.is-mytag { border-color: var(--sk-accent); box-shadow: var(--sk-lift); }
+html[data-card] .sc-install.is-mytag { border-color: var(--accent-b); }
+html[data-card] .sc-install-head img { box-shadow: 0 2px 6px color-mix(in srgb, var(--sk-shadow) 35%, transparent); }
+html[data-card] .sc-steps li::marker, html[data-card] .sc-install.is-mytag .sc-steps li::marker { color: var(--sk-accent); }
+
+
+/* ---------- TD Builder (/td): same card stock, desk-sized ---------- */
+html[data-card] .td-top { row-gap: 10px; }
+html[data-card] .td-top .td-btn.quiet { border-color: color-mix(in srgb, var(--sk-band-ink) 45%, transparent); color: var(--sk-band-ink); }
+html[data-card] .td-login h1 { color: var(--sk-ink); }
+html[data-card] .td-login label { font-size: 13px; color: var(--fg-2); }
+html[data-card] .td-side { background: var(--sk-card); border-color: var(--border-subtle); box-shadow: var(--sk-lift); }
+html[data-card] .td-toast { background: var(--sk-ok-bg); color: var(--sk-ok-ink); border-bottom-color: var(--border); }
+html[data-card] .td-stat span, html[data-card] .td-table th, html[data-card] .td-hole.hdr, html[data-card] .td-st-count { opacity: 1; color: var(--fg-3); }
+html[data-card] .td-stat b { color: var(--sk-ink); }
+html[data-card] .td-table { font-size: 14px; }
+html[data-card] .td-table td, html[data-card] .td-stations th, html[data-card] .td-stations td { border-color: var(--border-subtle); }
+html[data-card] :is(.td-search, .io-step input, .td-title-input) { background: var(--sk-card); color: var(--sk-ink); }
+html[data-card] .td-title-input { background: transparent; }
+/* cards (groups) + rings */
+html[data-card] .td-card { background: var(--sk-card); box-shadow: var(--sk-lift); }
+html[data-card] .td-card-head { background: var(--bg-raised); }
+html[data-card] .td-card.locked .td-card-head { background: var(--sk-ok-bg); }
+html[data-card] .td-ring { background: var(--sk-card); color: var(--sk-ink); border-color: var(--sk-accent); }
+html[data-card] .td-ring.mixed { border-color: var(--accent-gold); }
+html[data-card] .td-lock { color: var(--sk-ink); }
+html[data-card] .td-lock[aria-pressed='true'] { color: var(--sk-on); }
+html[data-card] .td-player.match { background: var(--sk-tint-gold); }
+html[data-card] .td-player[aria-pressed='true'] .d { color: var(--sk-ink); }
+html[data-card] .td-drop { background: var(--sk-card); }
+/* check-in roster: big obvious states */
+html[data-card] .td-roster-row { background: var(--sk-card); }
+html[data-card] .td-roster-row.is-in { background: var(--sk-tint-good); }
+html[data-card] .td-checkin { background: var(--sk-card); border-color: var(--sk-ink); color: var(--sk-ink); box-shadow: 0 3px 0 var(--sk-press); font-weight: 800; }
+html[data-card] .td-checkin[aria-pressed='true'] { background: var(--sk-accent); border-color: var(--sk-ink); color: var(--sk-on); }
+html[data-card] .td-checkin.is-outbtn[aria-pressed='true'] { background: var(--sk-red); color: var(--sk-on); }
+html[data-card] .td-checkin:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--sk-press); }
+html[data-card] :is(.td-bagsize, .td-req-warn) { color: var(--accent-gold); border-color: var(--accent-gold); }
+html[data-card] :is(.td-picker-hits button, .td-divpick button, .td-swatch, .td-vibe.is-star, .td-vibe.is-easy, .td-home-step) { color: var(--sk-ink); }
+html[data-card] .td-picker-hits button { background: var(--sk-card); }
+html[data-card] .td-swatch[aria-pressed='true'] { border-color: var(--sk-ink); background: var(--sk-card); }
+html[data-card] .td-divpick .td-wave.PM { color: var(--sk-on); }
+html[data-card] :is(.td-list li, .td-sizerow, .td-pcts, .td-library, .td-home-updates li, .td-update, .td-st-person) { background: var(--bg-raised); }
+html[data-card] :is(.td-req, .td-task, .td-sponsor, .td-checklist li, .td-vote-opt, .td-private) { background: var(--sk-card); }
+html[data-card] .td-home-step { background: var(--sk-card); box-shadow: 0 3px 0 var(--border); }
+html[data-card] .td-home-updates p b { color: var(--sk-ink); }
+html[data-card] .td-home a, html[data-card] .td-help-sec h3 { color: var(--sk-accent); }
+html[data-card] .td-thumb { background: var(--bg-raised); }
+/* volunteer grid */
+html[data-card] .td-stations thead th { background: var(--sk-band); color: var(--sk-band-ink); }
+html[data-card] :is(.td-st-name, .td-st-cell) { background: var(--sk-card); }
+html[data-card] .td-st-cell.is-short { background: var(--sk-tint-gold); }
+html[data-card] .td-st-cell.is-full { background: var(--sk-tint-good); }
+html[data-card] .td-st-cell.is-over { background: var(--sk-tint-blue); }
+/* printables shown on screen: white sheets need an edge on paper */
+html[data-card] :is(.td-qr-card, .td-sign, .td-crew-qr) { box-shadow: 0 0 0 1px var(--border), var(--sk-lift); }
+/* overlays + floats that used the app colour */
+html[data-card] .td-help { background: color-mix(in srgb, var(--sk-shadow) 50%, transparent); }
+html[data-card] .td-help-inner { background: var(--sk-card); border-color: var(--sk-accent); color: var(--sk-ink); box-shadow: 0 20px 50px -20px color-mix(in srgb, var(--sk-shadow) 60%, transparent); }
+html[data-card] .td-ok.td-float { background: var(--sk-ok-bg); }
+/* disc order */
+html[data-card] .td-chip.io-t.putter[aria-pressed='true'], html[data-card] .td-chip.io-mine[aria-pressed='true'], html[data-card] .td-chip.io-t.mid[aria-pressed='true'], html[data-card] .td-chip.io-t.novelty[aria-pressed='true'] { color: var(--sk-on); }
+html[data-card] .td-chip.io-t.distance { color: var(--accent-b); }
+html[data-card] :is(.io-card-top, .io-flight dd, .io-step button) { color: var(--sk-ink); }
+html[data-card] .io-badges em.io-orange { border-color: var(--sk-orange); color: var(--sk-orange); }
+html[data-card] .io-badges em.io-yellow { border-color: var(--sk-gold); color: var(--sk-gold); }
+html[data-card] .io-problem { color: var(--sk-red); }
+html[data-card] .io-issues.warn { border-color: var(--accent-gold); }
+html[data-card] .io-w.low { box-shadow: inset 0 3px 0 var(--accent-gold); }
+/* bug squasher (owner) */
+html[data-card] :is(.bsq-stat, .bsq-card) { background: var(--sk-card); border-color: var(--border); }
+html[data-card] .bsq-head h2, html[data-card] .bsq-stat.s-squashed b, html[data-card] :is(.bsq-ship, .bsq-note) { color: var(--sk-accent); }
+html[data-card] .bsq-stat.s-open b, html[data-card] .bsq-gh.k-bug { color: var(--sk-red); }
+html[data-card] .bsq-gh.k-idea { color: var(--accent-gold); } html[data-card] .bsq-gh.k-feedback { color: var(--sk-blue); }
+html[data-card] .bsq-card.k-bug { border-left-color: var(--sk-hot); } html[data-card] .bsq-card.k-idea { border-left-color: var(--sk-gold); } html[data-card] .bsq-card.k-feedback { border-left-color: var(--sk-blue); }
+html[data-card] :is(.bsq-bump, .bsq-preview, .bsq-photo img) { border-color: var(--border); }
+html[data-card] .bsq-bump.on { border-color: var(--sk-accent); background: var(--sk-tint-good); }
+html[data-card] .bsq-history details { border-top-color: var(--border-subtle); }
+
+@media (max-width: 640px) {
+  html[data-card] .td-top .td-title { font-size: 26px; }
+  html[data-card] .td-top { padding: 12px 16px; gap: 10px; }
+  html[data-card] .td-top :is(.td-btn, .sk-btn) { min-height: 38px; height: auto; padding-top: 0; padding-bottom: 0; }
+  html[data-card] .td-top .sk-btn { height: 38px; }
+  /* check-in on a phone, every skin: the name gets its own full line, buttons underneath. Never "T…" */
+  html[data-skin] .td-roster-row { flex-wrap: wrap; row-gap: 8px; padding: 10px; }
+  html[data-skin] .td-roster-name { order: -1; flex: 1 1 100%; white-space: normal; font-size: 18px; }
+  html[data-skin] .td-roster-row > .td-btn.quiet { margin-left: auto; }
+}

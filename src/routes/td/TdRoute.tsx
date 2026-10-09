@@ -5,8 +5,8 @@ import { isTd } from '../../lib/td/builder';
 import { useTheme } from '../../lib/theme';
 import EventHub from './EventHub';
 import { HelpButton } from './Help';
-import { useGModeSkin } from '../../lib/gmode';
-import { GModeToggle } from '../../components/gmode/GModeToggle';
+import { useSkinApply } from '../../lib/skins';
+import { SkinPicker } from '../../components/skins/SkinPicker';
 import './td.css';
 
 /**
@@ -16,7 +16,7 @@ import './td.css';
  */
 export default function TdRoute() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
-  useGModeSkin(); // G-Mode covers the whole TD Builder: sign-in, events, every tab
+  useSkinApply(); // G-Mode covers the whole TD Builder: sign-in, events, every tab
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -57,7 +57,7 @@ function Login() {
       <div className="td-login">
         <h1>TD Builder</h1>
         <div className="td-sub">CARDS · CHECK-IN · LIVE SCORING</div>
-        <div className="td-row"><HelpButton start="start" /><GModeToggle /></div>
+        <div className="td-row"><HelpButton start="start" /><SkinPicker /></div>
         {notice && <div className="td-warn soft" role="status">{notice}</div>}
         {error && <div className="td-warn" role="alert">{error}</div>}
         <form onSubmit={submit}>
