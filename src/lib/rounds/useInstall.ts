@@ -5,6 +5,7 @@
  *  - catches Chrome's install prompt so we can offer a real INSTALL button.
  */
 import { useEffect, useState } from 'react';
+import { manifestPath } from '../tags/appManifest';
 
 type PromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> };
 
@@ -24,10 +25,10 @@ export function isStandalone(): boolean {
 export interface AppHead { icon: string; title: string; pageTitle: string; manifest?: string }
 export const SCORECARD_HEAD: AppHead = { icon: '/assets/app/scorecard-180.png', title: 'Scorecard', pageTitle: 'Scorecard · Bare Bones', manifest: '/scorecard.webmanifest' };
 /**
- * My Tag: no manifest on purpose. The link carries the player's token, so the home-screen icon
- * must open the page it was saved from (iPhone and Android both do that when there's no manifest).
+ * My Tag: a personal manifest per player (/m/<token>.webmanifest, served by worker/index.ts) whose start_url is
+ * their own page, so the home-screen icon opens straight to it and runs as a real app (iPhone push needs that).
  */
-export const MYTAG_HEAD: AppHead = { icon: '/assets/app/mytag-180.png', title: 'My Tag', pageTitle: 'My Tag · Bare Bones' };
+export const myTagHead = (token: string): AppHead => ({ icon: '/assets/app/mytag-180.png', title: 'My Tag', pageTitle: 'My Tag · Bare Bones', manifest: manifestPath(token) });
 
 /** Swap in an app identity (icon, name, manifest) while mounted; put the site's back after. */
 export function useAppHead(app: AppHead) {

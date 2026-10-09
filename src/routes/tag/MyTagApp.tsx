@@ -12,6 +12,7 @@ import { HeatBell, TagHeat } from '../../components/tags/TagHeat';
 import { TagBoard } from '../../components/tags/TagBoard';
 import { Matchups } from '../../components/tags/Matchups';
 import { MyRounds } from '../../components/tags/MyRounds';
+import { PhoneAlerts } from '../../components/tags/PhoneAlerts';
 import { asTab, type MyTagTab } from '../../lib/tags/board';
 import { chatSeenKey, readSeen, useCasuals, useHeat, useMentions, useRounds, welcomeSeen, type HeatFocus } from '../../lib/tags/useHeat';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
@@ -19,7 +20,7 @@ import { useTheme } from '../../lib/theme';
 import { NewVersionNote } from '../../components/dev/DevReports';
 import { WelcomeTour } from '../../components/tags/WelcomeTour';
 import { InstallCard } from '../rounds/InstallCard';
-import { MYTAG_HEAD, isStandalone, useAppHead } from '../../lib/rounds/useInstall';
+import { isStandalone, myTagHead, useAppHead } from '../../lib/rounds/useInstall';
 import { platformOf } from '../../lib/rounds/install';
 import { useGModeSkin } from '../../lib/gmode';
 import { GModeToggle } from '../../components/gmode/GModeToggle';
@@ -38,7 +39,7 @@ export default function MyTagApp() {
   const [toConfirm, setToConfirm] = useState<Array<{ id: string; course: string; played_on: string }>>([]);
   useTheme('event', 'bone');
   useGModeSkin();
-  useAppHead(MYTAG_HEAD);
+  useAppHead(myTagHead(token));
   /** Home-screen buttons: phones only, and never inside the home-screen app itself. */
   const [canAdd] = useState(() => platformOf(navigator.userAgent, navigator.maxTouchPoints, navigator.platform) !== 'other' && !isStandalone());
   const [addTag, setAddTag] = useState(false);
@@ -46,12 +47,13 @@ export default function MyTagApp() {
   const rounds = useRounds(token, rev);
   const mentions = useMentions(token, rev);
   const casuals = useCasuals(token, rev);
-  const [focusChat, setFocusChat] = useState<number | null>(null);
+  // a phone alert opens ?tab=board&pool=<set>&chat=<id>: land on that message
+  const [focusChat, setFocusChat] = useState<number | null>(() => Number(new URLSearchParams(window.location.search).get('chat')) || null);
   const [focus, setFocus] = useState<HeatFocus | null>(null);
   const [params, setParams] = useSearchParams();
   const tab = asTab(params.get('tab'));
   const go = useCallback((t: MyTagTab) => { setParams(t === 'tags' ? {} : { tab: t }, { replace: true }); window.scrollTo(0, 0); }, [setParams]);
-  const [boardPool, setBoardPool] = useState<string | null>(null);
+  const [boardPool, setBoardPool] = useState<string | null>(() => new URLSearchParams(window.location.search).get('pool'));
   const [tour, setTour] = useState<boolean | null>(null); // null = not decided yet (decided once we know who this is)
   const [unread, setUnread] = useState<Record<string, number>>({});
   const meIdForSeen = home?.me.id ?? '';
@@ -201,6 +203,8 @@ export default function MyTagApp() {
           </div>
         )}
         {canAdd && addTag && <InstallCard app="mytag" token={null} force onClose={() => setAddTag(false)} />}
+
+        <PhoneAlerts token={token} onInstall={() => { setAddTag(true); requestAnimationFrame(() => document.querySelector('.mt-add')?.scrollIntoView({ behavior: 'smooth', block: 'center' })); }} />
 
         {home.holdings.length > 0 && <LogRound home={home} token={token} act={act} />}
 

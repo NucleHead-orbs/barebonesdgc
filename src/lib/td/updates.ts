@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'phone-alerts', date: '2026-10-08', help: 'tags', who: 'all',
+    title: 'Phone alerts',
+    body: 'My Tag has **PHONE ALERTS**: push notifications for challenges (sent, answered, tee times picked and locked), @mentions and replies, casual round invites, rounds waiting on a confirm, and a fuse with under 24 hours left. Each player picks which ones. Android: tap TURN ON. iPhone: add My Tag to the home screen first (the icon now opens straight to their own page as a real app), open it from there, then TURN ON.',
+  },
+  {
     id: 'my-rounds-replies', date: '2026-10-07', help: 'tags', who: 'all',
     title: 'MY ROUNDS + Board replies',
     body: 'My Tag has a **MY ROUNDS** tab: every Scorecard round you were on (tap one for the full hole-by-hole card for the whole group) and every tag round that counted, with your finish and tag moves. On the Board, tap **REPLY** under any message: answers stack under it as a thread, the thread jumps back to the top, and whoever you answered gets a ping in their @ bell.',

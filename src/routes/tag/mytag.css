@@ -81,3 +81,9 @@
   .mt-tabs { padding: 0 6px; gap: 0; }
   .mt-tabs button { padding: 12px 8px; font-size: 12px; letter-spacing: .5px; }
 }
+
+/* ---------- PHONE ALERTS (migration 20261118) ---------- */
+.pa .td-row { justify-content: space-between; flex-wrap: wrap; }
+.pa-dot { font-family: var(--font-label); font-size: 11px; letter-spacing: 1px; padding: 3px 8px; border-radius: 10px; border: 1px solid var(--border); opacity: .8; }
+.pa-dot.on { border-color: var(--cyan); color: var(--cyan); opacity: 1; }
+.pa-kinds { display: flex; flex-direction: column; gap: 6px; }

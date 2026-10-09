@@ -20,7 +20,7 @@ function ShareIcon() {
 
 const COPY: Record<App, { icon: string; title: string; pitch: string; look: string }> = {
   scorecard: { icon: '/assets/app/scorecard-180.png', title: 'Make it an app', pitch: 'One tap from your home screen to a fresh card. Fastest way to start a casual round.', look: 'Look for the glowing skull.' },
-  mytag: { icon: '/assets/app/mytag-180.png', title: 'My Tag on your home screen', pitch: 'Your tags, the Board and your matchups one tap away. It\'s your private link, so it only lives on your phone.', look: 'Look for the glowing tag.' },
+  mytag: { icon: '/assets/app/mytag-180.png', title: 'My Tag on your home screen', pitch: 'Your tags, the Board and your matchups one tap away. It\'s your private link, so it only lives on your phone. Open it from the icon to turn on phone alerts.', look: 'Look for the glowing tag.' },
 };
 
 /**

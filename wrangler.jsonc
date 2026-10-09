@@ -4,9 +4,13 @@
   "$schema": "https://unpkg.com/wrangler/config-schema.json",
   "name": "barebonesdgc",
   "compatibility_date": "2026-09-25",
+  // A tiny worker serves each player's personal My Tag app manifest (/m/<token>.webmanifest); nothing else runs it.
+  "main": "worker/index.ts",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/m/*"]
   },
   "observability": { "enabled": true }
 }
