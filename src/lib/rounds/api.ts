@@ -17,6 +17,8 @@ export interface RoundMe { me: TagMember; pools: Array<{ pool_id: string; number
 export interface RoundPlayer {
   seq: number; member_id: string | null; guest_name: string | null; name: string; nickname: string | null;
   scores: number[] | null; strokes: number; to_par: number; confirmed: boolean; disputed: boolean;
+  /** PULL OUT: holes finished before a DNF (migration 20261120); null = finished. */
+  dnf_after?: number | null;
 }
 export interface Exchange {
   id: string; round_id: string; pool: string; pool_name: string; status: 'pending' | 'applied' | 'disputed';
@@ -54,7 +56,7 @@ export const confirmRound = (token: string, id: string, ok: boolean) =>
 export const voidRound = (token: string, id: string) =>
   wrap(async () => { must(await supabase.rpc('round_void', { p_token: token, p_round: id })); });
 
-const ROUND_COLS = 'id, course, course_id, played_on, pars, hole_labels, totals_only, note, created_by, created_at, club_round_players(seq, member_id, guest_name, scores, strokes, to_par, confirmed_at, disputed_at)';
+const ROUND_COLS = 'id, course, course_id, played_on, pars, hole_labels, totals_only, note, created_by, created_at, club_round_players(seq, member_id, guest_name, scores, strokes, to_par, confirmed_at, disputed_at, dnf_after)';
 type RoundRow = Omit<Round, 'players' | 'exchanges'> & { club_round_players: Array<Omit<RoundPlayer, 'name' | 'nickname' | 'confirmed' | 'disputed'> & { confirmed_at: string | null; disputed_at: string | null }> };
 
 async function hydrate(rows: RoundRow[]): Promise<Round[]> {
@@ -70,9 +72,9 @@ async function hydrate(rows: RoundRow[]): Promise<Round[]> {
     ...r,
     players: club_round_players.map((p) => {
       const m = p.member_id ? byId.get(p.member_id) : null;
-      return { seq: p.seq, member_id: p.member_id, guest_name: p.guest_name, scores: p.scores, strokes: p.strokes, to_par: p.to_par,
+      return { seq: p.seq, member_id: p.member_id, guest_name: p.guest_name, scores: p.scores, strokes: p.strokes, to_par: p.to_par, dnf_after: p.dnf_after ?? null,
         name: m?.name ?? p.guest_name ?? '?', nickname: m?.nickname ?? null, confirmed: !!p.confirmed_at, disputed: !!p.disputed_at };
-    }).sort((a, b) => a.strokes - b.strokes || a.seq - b.seq),
+    }).sort((a, b) => Number(a.dnf_after != null) - Number(b.dnf_after != null) || a.strokes - b.strokes || a.seq - b.seq),
     exchanges: exchanges.filter((x) => x.round_id === r.id),
   }));
 }

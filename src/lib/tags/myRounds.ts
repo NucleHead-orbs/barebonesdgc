@@ -5,6 +5,8 @@
 export interface MyCardPlayer {
   member_id: string | null; name: string; nickname: string | null; guest: boolean;
   scores: number[] | null; strokes: number; to_par: number; confirmed: boolean; disputed: boolean;
+  /** pulled out after this many holes (DNF) */
+  dnf_after?: number | null;
 }
 export interface MyTagMove { pool_name: string; status: 'pending' | 'applied' | 'disputed'; before: number | null; after: number | null }
 export interface MyCardRound {
@@ -18,7 +20,7 @@ export interface MyRoundsPage { rounds: MyRound[]; more: boolean }
 
 /** Where I finished: 1 = best (ties share the place), out of how many. */
 export function myPlace(r: MyRound, meId: string): { place: number; of: number; tied: boolean } | null {
-  const scores = r.kind === 'card' ? r.players.map((p) => ({ id: p.member_id, s: p.strokes })) : r.players.map((p) => ({ id: p.member_id, s: p.score }));
+  const scores = r.kind === 'card' ? r.players.map((p) => ({ id: p.member_id, s: p.strokes + (p.dnf_after != null ? 100000 : 0) })) : r.players.map((p) => ({ id: p.member_id, s: p.score }));
   const me = scores.find((x) => x.id === meId);
   if (!me) return null;
   return { place: 1 + scores.filter((x) => x.s < me.s).length, of: scores.length, tied: scores.filter((x) => x.s === me.s).length > 1 };

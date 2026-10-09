@@ -2,14 +2,14 @@
  * /scorecard: the club's casual-round scorecard. Anyone can keep score (it lives on this phone);
  * a member saves it to Boner Rounds with their My Tag link. Nothing here decides anything the database doesn't re-check.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import * as api from '../../lib/rounds/api';
 import type { CourseOption, RoundMe } from '../../lib/rounds/api';
 import {
   DRAFT_KEY, HOLE_CHOICES, holeName, MAX_PLAYERS, ME_KEY, fmtToPar, holeDone, leaders, newDraft, parseTagLink, roundMessage, running,
-  exchangeOptions, finishCheck, setHoles, started, toPayload, toParClass, type Draft,
+  exchangeOptions, finishCheck, setHoles, teeOrder, pullOut, putBack, isOut, draftFromRound, DNF_OVER, started, toPayload, toParClass, type Draft,
 } from '../../lib/rounds/rounds';
 import { display, swap, type TagMember, type TagPool } from '../../lib/tags/tags';
 import { localDate } from '../../lib/leagues/leagues';
@@ -22,6 +22,7 @@ import { SCORECARD_HEAD, useAppHead } from '../../lib/rounds/useInstall';
 import { AppConnect, InstallCard } from './InstallCard';
 import { useSkinApply } from '../../lib/skins';
 import { SkinPicker } from '../../components/skins/SkinPicker';
+import { loadRoundSource } from '../../lib/rounds/fromRound';
 import './rounds.css';
 
 const read = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -120,6 +121,29 @@ export default function ScorecardApp() {
   }, [known]);
   const forget = () => { write(ME_KEY, null); setToken(null); setMe(null); };
 
+  // START THE CARD from a scheduled round on My Tag (/scorecard?from=casual:<id> | challenge:<id>)
+  const from = params.get('from');
+  const [pendingFrom, setPendingFrom] = useState<Draft | null>(null);
+  const draftRef = useRef(d);
+  useEffect(() => { draftRef.current = d; }, [d]);
+  useEffect(() => {
+    if (!from || !courses.length) return;
+    let live = true;
+    void (async () => {
+      if (!token) { setErr('Open your My Tag link on this phone first, then tap START THE CARD again.'); nav('/scorecard', { replace: true }); return; }
+      const src = await loadRoundSource(token, from);
+      if (!live) return;
+      nav('/scorecard', { replace: true });
+      if (typeof src === 'string') { setErr(src); return; }
+      const next = draftFromRound(src, localDate(), courses);
+      const cur = draftRef.current;
+      if (cur.source === src.source && cur.players.length) { setView('card'); return; }   // already on this card
+      if (started(cur)) { setPendingFrom(next); return; }
+      endLive(); setD(next); setView('setup');
+    })();
+    return () => { live = false; };
+  }, [from, token, courses, nav]);
+
   const save = async () => {
     if (!token) return;
     const declared = (d.onLine ?? []).filter((id) => swapSets.some((o) => o.pool.id === id));
@@ -142,6 +166,15 @@ export default function ScorecardApp() {
         </div>
       </header>
       {err && <div className="sc-warn" role="alert">{err} <button className="sc-link" onClick={() => setErr('')}>OK</button></div>}
+      {pendingFrom && (
+        <div className="sc-note" role="alert">
+          You've got a card going at {d.course || 'a course'} ({d.scores[0]?.filter((x) => x != null).length ?? 0} holes in). Start the {pendingFrom.sourceLabel} card instead? Your current card gets thrown away.
+          <div className="sc-row">
+            <button className="sc-btn cta" onClick={() => { endLive(); setD(pendingFrom); setPendingFrom(null); setView('setup'); }}>Start the new card</button>
+            <button className="sc-btn" onClick={() => setPendingFrom(null)}>Keep my card</button>
+          </div>
+        </div>
+      )}
       {me && me.to_confirm.length > 0 && (
         <div className="sc-note">{me.to_confirm.length} round{me.to_confirm.length === 1 ? '' : 's'} waiting on your OK: {me.to_confirm.map((x, i) => (
           <span key={x.id}>{i > 0 && ', '}<Link to={`/rounds/${x.id}`}>{x.course}</Link></span>))}</div>
@@ -185,7 +218,8 @@ function Setup({ d, setD, me, members, courses, swapSets, onStart, top }: {
     <main className="sc-main">
       {top}
       <section className="sc-panel">
-        <h1>New round</h1>
+        <h1>{d.sourceLabel ?? 'New round'}</h1>
+        {d.source && <p className="sc-hint">Started from your scheduled round: course and players are filled in. One scorer per card: if someone else on it already saved this round, saving tells you so.</p>}
         <label className="sc-field"><span>Course</span>
           <select id="sc-course" value={d.courseId ?? ''} onChange={(e) => pickCourse(e.target.value)}>
             <option value="">Other / not listed…</option>
@@ -292,18 +326,24 @@ function Card({ d, setD, onSetup, me, busy, swapSets, poolNames, onSave, onConne
     return { ...x, scores };
   });
   const go = (n: number) => { setD((x) => ({ ...x, cur: Math.max(0, Math.min(x.pars.length - 1, n)) })); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  // tee order for this hole: box owner first; pulled-out players sit below
+  const order = teeOrder(d, h);
+  const throwing = order.filter((i) => !(isOut(d, i) && d.out![d.players[i].key] <= h));
+  const sittingOut = order.filter((i) => !throwing.includes(i));
 
   return (
     <main className="sc-main">
-      <div className="sc-course"><b>{d.course}</b><span>{d.pars.length} holes · par {d.pars.reduce((a, b) => a + b, 0)}</span><button className="sc-link" onClick={onSetup}>Edit round</button></div>
+      <div className="sc-course"><b>{d.course}</b><span>{d.sourceLabel ? `${d.sourceLabel} · ` : ''}{d.pars.length} holes · par {d.pars.reduce((a, b) => a + b, 0)}</span><button className="sc-link" onClick={onSetup}>Edit round</button></div>
       {declared.length > 0 && <div className="sc-online">On the line: {declared.map((o) => o.pool.name).join(' + ')}</div>}
       {liveOn(d) && started(d) && <LiveBadge />}
       <div className="sc-stand">
         {d.players.map((p, i) => (
-          <div key={p.key} className={`sc-st${lead.includes(i) ? ' is-lead' : ''}`}>
+          <div key={p.key} className={`sc-st${lead.includes(i) ? ' is-lead' : ''}${isOut(d, i) ? ' is-out' : ''}`}>
             <b>{p.name}</b>
-            <div><span className={`sc-tp ${tots[i].thru ? toParClass(tots[i].toPar) : ''}`}>{tots[i].thru ? fmtToPar(tots[i].toPar) : '–'}</span>
-              <small>{tots[i].strokes} thru {tots[i].thru}</small></div>
+            {isOut(d, i)
+              ? <div><span className="sc-tp">DNF</span><small>out after {d.out![p.key]}</small></div>
+              : <div><span className={`sc-tp ${tots[i].thru ? toParClass(tots[i].toPar) : ''}`}>{tots[i].thru ? fmtToPar(tots[i].toPar) : '–'}</span>
+                <small>{tots[i].strokes} thru {tots[i].thru}</small></div>}
           </div>
         ))}
       </div>
@@ -317,11 +357,13 @@ function Card({ d, setD, onSetup, me, busy, swapSets, poolNames, onSave, onConne
             <button className="sc-round" aria-label="Par up" onClick={() => setD((x) => ({ ...x, pars: x.pars.map((v, i) => (i === h ? Math.min(6, v + 1) : v)), layoutId: null }))}>+</button>
           </div>
         </div>
-        {d.players.map((p, i) => {
+        {order.length > 1 && throwing.length > 0 && <div className="sc-box"><span className="sc-box-tag">BOX</span><b>{d.players[throwing[0]].name}</b> owns the box</div>}
+        {throwing.map((i, pos) => {
+          const p = d.players[i];
           const s = d.scores[i]?.[h] ?? null;
           return (
-            <div key={p.key} className="sc-prow">
-              <div className="sc-pname"><b>{p.name}</b>
+            <div key={p.key} className={`sc-prow${pos === 0 && throwing.length > 1 ? ' is-box' : ''}`}>
+              <div className="sc-pname"><b><span className="sc-teepos" aria-label={`throws ${pos + 1}`}>{pos + 1}</span>{p.name}</b>
                 <small>{s == null ? 'Tap + for par' : `${s === 1 ? 'ACE' : s === par ? 'Par' : fmtToPar(s - par)} · ${fmtToPar(tots[i].toPar)} overall`}</small></div>
               <div className="sc-ctl">
                 <button className="sc-big" aria-label={`${p.name} one less`} onClick={() => set(i, s == null ? Math.max(1, par - 1) : s <= 1 ? null : s - 1)}>−</button>
@@ -331,6 +373,12 @@ function Card({ d, setD, onSetup, me, busy, swapSets, poolNames, onSave, onConne
             </div>
           );
         })}
+        {sittingOut.map((i) => (
+          <div key={d.players[i].key} className="sc-prow is-out">
+            <div className="sc-pname"><b>{d.players[i].name}</b><small>Pulled out after {d.out![d.players[i].key]}: DNF, par +{DNF_OVER} a hole, last on tags</small></div>
+            <button className="sc-link" onClick={() => setD((x) => putBack(x, i))}>Back in</button>
+          </div>
+        ))}
         <div className="sc-nav">
           <button className="sc-btn" disabled={h === 0} onClick={() => go(h - 1)}>{h === 0 ? '‹ Back' : `‹ Hole ${holeName(d, h - 1)}`}</button>
           {h < d.pars.length - 1 ? <button className="sc-btn cta" onClick={() => go(h + 1)}>Hole {holeName(d, h + 1)} ›</button>
@@ -341,6 +389,25 @@ function Card({ d, setD, onSetup, me, busy, swapSets, poolNames, onSave, onConne
           {d.pars.map((_, i) => <button key={i} className={holeDone(d, i) ? 'done' : ''} aria-current={i === h} onClick={() => go(i)}>{holeName(d, i)}</button>)}
         </div>
       </section>
+
+      {throwing.length > 0 && (
+        <details className="sc-panel sc-pullout">
+          <summary>Someone leaving? Pull them out</summary>
+          <p className="sc-hint">They're DNF after the holes they finished. Every hole after that counts par +{DNF_OVER}, and on tags they finish last, whatever the totals say. Tap Back in if it was a mistake.</p>
+          {throwing.map((i) => {
+            const done = d.pars.findIndex((_, x) => d.scores[i]?.[x] == null);
+            if (done < 0) return null;
+            return (
+              <div key={d.players[i].key} className="sc-row">
+                <span style={{ flex: 1 }}><b>{d.players[i].name}</b> <small className="sc-hint">· {done} hole{done === 1 ? '' : 's'} played</small></span>
+                <button className="sc-btn" onClick={() => {
+                  if (window.confirm(`Pull ${d.players[i].name} out after ${done} hole${done === 1 ? '' : 's'}? DNF: par +${DNF_OVER} on every hole left, last on tags.`)) setD((x) => pullOut(x, i));
+                }}>Pull out</button>
+              </div>
+            );
+          })}
+        </details>
+      )}
 
       <details className="sc-panel">
         <summary>Full card</summary>

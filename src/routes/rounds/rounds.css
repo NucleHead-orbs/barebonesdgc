@@ -202,3 +202,16 @@
 .sc-blockers .sc-problems { color: var(--fg-1); display: flex; flex-direction: column; gap: 6px; }
 .sc-blockers .sc-problems li span { margin-right: 8px; }
 .sc-warnline { margin: 0; padding: 8px 12px; border-left: 3px solid var(--accent-gold); color: var(--fg-1); font-size: 14px; }
+
+/* ---------- tee order + box, pull out (migration 20261120) ---------- */
+.sc-box { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--fg-2); padding: 2px 0 6px; }
+.sc-box b { color: var(--fg-1); }
+.sc-box-tag { font-family: var(--font-label); font-size: 11px; letter-spacing: 1.5px; padding: 2px 7px; border-radius: 6px; background: var(--accent-gold); color: var(--bg-page); }
+.sc-teepos { display: inline-grid; place-items: center; min-width: 22px; height: 22px; margin-right: 8px; border-radius: 50%; font-size: 12px;
+  border: 1px solid var(--border); color: var(--fg-2); font-variant-numeric: tabular-nums; vertical-align: 2px; }
+.sc-prow.is-box .sc-teepos { background: var(--accent-gold); border-color: var(--accent-gold); color: var(--bg-page); }
+.sc-prow.is-out { opacity: .6; }
+.sc-prow.is-out .sc-pname small { white-space: normal; }
+.sc-st.is-out { opacity: .55; }
+.sc-pullout summary { cursor: pointer; font-weight: 700; }
+.sc-pullout .sc-row { align-items: center; border-top: 1px solid var(--border); padding-top: 8px; }

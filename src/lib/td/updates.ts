@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'scorecard-flow', date: '2026-10-09', help: 'rounds', who: 'all',
+    title: 'START THE CARD, tee order + the box, PULL OUT',
+    body: 'Scheduled casual and challenge rounds get **START THE CARD** on My Tag from 3 hours before tee: course, layout and every player already on it (one saved card per round). Each hole now lists players in **tee order** with a gold **BOX** badge on whoever owns it. **Pull out** marks a player DNF after the holes they finished: par +3 on the rest, last on tags.',
+  },
+  {
     id: 'ea-invite-match', date: '2026-10-09', help: 'early', who: 'all',
     title: 'Early Access invites find the person first',
     body: 'Typing a name in Early Access → **INVITES** now lists anyone who already has a tag and looks like that name, with the tags they hold. Tap **INVITE <NAME>** and they keep one My Tag link for every set, instead of getting a second person and a second link.',

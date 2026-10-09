@@ -64,7 +64,7 @@ export function RoundsList() {
 function RoundCard({ r, meId, link }: { r: Round; meId: string | null; link?: boolean }) {
   const cs = confirmState(r.players);
   const par = r.pars.reduce((a, b) => a + b, 0);
-  const best = Math.min(...r.players.map((p) => p.strokes));
+  const best = Math.min(...r.players.filter((p) => p.dnf_after == null).map((p) => p.strokes));
   const head = (
     <div className="br-head">
       <b>{r.course}</b>
@@ -80,7 +80,7 @@ function RoundCard({ r, meId, link }: { r: Round; meId: string | null; link?: bo
             <span className="br-name">{p.name}{p.nickname ? <small> “{p.nickname}”</small> : null}{!p.member_id && <small> guest</small>}</span>
             <span className="br-mark" aria-label={p.member_id ? (p.confirmed ? 'confirmed' : p.disputed ? 'disputed' : 'not confirmed yet') : undefined}>
               {p.member_id ? (p.confirmed ? '✓' : p.disputed ? '✗' : '…') : ''}</span>
-            <span className={`br-tp ${toParClass(p.to_par)}`}>{fmtToPar(p.to_par)}</span>
+            {p.dnf_after != null ? <span className="br-tp" title={`Pulled out after ${p.dnf_after}`}>DNF {p.dnf_after}</span> : <span className={`br-tp ${toParClass(p.to_par)}`}>{fmtToPar(p.to_par)}</span>}
             <span className="br-str">{p.strokes}</span>
           </li>
         ))}

@@ -91,7 +91,7 @@ function CardDetail({ r, meId }: { r: MyCardRound; meId: string }) {
                   <th>{display(p)}{p.guest ? <small> guest</small> : null}</th>
                   {r.pars.map((pp, i) => { const s = p.scores?.[i]; return <td key={i} className={s == null ? '' : toParClass(s - pp)}>{s ?? ''}</td>; })}
                   <td><b>{p.strokes}</b></td>
-                  <td className={toParClass(p.to_par)}>{fmtToPar(p.to_par)}</td>
+                  <td className={p.dnf_after != null ? '' : toParClass(p.to_par)}>{p.dnf_after != null ? `DNF ${p.dnf_after}` : fmtToPar(p.to_par)}</td>
                 </tr>
               ))}
             </tbody>

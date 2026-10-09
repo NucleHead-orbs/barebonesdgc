@@ -5,6 +5,8 @@
 import { useEffect, useState } from 'react';
 import * as tagApi from '../../lib/tags/api';
 import { MAX_JUMP_INS, canDropOut, canJumpIn, roundStep, slotLabel, toLocalInput, type ChallengeRound, type LibCourseLite, type RoundPerson } from '../../lib/tags/board';
+import { Link } from 'react-router-dom';
+import { cardLink, cardTime } from '../../lib/rounds/fromRound';
 import { display, tagMessage } from '../../lib/tags/tags';
 import './board.css';
 
@@ -47,6 +49,7 @@ export function SlotBox({ round, token, act, now }: { round: ChallengeRound; tok
         </>
       )}
       {step === 'closed' && <p><b>{slot}.</b> {jumps} The card is set. Save it on the Scorecard with tags on the line.</p>}
+      {round.locked && cardTime(round.tee_at, now) && <Link className="td-btn cta" to={cardLink('challenge', round.id)}>START THE CARD</Link>}
     </div>
   );
 }
@@ -113,7 +116,7 @@ export function JumpIns({ rounds, token, act, now }: { rounds: ChallengeRound[];
             {r.role === 'joined'
               ? (canDropOut(r, now)
                 ? <button className="td-btn quiet" onClick={() => { if (window.confirm('Drop out? Your spot opens for someone else.')) void act(tagApi.dropOut(token, r.id), 'You dropped out.'); }}>DROP OUT</button>
-                : <span className="td-hint">You're in</span>)
+                : cardTime(r.tee_at, now) ? <Link className="td-btn cta" to={cardLink('challenge', r.id)}>START THE CARD</Link> : <span className="td-hint">You're in</span>)
               : <button className="td-btn cta" disabled={!canJumpIn(r, now)} onClick={() => {
                 if (!window.confirm(`Jump into ${display(r.challenger)} vs ${display(r.challenged)}, ${slotLabel(r.tee_at, r.course)}? Your ${r.pool_name} tag goes on the line too.`)) return;
                 void act(tagApi.jumpIn(token, r.id), "You're in. Show up, tags on the line.");

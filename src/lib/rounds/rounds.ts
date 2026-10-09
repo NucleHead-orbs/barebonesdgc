@@ -14,6 +14,12 @@ export interface Draft {
   onLine?: string[];
   /** SHARE LIVE: mirror this card to the public live view while playing. Absent = on. */
   live?: boolean;
+  /** PULL OUT: player key -> holes finished before they left (DNF). Later holes are par +3 (migration 20261120). */
+  out?: Record<string, number>;
+  /** The scheduled round this card was started from ('casual:<id>' | 'challenge:<id>'): one saved card per round. */
+  source?: string | null;
+  /** What to call that round on the card ("Danny vs Nick", "April's round"). */
+  sourceLabel?: string | null;
 }
 
 /** The round has started (any score in): tags on the line are locked. */
@@ -47,10 +53,70 @@ export function running(pars: number[], scores: Array<number | null>): { strokes
   return { strokes, toPar: strokes - par, thru };
 }
 
+/** DNF: holes after a pulled-out player's last are par +3 (same rule the database applies on save). */
+export const DNF_OVER = 3;
+export const isOut = (d: Pick<Draft, 'out' | 'players'>, i: number) => d.out?.[d.players[i]?.key] != null;
+
+/** PULL OUT player i: DNF after the holes they finished (first blank hole); the rest fill with par +3. Undone by putBack. */
+export function pullOut(d: Draft, i: number): Draft {
+  const p = d.players[i];
+  if (!p || isOut(d, i)) return d;
+  const row = d.scores[i] ?? [];
+  const done = d.pars.findIndex((_, h) => row[h] == null);
+  if (done < 0) return d;   // finished every hole: nothing to pull out of
+  const scores = d.scores.map((r, j) => (j !== i ? r : d.pars.map((par, h) => (h < done ? r[h] ?? null : par + DNF_OVER))));
+  return { ...d, scores, out: { ...(d.out ?? {}), [p.key]: done } };
+}
+/** Undo a PULL OUT: back in, the auto-filled holes go blank again. */
+export function putBack(d: Draft, i: number): Draft {
+  const p = d.players[i];
+  const done = p ? d.out?.[p.key] : undefined;
+  if (!p || done == null) return d;
+  const out = { ...(d.out ?? {}) }; delete out[p.key];
+  return { ...d, out, scores: d.scores.map((r, j) => (j !== i ? r : d.pars.map((_, h) => (h < done ? r[h] ?? null : null)))) };
+}
+
+/**
+ * Tee order for hole h (0-based): the card's order on the first hole; after that, lowest score on the previous hole
+ * throws first and ties keep the order they had. A hole someone hasn't scored yet doesn't reshuffle anyone.
+ * Pulled-out players drop to the end once they're out. Returns player indexes; [0] owns the box.
+ */
+export function teeOrder(d: Pick<Draft, 'players' | 'scores' | 'out'>, h: number): number[] {
+  let order = d.players.map((_, i) => i);
+  for (let prev = 0; prev < h; prev++) {
+    const live = order.filter((i) => !(d.out?.[d.players[i].key] != null && d.out[d.players[i].key] <= prev));
+    if (live.every((i) => d.scores[i]?.[prev] != null)) {
+      const ranked = live.slice().sort((a, b) => (d.scores[a]![prev]! - d.scores[b]![prev]!) || (order.indexOf(a) - order.indexOf(b)));
+      order = [...ranked, ...order.filter((i) => !live.includes(i))];
+    }
+  }
+  const outNow = (i: number) => d.out?.[d.players[i].key] != null && d.out[d.players[i].key] <= h;
+  return [...order.filter((i) => !outNow(i)), ...order.filter(outNow)];
+}
+
+/** A scheduled round (casual invite or challenge) -> a fresh card: course + first layout, the players who are in, tags. */
+export interface RoundSource {
+  source: string; label: string; course: string | null; courseId: string | null;
+  players: Array<{ memberId: string; name: string }>; onLine?: string[];
+}
+export function draftFromRound(src: RoundSource, today: string, courses: Array<{ id: string; name: string; layouts: Array<{ id: string; pars: number[]; labels: string[] | null; ft: Array<number | null> }> }>): Draft {
+  const c = src.courseId ? courses.find((x) => x.id === src.courseId) : undefined;
+  const l = c?.layouts[0];
+  const base = newDraft(today);
+  const seen = new Set<string>();
+  const players = src.players.filter((p) => !seen.has(p.memberId) && seen.add(p.memberId)).slice(0, MAX_PLAYERS)
+    .map((p) => ({ key: p.memberId, memberId: p.memberId, name: p.name }));
+  return {
+    ...base, course: c?.name ?? src.course ?? '', courseId: c?.id ?? null, layoutId: l?.id ?? null,
+    ...(l ? { pars: l.pars.slice(), labels: l.labels, ft: l.ft } : {}),
+    players, scores: players.map(() => []), onLine: src.onLine ?? [], source: src.source, sourceLabel: src.label,
+  };
+}
+
 /** Leaders by to-par over holes played (only players with at least one hole). */
-export function leaders(d: Pick<Draft, 'pars' | 'scores'>): number[] {
+export function leaders(d: Pick<Draft, 'pars' | 'scores'> & Partial<Pick<Draft, 'out' | 'players'>>): number[] {
   const t = d.scores.map((s) => running(d.pars, s));
-  const played = t.map((x, i) => ({ ...x, i })).filter((x) => x.thru > 0);
+  const played = t.map((x, i) => ({ ...x, i })).filter((x) => x.thru > 0 && !(d.players?.[x.i] && d.out?.[d.players[x.i].key] != null));
   if (!played.length) return [];
   const best = Math.min(...played.map((x) => x.toPar));
   return played.filter((x) => x.toPar === best).map((x) => x.i);
@@ -114,7 +180,12 @@ export function toPayload(d: Draft) {
   return {
     course: d.course.trim(), course_id: d.courseId, layout_id: d.layoutId, played_on: d.playedOn, pars: d.pars,
     ...(d.labels && d.labels.length === d.pars.length ? { labels: d.labels } : {}),
-    players: d.players.map((p, i) => ({ ...(p.memberId ? { member_id: p.memberId } : { guest_name: p.name.trim() }), scores: d.scores[i].slice(0, d.pars.length) })),
+    ...(d.source ? { source: d.source } : {}),
+    players: d.players.map((p, i) => {
+      const dnf = d.out?.[p.key];
+      const scores = d.pars.map((par, h) => (dnf != null && h >= dnf ? par + DNF_OVER : d.scores[i]?.[h] ?? null));
+      return { ...(p.memberId ? { member_id: p.memberId } : { guest_name: p.name.trim() }), scores, ...(dnf != null ? { dnf_after: dnf } : {}) };
+    }),
   };
 }
 
@@ -171,6 +242,7 @@ export function roundMessage(err: unknown): string {
   if (/invalid_reaction/.test(m)) return "That reaction isn't on the menu.";
   if (/invalid_card|invalid_live/.test(m)) return 'The live view didn\'t take that update. Your card is safe on this phone.';
   if (/forbidden/.test(m)) return 'Only that tag set\'s league admins can vouch for a round.';
+  if (/already_saved/.test(m)) return 'Someone on your card already saved this round. Check Boner Rounds (or your My Tag) and confirm your score there.';
   if (/needs_challenge/.test(m)) return 'Early Access tags need 3 Jewel players on the card, or 2 with a challenge you\'ve accepted (My Tag → MATCHUPS). Untick that set and save again.';
   if (/need_two_holders/.test(m)) return 'A tag exchange needs at least two tag holders from that set on the round.';
   if (/already_exchanged/.test(m)) return 'Tags from that set are already on the line for this round.';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { finishCheck, started, holeName, confirmState, exchangeOptions, fmtToPar, holeDone, leaders, newDraft, parseTagLink, running, saveProblems, setHoles, toPayload } from './rounds';
+import { draftFromRound, pullOut, putBack, teeOrder, finishCheck, started, holeName, confirmState, exchangeOptions, fmtToPar, holeDone, leaders, newDraft, parseTagLink, running, saveProblems, setHoles, toPayload } from './rounds';
 
 const me = { id: 'm1', name: 'YT' };
 
@@ -108,3 +108,39 @@ describe('finish check: say what is holding the save up', () => {
   });
 });
 
+
+describe('tee order, pull out, cards from scheduled rounds', () => {
+  const base = { ...newDraft('2026-10-09'), course: 'Emerald Park', pars: [3, 3, 3, 4],
+    players: [{ key: 'a', memberId: 'a', name: 'A' }, { key: 'b', memberId: 'b', name: 'B' }, { key: 's', memberId: 's', name: 'Salty' }] };
+  it('first hole: card order; then best score on the last hole tees first, ties keep their order', () => {
+    const d = { ...base, scores: [[3, 3], [2, 3], [3, 2]] };
+    expect(teeOrder(d, 0)).toEqual([0, 1, 2]);
+    expect(teeOrder(d, 1)).toEqual([1, 0, 2]);       // B birdied 1
+    expect(teeOrder(d, 2)).toEqual([2, 1, 0]);       // Salty birdied 2; A and B tie, B stays ahead
+  });
+  it('an unfinished hole doesn\'t reshuffle anyone', () => {
+    const d = { ...base, scores: [[3, 4], [2, null], [3, 2]] };
+    expect(teeOrder(d, 2)).toEqual(teeOrder(d, 1));
+  });
+  it('PULL OUT: DNF after the holes played, the rest par +3, last in tee order, out of the lead; back in undoes it', () => {
+    const d = pullOut({ ...base, scores: [[3, 3], [3, 3], [2, 2]] }, 2);
+    expect(d.out).toEqual({ s: 2 });
+    expect(d.scores[2]).toEqual([2, 2, 6, 7]);
+    expect(teeOrder(d, 2)).toEqual([0, 1, 2]);
+    expect(leaders(d)).toEqual([0, 1]);
+    expect(toPayload(d).players[2]).toEqual({ member_id: 's', scores: [2, 2, 6, 7], dnf_after: 2 });
+    expect(finishCheck(d, 'a').blockers.map((b) => b.text)).toEqual(['A is missing holes 3 and 4.', 'B is missing holes 3 and 4.']);
+    const back = putBack(d, 2);
+    expect(back.out).toEqual({});
+    expect(back.scores[2]).toEqual([2, 2, null, null]);
+  });
+  it('a card from a scheduled round: course layout, the players, tags on the line, the source', () => {
+    const courses = [{ id: 'k1', name: 'Emerald Park', layouts: [{ id: 'l1', pars: [3, 3, 4], labels: null, ft: [200, 210, 330] }] }];
+    const d = draftFromRound({ source: 'challenge:x', label: 'Danny vs Nick', course: 'Emerald Park', courseId: 'k1', onLine: ['p1'],
+      players: [{ memberId: 'd', name: 'Danny' }, { memberId: 'n', name: 'Nick' }, { memberId: 'd', name: 'Danny' }] }, '2026-10-09', courses);
+    expect([d.course, d.courseId, d.layoutId, d.pars]).toEqual(['Emerald Park', 'k1', 'l1', [3, 3, 4]]);
+    expect(d.players.map((p) => p.name)).toEqual(['Danny', 'Nick']);
+    expect([d.onLine, d.source, d.sourceLabel, d.scores]).toEqual([['p1'], 'challenge:x', 'Danny vs Nick', [[], []]]);
+    expect(toPayload({ ...d, scores: [[3, 3, 4], [3, 3, 4]] }).source).toBe('challenge:x');
+  });
+});

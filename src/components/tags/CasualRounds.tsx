@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react';
 import * as tagApi from '../../lib/tags/api';
 import type { Holding, RosterEntry } from '../../lib/tags/api';
 import { CARD_MAX, MAX_INVITED, casualAction, casualIn, casualMessage, seatsLeft, slotLabel, toLocalInput, type CasualRound, type LibCourseLite, type RoundPerson } from '../../lib/tags/board';
+import { Link } from 'react-router-dom';
+import { cardLink, cardTime } from '../../lib/rounds/fromRound';
 import { display, tagMessage } from '../../lib/tags/tags';
 import './board.css';
 
@@ -58,6 +60,7 @@ export function CasualRounds({ token, meId, holdings, rosters, rounds, act, now 
               {a === 'leave' && <button className="td-btn quiet" onClick={() => { if (window.confirm('Drop out? Your seat opens for someone else.')) void run(tagApi.casualAnswer(token, r.id, false), 'You dropped out.'); }}>DROP OUT</button>}
               {a === 'host' && <button className="td-btn quiet" onClick={() => { if (window.confirm('Call off this round? Everyone sees it on the Board.')) void run(tagApi.casualCancel(token, r.id), 'Round called off.'); }}>CALL IT OFF</button>}
               {a === 'full' && <span className="td-hint">Full</span>}
+              {(r.mine === 'in' || r.host_me) && cardTime(r.tee_at, now) && <Link className="td-btn cta" to={cardLink('casual', r.id)}>START THE CARD</Link>}
             </div>
           </div>
         );
