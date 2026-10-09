@@ -194,3 +194,11 @@
 .sc-install.is-mytag { border-color: #29e1ff; box-shadow: 0 0 0 1px rgba(41, 225, 255, .3), 0 0 18px rgba(255, 58, 209, .2); text-align: left; }
 .sc-install.is-mytag .sc-install-head img { box-shadow: 0 0 12px rgba(41, 225, 255, .5); }
 .sc-install.is-mytag .sc-steps li::marker { color: #29e1ff; }
+
+/* ---------- finish check: what's holding the save up ---------- */
+.sc-blockers { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: var(--r-banner, 10px); border: 2px solid var(--accent-gold);
+  background: color-mix(in srgb, var(--accent-gold) 10%, var(--bg-surface)); }
+.sc-blockers > b { color: var(--fg-1); }
+.sc-blockers .sc-problems { color: var(--fg-1); display: flex; flex-direction: column; gap: 6px; }
+.sc-blockers .sc-problems li span { margin-right: 8px; }
+.sc-warnline { margin: 0; padding: 8px 12px; border-left: 3px solid var(--accent-gold); color: var(--fg-1); font-size: 14px; }

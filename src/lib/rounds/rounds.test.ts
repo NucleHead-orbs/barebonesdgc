@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { started, holeName, confirmState, exchangeOptions, fmtToPar, holeDone, leaders, newDraft, parseTagLink, running, saveProblems, setHoles, toPayload } from './rounds';
+import { finishCheck, started, holeName, confirmState, exchangeOptions, fmtToPar, holeDone, leaders, newDraft, parseTagLink, running, saveProblems, setHoles, toPayload } from './rounds';
 
 const me = { id: 'm1', name: 'YT' };
 
@@ -34,8 +34,8 @@ describe('saving', () => {
   const base = { ...newDraft('2026-10-03', me), course: 'Buffalo Ridge', pars: [3, 3] };
   it('lists what is missing', () => {
     expect(saveProblems({ ...base, course: '', scores: [[3]] }, null)).toEqual([
-      'Pick or type the course.', 'Connect your My Tag link to save.', 'YT is missing 1 hole.']);
-    expect(saveProblems({ ...base, scores: [[3, 3]] }, 'other')).toEqual(['You have to be on the round to save it.']);
+      'Pick or type the course.', 'Connect your My Tag link to save (it\'s how the round knows who you are).', 'YT is missing hole 2.']);
+    expect(saveProblems({ ...base, scores: [[3, 3]] }, 'other')).toEqual(['You have to be on the round to save it. Add yourself in Edit round.']);
   });
   it('builds the payload with members by id and guests by name', () => {
     const d = { ...base, players: [...base.players, { key: 'g', memberId: null, name: ' Uncle Buck ' }], scores: [[3, 4], [5, 5]] };
@@ -81,3 +81,30 @@ describe('Boner Rounds', () => {
     expect(o[0].holders).toEqual([{ member_id: 'yt', number: 1 }, { member_id: 'hay', number: 6 }]);
   });
 });
+
+describe('finish check: say what is holding the save up', () => {
+  const base = newDraft('2026-10-08', me);
+  const card = (o: Partial<typeof base>) => ({ ...base, course: 'Emerald Park', pars: [3, 3, 3, 3, 3, 3, 3, 3], ...o });
+  it('names the holes each player is missing and where to jump', () => {
+    const d = card({ players: [...base.players, { key: 'b', memberId: 'm2', name: 'Bo' }, { key: 'c', memberId: null, name: 'Cy' }],
+      scores: [[3, 3, 3, 3, 3, 3, 3, 3], [3, null, 3, null, 3, 3, 3, 3], []] });
+    const c = finishCheck(d, 'm1');
+    expect(c.blockers.map((b) => b.text)).toEqual(['Bo is missing holes 2 and 4.', 'Cy has no scores yet. Every player needs a score on every hole (or take them off the card in Edit round).']);
+    expect(c.blockers[0]).toMatchObject({ fix: 'hole', hole: 1 });
+  });
+  it('long lists get trimmed; course hole names are used', () => {
+    const d = card({ labels: ['1', '2', '3', '4', '5', 'A', 'B', 'C'], scores: [[3]] });
+    expect(finishCheck(d, 'm1').blockers[0].text).toBe('YT is missing holes 2, 3, 4, 5, A, B and 1 more.');
+  });
+  it('old cards, Early Access blocks, and tags that can no longer swap', () => {
+    const full = { scores: [[3, 3, 3, 3, 3, 3, 3, 3]] };
+    expect(finishCheck(card({ ...full, playedOn: '2026-09-20' }), 'm1', { today: '2026-10-08' }).blockers[0].text).toMatch(/more than two weeks/);
+    const ea = finishCheck(card({ ...full, onLine: ['p1'] }), 'm1', { sets: [{ pool: { id: 'p1', name: 'Jewel EA' }, holders: [], blocked: true }] });
+    expect(ea.blockers[0]).toMatchObject({ fix: 'setup' });
+    const alone = finishCheck(card({ ...full, onLine: ['p2'] }), 'm1', { sets: [], tagNames: { p2: 'Lazy Boners' } });
+    expect(alone.blockers).toEqual([]);
+    expect(alone.warnings[0]).toBe("Lazy Boners tags were on the line, but you're the only Lazy Boners tag holder left on this card, so no tags will swap. Tags only swap between holders on the same card.");
+    expect(finishCheck(card(full), 'm1', { today: '2026-10-08' })).toEqual({ blockers: [], warnings: [] });
+  });
+});
+

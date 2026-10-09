@@ -59,21 +59,57 @@ export function leaders(d: Pick<Draft, 'pars' | 'scores'>): number[] {
 export const holeDone = (d: Pick<Draft, 'players' | 'scores'>, h: number) => d.players.length > 0 && d.players.every((_, p) => d.scores[p]?.[h] != null);
 
 /** What's still missing before a round can be saved (empty = ready). */
-export function saveProblems(d: Draft, meId: string | null): string[] {
-  const out: string[] = [];
-  if (!d.course.trim()) out.push('Pick or type the course.');
-  if (!meId) out.push('Connect your My Tag link to save.');
-  else if (!d.players.some((p) => p.memberId === meId)) out.push('You have to be on the round to save it.');
-  if (!d.players.length) out.push('Add a player.');
+/**
+ * Why this card can't be saved yet, in plain words, plus what to tap (bug squasher, 2026-10-09: a solo card never got
+ * saved because FINISH only scrolled and nobody said what was holding it up). blockers stop the save; warnings don't.
+ * Mirrors round_save's own rules (course, you on it, names, every hole for everyone, played in the last 14 days).
+ */
+export type FinishFix = 'connect' | 'setup' | 'hole';
+export interface Blocker { text: string; fix?: FinishFix; hole?: number }
+export interface FinishSet { pool: { id: string; name: string }; holders: Array<{ member_id: string }>; blocked?: boolean }
+export function finishCheck(d: Draft, meId: string | null, opts: { today?: string; sets?: FinishSet[]; tagNames?: Record<string, string> } = {}):
+  { blockers: Blocker[]; warnings: string[] } {
+  const blockers: Blocker[] = [];
+  const warnings: string[] = [];
+  if (!d.course.trim()) blockers.push({ text: 'Pick or type the course.', fix: 'setup' });
+  if (!meId) blockers.push({ text: 'Connect your My Tag link to save (it\'s how the round knows who you are).', fix: 'connect' });
+  else if (!d.players.some((p) => p.memberId === meId)) blockers.push({ text: 'You have to be on the round to save it. Add yourself in Edit round.', fix: 'setup' });
+  if (!d.players.length) blockers.push({ text: 'Add a player.', fix: 'setup' });
   d.players.forEach((p, i) => {
-    if (!p.name.trim()) out.push(`Player ${i + 1} needs a name.`);
-    const missing = d.pars.filter((_, h) => d.scores[i]?.[h] == null).length;
-    if (missing) out.push(`${p.name || `Player ${i + 1}`} is missing ${missing} hole${missing === 1 ? '' : 's'}.`);
+    const who = p.name.trim() || `Player ${i + 1}`;
+    if (!p.name.trim()) blockers.push({ text: `Player ${i + 1} needs a name.`, fix: 'setup' });
+    const miss = d.pars.map((_, h) => h).filter((h) => d.scores[i]?.[h] == null);
+    if (!miss.length) return;
+    const names = miss.map((h) => holeName(d, h));
+    const list = names.length > 6 ? `${names.slice(0, 6).join(', ')} and ${names.length - 6} more` : names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0];
+    blockers.push({ text: miss.length === d.pars.length ? `${who} has no scores yet. Every player needs a score on every hole (or take them off the card in Edit round).`
+      : `${who} is missing hole${miss.length === 1 ? '' : 's'} ${list}.`, fix: 'hole', hole: miss[0] });
   });
-  return out;
+  if (opts.today && d.playedOn) {
+    const days = Math.round((Date.parse(opts.today) - Date.parse(d.playedOn)) / 86400000);
+    if (days > 14) blockers.push({ text: `This card is dated ${d.playedOn}, more than two weeks ago. Rounds save within two weeks of the day they're played.` });
+  }
+  const sets = opts.sets ?? [];
+  for (const id of d.onLine ?? []) {
+    const s = sets.find((x) => x.pool.id === id);
+    if (!s) {
+      const name = opts.tagNames?.[id];
+      warnings.push(name
+        ? `${name} tags were on the line, but you're the only ${name} tag holder left on this card, so no tags will swap. Tags only swap between holders on the same card.`
+        : 'Tags were on the line, but nobody else on this card holds one from that set anymore, so no tags will swap. Tags only swap between holders on the same card.');
+    } else if (s.blocked) {
+      blockers.push({ text: `${s.pool.name} tags can't go on the line on this card: Early Access needs 3 Jewel players, or 2 with a challenge you've accepted. Untick it in Edit round, then save.`, fix: 'setup' });
+    }
+  }
+  return { blockers, warnings };
 }
 
-/** The round_save payload. Call only when saveProblems() is empty. */
+/** Just the blocker texts (kept for callers that only need yes/no + words). */
+export function saveProblems(d: Draft, meId: string | null): string[] {
+  return finishCheck(d, meId).blockers.map((b) => b.text);
+}
+
+/** The round_save payload. Call only when finishCheck() has no blockers. */
 export function toPayload(d: Draft) {
   return {
     course: d.course.trim(), course_id: d.courseId, layout_id: d.layoutId, played_on: d.playedOn, pars: d.pars,

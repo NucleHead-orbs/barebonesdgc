@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'finish-check-leaderboard', date: '2026-10-09', help: 'tags', who: 'all',
+    title: 'Scorecard says what\'s holding the save up + My Tag leaderboard',
+    body: 'On the Scorecard\'s last hole, **FINISH** now saves the round when it\'s ready. When it isn\'t, it says exactly why: which player is missing which holes (with a GO TO HOLE button), not connected, tags that can\'t go on the line, or a card older than two weeks. If tags were on the line but the other holders left the card, it warns that nothing will swap. My Tag has a **LEADERBOARD** button under each tag: everyone in that set by number, you highlighted.',
+  },
+  {
     id: 'skins', date: '2026-10-08', who: 'all',
     title: 'Skins: pick your look',
     body: 'The **SKIN** button (My Tag, the Scorecard and here) picks the look for your phone: **Night Card** (the new dark), **G-Mode** (daylight, bigger print), **Spooky Season**, **Ugly Sweater** or **Jewel Electric**. Super admins set the **club skin** on this page for a season, with an end date, and phones that picked their own keep theirs.',

@@ -13,6 +13,7 @@ import { TagBoard } from '../../components/tags/TagBoard';
 import { Matchups } from '../../components/tags/Matchups';
 import { MyRounds } from '../../components/tags/MyRounds';
 import { PhoneAlerts } from '../../components/tags/PhoneAlerts';
+import { TagLeaderboard } from '../../components/tags/TagLeaderboard';
 import { asTab, type MyTagTab } from '../../lib/tags/board';
 import { chatSeenKey, readSeen, useCasuals, useHeat, useMentions, useRounds, welcomeSeen, type HeatFocus } from '../../lib/tags/useHeat';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
@@ -43,6 +44,8 @@ export default function MyTagApp() {
   /** Home-screen buttons: phones only, and never inside the home-screen app itself. */
   const [canAdd] = useState(() => platformOf(navigator.userAgent, navigator.maxTouchPoints, navigator.platform) !== 'other' && !isStandalone());
   const [addTag, setAddTag] = useState(false);
+  const [leaders, setLeaders] = useState<string | null>(null); // LEADERBOARD pop-up: which set
+  const closeLeaders = useCallback(() => setLeaders(null), []);
   const heatRows = useHeat(token, rev);
   const rounds = useRounds(token, rev);
   const mentions = useMentions(token, rev);
@@ -154,16 +157,23 @@ export default function MyTagApp() {
                 <b>{h.pool_name} #{h.number}</b>
                 <span>of {h.held}{h.moved_at ? ` · won ${niceDate(h.moved_at.slice(0, 10))}` : ''} · tap to flip</span>
                 <Link to={`/tags/${h.pool}/${h.number}`}>Tag history ›</Link>
+                <button type="button" className="td-btn quiet mt-lbbtn" onClick={() => setLeaders(h.pool)}>LEADERBOARD</button>
               </div>
             </div>
           ) : (
-            <Link key={h.pool} to={`/tags/${h.pool}/${h.number}`} className={`mt-tag${h.number === 1 ? ' is-top' : ''}`}>
-              <span className="mt-tag-pool">{h.pool_name}</span>
-              <span className="mt-tag-num">#{h.number}</span>
-              <span className="mt-tag-meta">of {h.held}{h.moved_at ? ` · won ${niceDate(h.moved_at.slice(0, 10))}` : ''}</span>
-            </Link>
+            <div key={h.pool} className="mt-tagwrap">
+              <Link to={`/tags/${h.pool}/${h.number}`} className={`mt-tag${h.number === 1 ? ' is-top' : ''}`}>
+                <span className="mt-tag-pool">{h.pool_name}</span>
+                <span className="mt-tag-num">#{h.number}</span>
+                <span className="mt-tag-meta">of {h.held}{h.moved_at ? ` · won ${niceDate(h.moved_at.slice(0, 10))}` : ''}</span>
+              </Link>
+              <button type="button" className="td-btn quiet mt-lbbtn" onClick={() => setLeaders(h.pool)}>LEADERBOARD</button>
+            </div>
           ))}
         </div>
+        {leaders && home.rosters[leaders] && (
+          <TagLeaderboard poolName={names[leaders] ?? leaders} poolSlug={leaders} roster={home.rosters[leaders]} meId={meId} onClose={closeLeaders} />
+        )}
 
         <TagHeat rows={heatRows} rounds={rounds} token={token} names={names} act={act} focus={focus} onMatchups={() => go('matchups')} />
 

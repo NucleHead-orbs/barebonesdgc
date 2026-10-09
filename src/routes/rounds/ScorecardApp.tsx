@@ -9,7 +9,7 @@ import * as api from '../../lib/rounds/api';
 import type { CourseOption, RoundMe } from '../../lib/rounds/api';
 import {
   DRAFT_KEY, HOLE_CHOICES, holeName, MAX_PLAYERS, ME_KEY, fmtToPar, holeDone, leaders, newDraft, parseTagLink, roundMessage, running,
-  exchangeOptions, saveProblems, setHoles, started, toPayload, toParClass, type Draft,
+  exchangeOptions, finishCheck, setHoles, started, toPayload, toParClass, type Draft,
 } from '../../lib/rounds/rounds';
 import { display, swap, type TagMember, type TagPool } from '../../lib/tags/tags';
 import { localDate } from '../../lib/leagues/leagues';
@@ -80,6 +80,7 @@ export default function ScorecardApp() {
     return () => { live = false; };
   }, [optionsKey]);
   const swapSets = useMemo(() => options.map((o) => ({ ...o, blocked: lineOk[o.pool.id] === false })), [options, lineOk]);
+  const poolNames = useMemo(() => Object.fromEntries(pools.map((p) => [p.id, p.name])), [pools]);
 
   useEffect(() => { write(DRAFT_KEY, JSON.stringify(d)); }, [d]);
   // live mirror: a couple of seconds after the card changes, push it (when there's signal). The phone's card stays the truth.
@@ -148,7 +149,7 @@ export default function ScorecardApp() {
       {view === 'setup'
         ? <Setup d={d} setD={setD} me={me} members={members} courses={courses} swapSets={swapSets} onStart={() => setView('card')}
             top={token ? <InstallCard app="scorecard" token={token} force={params.get('install') === '1'} /> : <><AppConnect onConnect={(l) => void connect(l)} /><InstallCard app="scorecard" token={null} force={params.get('install') === '1'} /></>} />
-        : <Card d={d} setD={setD} onSetup={() => setView('setup')} me={me} busy={busy} swapSets={swapSets} onSave={() => void save()} onConnect={connect}
+        : <Card d={d} setD={setD} onSetup={() => setView('setup')} me={me} busy={busy} swapSets={swapSets} poolNames={poolNames} onSave={() => void save()} onConnect={connect}
             onNew={() => { endLive(); setD(newDraft(localDate(), me ? { id: me.me.id, name: me.me.nickname || me.me.name } : null)); setView('setup'); }} />}
     </div>
   );
@@ -255,7 +256,7 @@ function Setup({ d, setD, me, members, courses, swapSets, onStart, top }: {
               );
             })}
           </div>
-          <p className="sc-hint">{locked ? 'Locked: the round has started.' : 'Decide now. Once the first score is in, this locks. Checked sets swap when you save and everyone else on the card confirms from their My Tag link.'}</p>
+          <p className="sc-hint">{locked ? 'Locked: the round has started.' : 'Decide now. Once the first score is in, this locks. Checked sets swap when you save and everyone else on the card confirms from their My Tag link. Tags only swap between holders on this card: split into two groups? Keep every tag holder on one card (up to 10) and one scorer.'}</p>
         </section>
       )}
       <section className="sc-panel">
@@ -270,8 +271,8 @@ function Setup({ d, setD, me, members, courses, swapSets, onStart, top }: {
 }
 
 // ---------- the card ----------
-function Card({ d, setD, onSetup, me, busy, swapSets, onSave, onConnect, onNew }: {
-  d: Draft; setD: (f: (d: Draft) => Draft) => void; onSetup: () => void; me: RoundMe | null; busy: boolean; swapSets: SwapSet[];
+function Card({ d, setD, onSetup, me, busy, swapSets, poolNames, onSave, onConnect, onNew }: {
+  d: Draft; setD: (f: (d: Draft) => Draft) => void; onSetup: () => void; me: RoundMe | null; busy: boolean; swapSets: SwapSet[]; poolNames: Record<string, string>;
   onSave: () => void; onConnect: (s: string) => void; onNew: () => void;
 }) {
   const [link, setLink] = useState('');
@@ -280,7 +281,9 @@ function Card({ d, setD, onSetup, me, busy, swapSets, onSave, onConnect, onNew }
   const h = d.cur, par = d.pars[h];
   const tots = useMemo(() => d.players.map((_, p) => running(d.pars, d.scores[p] ?? [])), [d]);
   const lead = useMemo(() => leaders(d), [d]);
-  const problems = saveProblems(d, me?.me.id ?? null);
+  const check = finishCheck(d, me?.me.id ?? null, { today: localDate(), sets: swapSets, tagNames: poolNames });
+  const problems = check.blockers;
+  const toFinish = () => document.getElementById('sc-finish')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const allIn = d.pars.every((_, i) => holeDone(d, i));
   const set = (p: number, v: number | null) => setD((x) => {
     const scores = x.scores.map((r) => r.slice());
@@ -331,7 +334,8 @@ function Card({ d, setD, onSetup, me, busy, swapSets, onSave, onConnect, onNew }
         <div className="sc-nav">
           <button className="sc-btn" disabled={h === 0} onClick={() => go(h - 1)}>{h === 0 ? '‹ Back' : `‹ Hole ${holeName(d, h - 1)}`}</button>
           {h < d.pars.length - 1 ? <button className="sc-btn cta" onClick={() => go(h + 1)}>Hole {holeName(d, h + 1)} ›</button>
-            : <a className="sc-btn cta" href="#sc-finish">Finish ›</a>}
+            : <button className="sc-btn cta" disabled={busy} onClick={() => (me && !problems.length ? onSave() : toFinish())}>
+                {busy ? 'Saving…' : me && !problems.length ? 'Finish + save ›' : `Finish: ${problems.length} to fix ›`}</button>}
         </div>
         <div className="sc-strip" role="group" aria-label="Jump to hole">
           {d.pars.map((_, i) => <button key={i} className={holeDone(d, i) ? 'done' : ''} aria-current={i === h} onClick={() => go(i)}>{holeName(d, i)}</button>)}
@@ -364,10 +368,19 @@ function Card({ d, setD, onSetup, me, busy, swapSets, onSave, onConnect, onNew }
               <button className="sc-btn" disabled={!link.trim()}>Connect</button></div>
           </form>
         ) : problems.length ? (
-          <ul className="sc-problems">{problems.map((p) => <li key={p}>{p}</li>)}</ul>
+          <div className="sc-blockers" role="status">
+            <b>Can't save yet. {problems.length === 1 ? 'One thing' : `${problems.length} things`} to fix:</b>
+            <ul className="sc-problems">{problems.map((p) => (
+              <li key={p.text}><span>{p.text}</span>
+                {p.fix === 'hole' && p.hole != null && <button className="sc-link" onClick={() => go(p.hole!)}>Go to hole {holeName(d, p.hole)} ›</button>}
+                {p.fix === 'setup' && <button className="sc-link" onClick={onSetup}>Edit round ›</button>}
+              </li>))}
+            </ul>
+          </div>
         ) : (
           <p className="sc-hint">All {d.pars.length} holes in. It shows on Boner Rounds right away; the other members on it confirm from their My Tag link. You can put tags on the line next.</p>
         )}
+        {check.warnings.map((w) => <p key={w} className="sc-warnline" role="status">{w}</p>)}
         {declared.length > 0 && (
           <div className="sc-swaps">
             <div className="sc-label">On the line (declared at tee-off)</div>

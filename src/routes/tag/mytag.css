@@ -87,3 +87,23 @@
 .pa-dot { font-family: var(--font-label); font-size: 11px; letter-spacing: 1px; padding: 3px 8px; border-radius: 10px; border: 1px solid var(--border); opacity: .8; }
 .pa-dot.on { border-color: var(--cyan); color: var(--cyan); opacity: 1; }
 .pa-kinds { display: flex; flex-direction: column; gap: 6px; }
+
+/* ---------- LEADERBOARD pop-up (2026-10-09) ---------- */
+.mt-lbbtn { align-self: center; margin-top: 4px; }
+.mt-tagwrap { display: flex; flex-direction: column; gap: 6px; }
+.lb-wrap { position: fixed; inset: 0; z-index: 50; background: rgb(0 0 0 / .6); display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
+@media (min-width: 560px) { .lb-wrap { align-items: center; } }
+.lb { width: 100%; max-width: 440px; max-height: min(80vh, 640px); display: flex; flex-direction: column; background: var(--surface); color: #fff;
+  border: 2px solid var(--cyan); border-radius: 16px; overflow: hidden; }
+.lb-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
+.lb-head b { display: block; font-family: var(--font-display); font-size: 22px; font-weight: 400; }
+.lb-head span { font-size: 12px; opacity: .7; }
+.lb-x { background: none; border: 0; color: inherit; font-size: 28px; line-height: 1; min-width: 44px; min-height: 44px; cursor: pointer; }
+.lb-list { list-style: none; margin: 0; padding: 4px 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.lb-list li { display: flex; align-items: center; gap: 12px; padding: 9px 16px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.lb-list li.is-me { background: color-mix(in srgb, var(--cyan) 16%, transparent); }
+.lb-list li.is-top .lb-num { color: var(--gold); }
+.lb-num { font-family: var(--font-display); font-size: 18px; min-width: 44px; font-variant-numeric: tabular-nums; }
+.lb-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-you { font-family: var(--font-label); font-size: 11px; letter-spacing: 1px; color: var(--cyan); border: 1px solid var(--cyan); border-radius: 10px; padding: 1px 7px; }
+.lb-more { display: block; padding: 12px 16px; color: var(--cyan); font-size: 14px; border-top: 1px solid var(--border); }
