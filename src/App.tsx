@@ -12,6 +12,7 @@ const SponsorsPage = lazy(() => pages().then((m) => ({ default: m.Sponsors })));
 const MusicPage = lazy(() => pages().then((m) => ({ default: m.Music })));
 const GalleryPage = lazy(() => import('./routes/site/GalleryPage'));
 const LeaguesPage = lazy(() => import('./routes/site/LeaguesPage'));
+const StartPage = lazy(() => import('./routes/site/StartPage'));
 const VestPage = lazy(() => import('./routes/site/VestPage'));
 const CoursesPage = lazy(() => import('./routes/site/CoursesPage'));
 const DevReportsPage = lazy(() => import('./components/dev/DevReports').then((m) => ({ default: m.DevReportsPage })));
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/sponsors" element={<SponsorsPage />} />
           <Route path="/music" element={<MusicPage />} />
+          <Route path="/start" element={<StartPage />} />
           <Route path="/leagues" element={<LeaguesPage />} />
           <Route path="/leagues/:slug/vest" element={<VestPage />} />
           <Route path="/tags" element={<TagsBoard />} />

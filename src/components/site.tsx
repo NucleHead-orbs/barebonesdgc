@@ -81,6 +81,7 @@ export function Footer({ jewel }: { jewel?: boolean }) {
       <div className="ft-row">
         <div className="ft-tag">{EVENT.tagline}.</div>
         <nav className="ft-links" aria-label="Footer">
+          <Link to="/start">New here? Start here</Link>
           {CLUB.facebookUrl && <a href={CLUB.facebookUrl} target="_blank" rel="noreferrer">Facebook group</a>}
           <a href={YOUTUBE_CHANNEL} target="_blank" rel="noreferrer">YouTube</a>
           <a href={EVENT.registerUrl} target="_blank" rel="noreferrer">Disc Golf Scene</a>

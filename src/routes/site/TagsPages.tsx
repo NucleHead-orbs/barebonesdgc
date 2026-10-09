@@ -171,6 +171,7 @@ export function TagsBoard() {
                   {heat?.challenges && <li><b>Challenges:</b> challenge anyone up to 5 spots above you from your My Tag. 3 declines are free; the 4th drops you 5 spots. 48 hours of silence counts as a decline.</li>}
                   {heat?.chat && <li><b>Group chat:</b> everyone with a tag in this set, on your My Tag.</li>}
                 </ol>
+                <Button to="/start" variant="outline" size="sm">New here? Start here</Button>
                 {CLUB.facebookUrl && !board.data?.pool.invite_only && <Button href={CLUB.facebookUrl} external variant="outline" size="sm">Get a tag · ask the group ↗</Button>}
               </div>
             </div>
