@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { rankTeams, toPar, parTone, type Mode, type TeamRow } from '../lib/jewel/leaderboard';
 
 /** Doubles leaderboard: one pool of teams (Official / Live), same look as the division board. */
-export default function TeamBoard({ rows, title, style }: { rows: TeamRow[]; title: string; style: string }) {
+/** playoffCaptain: captain of the team that won a playoff for 1st (settles a T1). */
+export default function TeamBoard({ rows, title, style, playoffCaptain }: { rows: TeamRow[]; title: string; style: string; playoffCaptain?: string | null }) {
   const [mode, setMode] = useState<Mode>('live');
-  const ranked = rankTeams(rows, mode);
+  const ranked = rankTeams(rows, mode, playoffCaptain);
   const live = rows.filter((t) => t.holes_played > 0 && t.holes_played < t.hole_count && !t.official).length;
   return (
     <>

@@ -5,7 +5,8 @@ import { CLUB } from '../../lib/jewel/content';
 import { Banner, Button, SectionHeading } from '../../components/ui';
 import { useLoad } from '../../lib/useLoad';
 import { imageSrc, loadLeaguesPage, loadPublicEvents } from '../../lib/leagues/api';
-import { POPUPS_PAST, POPUP_FORMAT, currentHolder, leagueEvent, localDate, nextPopUp, niceDate, type League, type LeagueMvp, type LeagueWeek, type PublicEvent } from '../../lib/leagues/leagues';
+import { POPUPS_PAST, POPUP_FORMAT, currentHolder, leagueEvent, localDate, nextPopUp, niceDate, trophyPath, type League, type LeagueMvp, type LeagueWeek, type PublicEvent, type TrophyWeek } from '../../lib/leagues/leagues';
+import Podium from '../../components/Podium';
 import { fmtToPar } from '../../lib/rounds/rounds';
 import '../../components/gallery.css';
 import './leagues.css';
@@ -37,7 +38,7 @@ export default function LeaguesPage() {
         <div className="sec-inner" style={{ gap: 24 }}>
           <SectionHeading kicker="Weekly damage" title="The Leagues" size="l" aside={page ? `${leagues.length} league${leagues.length === 1 ? '' : 's'}` : undefined} />
           <div className="lg-grid">
-            {leagues.map((l) => <LeagueCard key={l.id} league={l} event={events ? leagueEvent(l.id, events, today) : null} group={group} weeks={weeks?.[l.id] ?? []} mvp={page?.mvp[l.id] ?? null} />)}
+            {leagues.map((l) => <LeagueCard key={l.id} league={l} event={events ? leagueEvent(l.id, events, today) : null} group={group} weeks={weeks?.[l.id] ?? []} mvp={page?.mvp[l.id] ?? null} podium={page?.podium[l.id] ?? null} />)}
           </div>
           <span className="lg-scrawl lg-gold">I'll put you down for a 4 there...</span>
           <Banner>Scores run on our own scorecard: scan the QR on your card, score every hole, everybody signs, submit. Only signed &amp; submitted rounds count.</Banner>
@@ -80,8 +81,9 @@ export default function LeaguesPage() {
   );
 }
 
-function LeagueCard({ league: l, event, group, weeks, mvp }: { league: League; event: PublicEvent | null; group: string | undefined; weeks: LeagueWeek[]; mvp: LeagueMvp | null }) {
-  const holder = l.award ? currentHolder(weeks) : null;
+function LeagueCard({ league: l, event, group, weeks, mvp, podium }: { league: League; event: PublicEvent | null; group: string | undefined; weeks: LeagueWeek[]; mvp: LeagueMvp | null; podium: TrophyWeek | null }) {
+  const single = l.trophy_room === 'single' && !!l.award;
+  const holder = single ? currentHolder(weeks) : null;
   return (
     <article id={l.slug} className="ds-card lg-card">
       {l.banner && <img className="lg-banner" src={imageSrc(l.banner)} alt="" loading="lazy" />}
@@ -97,8 +99,15 @@ function LeagueCard({ league: l, event, group, weeks, mvp }: { league: League; e
           {l.where_text && <Row k="Where" v={l.where_text} note={l.where_note ?? undefined} />}
           {l.buy_in && <Row k="Cost" v={l.buy_in} />}
         </div>
-        {l.award && (
-          <Link className="lg-vest" to={`/leagues/${l.slug}/vest`}>
+        {l.trophy_room === 'podium' && (
+          <Link className="lg-vest lg-trophy" to={trophyPath(l.slug)}>
+            <span className="lg-vest-k">{l.award ?? 'The podium'}{podium ? ` · ${niceDate(podium.starts_on)}` : ''}</span>
+            {podium ? <Podium podium={podium.podium} size="s" confetti={24} /> : <b className="lg-vest-none">Nobody's on the podium yet</b>}
+            <span className="lg-vest-more">The trophy room ›</span>
+          </Link>
+        )}
+        {single && (
+          <Link className="lg-vest" to={trophyPath(l.slug)}>
             <span className="lg-vest-k">{l.award}{holder ? ` · ${niceDate(holder.starts_on)}` : ''}</span>
             {holder ? <b>{holder.vest}</b> : <b className="lg-vest-none">Nobody's worn it yet</b>}
             {holder?.vest_note && <span className="lg-vest-note">{holder.vest_note}</span>}

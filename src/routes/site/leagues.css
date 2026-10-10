@@ -65,6 +65,7 @@
 .lg-vest-note { font-family: var(--font-hand); font-size: 19px; color: var(--accent-a); }
 .lg-vest-none { font-size: 18px !important; color: var(--fg-3); }
 .lg-vest-more { margin-top: 4px; font-weight: 700; font-size: 14px; color: var(--accent-gold); }
+.lg-trophy { gap: 6px; overflow: hidden; }
 
 /* MVP board (doubles leagues, migration 20261126) */
 .lg-mvp { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; border: 3px solid var(--accent-gold); border-radius: var(--r-banner); }

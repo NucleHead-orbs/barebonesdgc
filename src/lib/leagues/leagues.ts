@@ -18,10 +18,14 @@ export interface League {
   tags: boolean;
   /** Every NEW WEEK starts with these (null = copy the week before). */
   week_format: 'singles' | 'doubles' | null; week_layout_id: string | null;
+  /** The trophy room (migration 20261128): null = none, 'single' = one weekly prize the TD hands out (the vest),
+   *  'podium' = the week's top 3 straight from the results. award = the prize's (or the room's) name. */
+  trophy_room: TrophyRoom | null;
 }
+export type TrophyRoom = 'single' | 'podium';
 /** The MVP board of a doubles league: most wins (a tie for first = a win for each), then podiums. */
 export interface LeagueMvp { weeks: number; players: Array<{ name: string; weeks: number; wins: number; podiums: number; best: number | null }> }
-export const LEAGUE_COLS = 'id, slug, name, subtitle, title, scrawl, run_by, started_by, when_text, where_text, where_note, buy_in, award, banner, logo, award_image, tag_pool_id, hidden, sort, tags, week_format, week_layout_id';
+export const LEAGUE_COLS = 'id, slug, name, subtitle, title, scrawl, run_by, started_by, when_text, where_text, where_note, buy_in, award, banner, logo, award_image, tag_pool_id, hidden, sort, tags, week_format, week_layout_id, trophy_room';
 
 /** Text fields a league TD edits (League setup), in screen order. */
 export const LEAGUE_FIELDS: Array<{ key: keyof League; label: string; max: number; hint?: string }> = [
@@ -35,7 +39,7 @@ export const LEAGUE_FIELDS: Array<{ key: keyof League; label: string; max: numbe
   { key: 'where_text', label: 'WHERE', max: 80 },
   { key: 'where_note', label: 'WHERE NOTE', max: 120 },
   { key: 'buy_in', label: 'COST', max: 60, hint: 'Blank hides it' },
-  { key: 'award', label: 'WEEKLY AWARD', max: 60, hint: 'e.g. Lazy Boner Safety Vest. Blank = no award or vest wall' },
+  { key: 'award', label: 'TROPHY NAME', max: 60, hint: 'e.g. Lazy Boner Safety Vest. Pick the room under Trophy room' },
 ];
 
 /** "Thursday Thumpers!" -> "thursday-thumpers" (the league + tag set slug; fixed once created). */
@@ -139,3 +143,30 @@ export function weekLeader(rows: Array<{ player_id: string; r1_to_par: number | 
   const top = scored.filter((r) => r.r1_to_par === best);
   return top.length === 1 ? top[0].player_id : null;
 }
+
+// ---------- Trophy room (/leagues/<slug>/trophy, migration 20261128) ----------
+/** One step of a week's podium: its place (ties share: 1, 1, 3), score to par, who's on it (a team = 2 names, a Cali 1). */
+export interface PodiumStep { place: number; to_par: number; entries: string[][] }
+export interface TrophyWeek { slug: string; name: string; starts_on: string; course: string | null; photo: string | null; podium: PodiumStep[] }
+export interface TrophyRoomData {
+  league: Pick<League, 'id' | 'slug' | 'name' | 'award' | 'award_image' | 'trophy_room' | 'banner' | 'logo'>;
+  weeks: TrophyWeek[]; mvp: LeagueMvp;
+}
+export const TROPHY_ROOMS: Array<{ v: TrophyRoom | null; label: string; hint: string }> = [
+  { v: null, label: 'None', hint: 'No trophy room on the site.' },
+  { v: 'single', label: 'Single prize', hint: 'One weekly prize you hand out in WINNERS (the Lazy Boner Safety Vest). Needs a trophy name and art.' },
+  { v: 'podium', label: 'Podium celebration', hint: 'The week\'s top 3 on a podium, straight from the results (a playoff pick counts). Nothing to hand out.' },
+];
+/** The trophy room's link (single prize leagues keep /vest working too). */
+export const trophyPath = (slug: string) => `/leagues/${slug}/trophy`;
+/** Stage order, left to right: 2nd, 1st, 3rd. A place nobody holds (a tie above it) stays an empty step. */
+export function podiumStage(podium: PodiumStep[]): Array<{ place: 1 | 2 | 3; step: PodiumStep | null }> {
+  return ([2, 1, 3] as const).map((place) => ({ place, step: podium.find((p) => p.place === place) ?? null }));
+}
+/** "1", "T1" (shared step). */
+export const stepLabel = (s: PodiumStep) => `${s.entries.length > 1 ? 'T' : ''}${s.place}`;
+/** "Danny & Roger", "Megan (Cali)" when the week was dubs (any 2-name entry), plain name for singles. */
+export function entryName(names: string[], dubs: boolean): string {
+  return names.length > 1 ? names.join(' & ') : dubs ? `${names[0]} (Cali)` : names[0] ?? '';
+}
+export const podiumIsDubs = (podium: PodiumStep[]) => podium.some((s) => s.entries.some((e) => e.length > 1));

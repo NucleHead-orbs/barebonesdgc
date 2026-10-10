@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import { shrink } from '../gallery/api';
-import { LEAGUE_COLS, type League, type LeagueMvp, type LeagueWeek, type PublicEvent, type VestPageData } from './leagues';
+import { LEAGUE_COLS, type League, type LeagueMvp, type LeagueWeek, type PublicEvent, type TrophyRoom, type TrophyRoomData, type TrophyWeek, type VestPageData } from './leagues';
 
 /** Every live event (public read). The page picks league scores and the next Pop Up from these. */
 export async function loadPublicEvents(): Promise<PublicEvent[]> {
@@ -42,6 +42,13 @@ export async function loadVestPage(slug: string): Promise<VestPageData | null> {
   return (data ?? null) as VestPageData | null;
 }
 
+/** A league's trophy room: its type, every week's podium, the MVP board. null = no such league (or hidden). */
+export async function loadTrophyRoom(slug: string): Promise<TrophyRoomData | null> {
+  const { data, error } = await supabase.rpc('league_trophy_room', { p_slug: slug });
+  if (error) throw error;
+  return (data ?? null) as TrophyRoomData | null;
+}
+
 /** A doubles league's MVP board (most wins). */
 export async function loadMvp(slug: string): Promise<LeagueMvp> {
   const { data, error } = await supabase.rpc('league_mvp', { p_slug: slug });
@@ -50,13 +57,19 @@ export async function loadMvp(slug: string): Promise<LeagueMvp> {
 }
 
 /** The public page in one load: leagues + their walls + MVP boards (a board that fails to load is just left off). */
-export async function loadLeaguesPage(): Promise<{ leagues: League[]; weeks: Record<string, LeagueWeek[]>; mvp: Record<string, LeagueMvp> }> {
+export async function loadLeaguesPage(): Promise<{ leagues: League[]; weeks: Record<string, LeagueWeek[]>; mvp: Record<string, LeagueMvp>; podium: Record<string, TrophyWeek> }> {
   const leagues = await loadPublicLeagues();
-  const [weeks, boards] = await Promise.all([
-    loadAllWeeks(leagues.filter((l) => l.award)),
+  const podiums = leagues.filter((l) => l.trophy_room === 'podium');
+  const [weeks, boards, rooms] = await Promise.all([
+    loadAllWeeks(leagues.filter((l) => l.trophy_room === 'single' && l.award)),
     Promise.all(leagues.map((l) => loadMvp(l.slug).catch(() => null))),
+    Promise.all(podiums.map((l) => loadTrophyRoom(l.slug).catch(() => null))),
   ]);
-  return { leagues, weeks, mvp: Object.fromEntries(leagues.flatMap((l, i) => (boards[i]?.players.length ? [[l.id, boards[i]!]] : []))) };
+  return {
+    leagues, weeks,
+    mvp: Object.fromEntries(leagues.flatMap((l, i) => (boards[i]?.players.length ? [[l.id, boards[i]!]] : []))),
+    podium: Object.fromEntries(podiums.flatMap((l, i) => (rooms[i]?.weeks[0] ? [[l.id, rooms[i]!.weeks[0]]] : []))),
+  };
 }
 
 // ---------- TD side: leagues ----------
@@ -76,7 +89,7 @@ export async function createLeague(name: string, slug: string, tags = true): Pro
 }
 
 export type LeaguePatch = Partial<Pick<League, 'name' | 'subtitle' | 'title' | 'scrawl' | 'run_by' | 'started_by' | 'when_text' | 'where_text'
-  | 'where_note' | 'buy_in' | 'award' | 'banner' | 'logo' | 'award_image' | 'hidden' | 'sort' | 'tags' | 'week_format' | 'week_layout_id'>>;
+  | 'where_note' | 'buy_in' | 'award' | 'banner' | 'logo' | 'award_image' | 'hidden' | 'sort' | 'tags' | 'week_format' | 'week_layout_id' | 'trophy_room'>>;
 export async function saveLeague(id: string, patch: LeaguePatch): Promise<void> {
   const { error } = await supabase.rpc('td_save_league', { p_league: id, p: patch });
   if (error) throw error;
@@ -121,7 +134,7 @@ export async function uploadLeagueImage(leagueId: string, which: 'banner' | 'log
 
 // ---------- TD side: a week (WINNERS → LEAGUE WEEK) ----------
 export interface WeekTeam { id: string; player_a: string; player_b: string | null }
-export interface WeekState { holders: string[]; vest_note: string | null; group_photo: string | null; award: string | null; league_slug: string | null; teams: WeekTeam[] }
+export interface WeekState { holders: string[]; vest_note: string | null; group_photo: string | null; award: string | null; league_slug: string | null; trophy_room: TrophyRoom | null; teams: WeekTeam[] }
 
 export async function loadWeekState(eventId: string): Promise<WeekState> {
   const [ev, held, teams] = await Promise.all([
@@ -131,13 +144,14 @@ export async function loadWeekState(eventId: string): Promise<WeekState> {
   ]);
   if (ev.error) throw ev.error;
   if (held.error) throw held.error;
-  let award: string | null = null; let league_slug: string | null = null;
+  let award: string | null = null; let league_slug: string | null = null; let trophy_room: TrophyRoom | null = null;
   if (ev.data.league_id) {
-    const l = await supabase.from('leagues').select('award, slug').eq('id', ev.data.league_id).maybeSingle();
+    const l = await supabase.from('leagues').select('award, slug, trophy_room').eq('id', ev.data.league_id).maybeSingle();
     award = (l.data?.award as string | null | undefined) ?? null; league_slug = (l.data?.slug as string | undefined) ?? null;
+    trophy_room = (l.data?.trophy_room as TrophyRoom | null | undefined) ?? null;
   }
   return {
-    holders: (held.data ?? []).map((r) => r.player_id as string), vest_note: ev.data.vest_note, group_photo: ev.data.group_photo, award, league_slug,
+    holders: (held.data ?? []).map((r) => r.player_id as string), vest_note: ev.data.vest_note, group_photo: ev.data.group_photo, award, league_slug, trophy_room,
     teams: (teams.data ?? []) as WeekTeam[],
   };
 }

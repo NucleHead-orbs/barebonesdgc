@@ -6,7 +6,8 @@ import { rankDivision, divisionsPresent, onCourse, toPar, parTone, type LbRow, t
  * Ranking rules live in lib/jewel/leaderboard.ts; this only lays them out.
  * One-round events drop the R1/R2 columns and show the total alone.
  */
-export default function Leaderboard({ board, rounds, empty }: { board: LbRow[]; rounds: 1 | 2; empty: string }) {
+/** playoffs: division code -> the player who won a playoff for 1st (playoffs table); settles a T1 on the board. */
+export default function Leaderboard({ board, rounds, empty, playoffs }: { board: LbRow[]; rounds: 1 | 2; empty: string; playoffs?: Record<string, string> }) {
   const [mode, setMode] = useState<Mode>('live');
   const [div, setDiv] = useState<string>('All');
   const divs = useMemo(() => divisionsPresent(board), [board]);
@@ -37,7 +38,7 @@ export default function Leaderboard({ board, rounds, empty }: { board: LbRow[]; 
       )}
       {!divs.length && <div className="jw-banner">{empty}</div>}
       {shown.map((d) => {
-        const ranked = rankDivision(board.filter((r) => r.div_code === d), mode);
+        const ranked = rankDivision(board.filter((r) => r.div_code === d), mode, playoffs?.[d]);
         return (
           <section key={d} className="jw-div" aria-label={`${d} leaderboard`}>
             <div className="jw-div-head"><b>{d}</b><span>{ranked.length} player{ranked.length === 1 ? '' : 's'}</span></div>

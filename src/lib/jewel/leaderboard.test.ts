@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rankDivision, divisionsPresent, onCourse, statusLine, toPar, parTone, rankTeams, onlyRound, type LbRow, type TeamRow } from './leaderboard';
+import { rankDivision, divisionsPresent, onCourse, statusLine, toPar, parTone, rankTeams, onlyRound, settlePlayoff, type LbRow, type TeamRow } from './leaderboard';
 
 const row = (name: string, o: Partial<LbRow> = {}): LbRow => ({
   player_id: name, name, div_code: 'MA1', div_sort: 7, hole_count: 20,
@@ -76,5 +76,31 @@ describe('doubles + per-round boards', () => {
     const [only] = onlyRound([row], 2);
     expect(rankDivision([only], 'official')[0].total).toBe(2);
     expect(rankDivision(onlyRound([row], 1), 'official')[0].total).toBe(-4);
+  });
+});
+
+describe('playoffs settle a tie for 1st', () => {
+  const tied = [
+    row('Axl', { r1_holes: 20, r1_to_par: -3, r1_official: true }),
+    row('Bo', { r1_holes: 20, r1_to_par: -3, r1_official: true }),
+    row('Cy', { r1_holes: 20, r1_to_par: -3, r1_official: true }),
+    row('Di', { r1_holes: 20, r1_to_par: 1, r1_official: true }),
+  ];
+  it('the winner shows 1 and moves to the top; the rest of the tie share 2nd; places below stay put', () => {
+    expect(rankDivision(tied, 'official', 'Cy').map((x) => [x.name, x.pos, x.first])).toEqual(
+      [['Cy', '1', true], ['Axl', 'T2', false], ['Bo', 'T2', false], ['Di', '4', false]]);
+  });
+  it('a two-way tie: the loser is a plain 2', () => {
+    expect(rankDivision(tied.filter((x) => x.name !== 'Cy'), 'official', 'Bo').map((x) => x.pos)).toEqual(['1', '2', '3']);
+  });
+  it('ignored when the winner isn\'t in the tie for 1st (or there is no tie)', () => {
+    expect(rankDivision(tied, 'official', 'Di').map((x) => x.pos)).toEqual(['T1', 'T1', 'T1', '4']);
+    expect(settlePlayoff([{ pos: '1', first: true }], () => true)).toEqual([{ pos: '1', first: true }]);
+  });
+  it('doubles: the captain names the winning team', () => {
+    const t = (id: string, a: string, b: string, to: number): TeamRow => ({ team_id: id, round: 1, team_no: Number(id), a_name: a, b_name: b, holes_played: 22, hole_count: 22, to_par: to, official: true, card_label: null, player_a: `p-${a}` });
+    const rows = [t('1', 'Saul', 'Jaden', -18), t('2', 'Danny', 'Roger', -18), t('3', 'Blake', 'Matt', -13)];
+    expect(rankTeams(rows, 'official').map((x) => x.pos)).toEqual(['T1', 'T1', '3']);
+    expect(rankTeams(rows, 'official', 'p-Danny').map((x) => [x.name, x.pos])).toEqual([['Danny & Roger', '1'], ['Saul & Jaden', '2'], ['Blake & Matt', '3']]);
   });
 });

@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'trophy-rooms', date: '2026-10-10', help: 'leagues', who: 'admin',
+    title: 'Trophy rooms: single prize or a podium',
+    body: 'LEAGUES → **SETUP → Trophy room**: pick **Single prize** (one weekly prize you hand out in WINNERS, like the Lazy Boner Safety Vest) or **Podium celebration** (each week\'s top 3 go up by themselves once the cards are in, confetti and all). It shows on the league\'s card and its own page, /leagues/<league>/trophy. A tie for 1st? Pick the **playoff winner** in WINNERS (doubles too now): the podium, the leaderboard and the MVP board all follow it.',
+  },
+  {
     id: 'league-tags-dubs', date: '2026-10-10', help: 'leagues', who: 'admin',
     title: 'Leagues without tags, week defaults, MVP board',
     body: 'New leagues can skip tags (toggle at **+ NEW LEAGUE**, or later in **SETUP → How the weeks run**). Set a league\'s **format** (singles or doubles) and **course layout** there and every **+ NEW WEEK** starts with them. Doubles leagues get an **MVP** board on the Leagues page: most wins, then podiums.',

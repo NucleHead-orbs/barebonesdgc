@@ -8,7 +8,7 @@ import { useSearchParams } from 'react-router-dom';
 import * as api from '../../lib/td/api';
 import * as tagApi from '../../lib/tags/api';
 import { addDays, dateRange, divisionsProblem, isoDate, type DivisionRow, type EventConfig } from '../../lib/td/setup';
-import { LEAGUE_FIELDS, leagueSlug, niceDate, validSlug, weekName, type League } from '../../lib/leagues/leagues';
+import { LEAGUE_FIELDS, TROPHY_ROOMS, leagueSlug, niceDate, trophyPath, validSlug, weekName, type League, type TrophyRoom } from '../../lib/leagues/leagues';
 import { createLeague, imageSrc, myLeagues, newWeek, saveLeague, uploadLeagueImage, type MyLeague } from '../../lib/leagues/api';
 import { findLayout, sortLibrary, type LibCourse } from '../../lib/courses/courses';
 import { LayoutSelect } from './CourseLibrary';
@@ -28,6 +28,8 @@ const why = (e: unknown): string => {
   if (/invalid_format/.test(m)) return 'Pick singles or doubles.';
   if (/unknown_layout/.test(m)) return 'That course layout isn\'t in the library anymore. Pick another.';
   if (/tags_off/.test(m)) return 'This league runs without tags. Turn tags on in SETUP first.';
+  if (/award_needed/.test(m)) return 'A single prize needs its name: fill in TROPHY NAME and save, then pick it.';
+  if (/invalid_trophy_room/.test(m)) return 'Pick none, single prize or podium.';
   if (/row-level security|Unauthorized|403/i.test(m)) return 'Upload refused: you\'re not a TD of this league.';
   return m;
 };
@@ -68,7 +70,7 @@ export default function LeaguesPanel({ admin, onBack }: { admin: boolean; onBack
             <button className="td-event-open" onClick={() => setParams({ view: 'leagues', l: l.id })}>
               <span className="td-event-name">{l.name}</span>
               <span className="td-event-meta">{[l.subtitle, l.when_text, l.where_text].filter(Boolean).join(' · ') || 'Set it up: tap OPEN → SETUP'}</span>
-              <span className="td-event-meta">{l.award ? `Award: ${l.award}` : 'No weekly award'}{l.hidden ? ' · hidden from the site' : ''}</span>
+              <span className="td-event-meta">{l.trophy_room === 'podium' ? `Trophy room: podium${l.award ? ` (${l.award})` : ''}` : l.trophy_room === 'single' ? `Trophy room: ${l.award ?? 'single prize'}` : 'No trophy room'}{l.hidden ? ' · hidden from the site' : ''}</span>
             </button>
             <div className="td-actions"><button className="td-btn" onClick={() => setParams({ view: 'leagues', l: l.id })}>OPEN</button></div>
           </article>
@@ -290,7 +292,7 @@ function SetupTab({ league, onSaved }: { league: MyLeague; onSaved: () => Promis
 
       <section className="td-panel td-form">
         <h2>Pictures</h2>
-        <p className="td-hint">Banner: a wide picture across the top of the league's card (or a logo on black when there's no banner). Award art: the weekly award (e.g. the Safety Vest) on its page. JPG, PNG or WebP; it shrinks itself.</p>
+        <p className="td-hint">Banner: a wide picture across the top of the league's card (or a logo on black when there's no banner). Award art: the trophy (e.g. the Safety Vest) on the trophy room page. JPG, PNG or WebP; it shrinks itself.</p>
         <div className="lw-grid">
           {([['banner', 'BANNER'], ['logo', 'LOGO'], ['award_image', 'AWARD ART']] as const).map(([which, label]) => {
             const cur = league[which];
@@ -308,8 +310,9 @@ function SetupTab({ league, onSaved }: { league: MyLeague; onSaved: () => Promis
             );
           })}
         </div>
-        {league.award && <p className="td-hint">The {league.award} page: <a href={`/leagues/${league.slug}/vest`} target="_blank" rel="noreferrer">/leagues/{league.slug}/vest ↗</a></p>}
       </section>
+
+      <TrophyRoomSetup league={league} run={run} busy={busy} />
 
       <WeeksSetup league={league} run={run} busy={busy} />
 
@@ -323,6 +326,26 @@ function SetupTab({ league, onSaved }: { league: MyLeague; onSaved: () => Promis
       </section>
       {msg && <div className={msg.ok ? 'td-ok' : 'td-warn'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
     </main>
+  );
+}
+
+/** The trophy room on the site: none, a single prize the TD hands out (the vest), or the podium. Migration 20261128. */
+function TrophyRoomSetup({ league, run, busy }: { league: MyLeague; run: (key: string, fn: () => Promise<unknown>, ok: string) => Promise<void>; busy: string }) {
+  const cur = league.trophy_room ?? null;
+  const pick = (v: TrophyRoom | null) => void run('trophy', () => saveLeague(league.id, { trophy_room: v }),
+    v === 'podium' ? 'Podium is on. Each week\'s top 3 go up once the cards are in.' : v === 'single' ? `Single prize: the ${league.award ?? 'award'}. Hand it out in WINNERS each week.` : 'Trophy room is off.');
+  return (
+    <section className="td-panel td-form">
+      <h2>Trophy room</h2>
+      <p className="td-hint">The winners' spot on the Leagues page and its own page. Pick what this league celebrates.</p>
+      <div className="td-seg" role="group" aria-label="Trophy room">
+        {TROPHY_ROOMS.map((o) => (
+          <button key={o.label} type="button" aria-pressed={cur === o.v} disabled={!!busy} onClick={() => { if (cur !== o.v) pick(o.v); }}>{o.label.toUpperCase()}</button>
+        ))}
+      </div>
+      <p className="td-hint">{TROPHY_ROOMS.find((o) => o.v === cur)?.hint}</p>
+      {cur && <p className="td-hint">The page: <a href={trophyPath(league.slug)} target="_blank" rel="noreferrer">{trophyPath(league.slug)} ↗</a></p>}
+    </section>
   );
 }
 

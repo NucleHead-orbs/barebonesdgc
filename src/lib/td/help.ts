@@ -151,7 +151,8 @@ export const HELP: HelpSection[] = [
       'Events with a dubs round show each round on its own. Divisions are paid from the singles round; each dubs round gets its own **DUBS** card (entry fee per player, payback %, places). Team payouts split between the two partners; a Cali takes the whole spot.',
       'Happy with it? Tap **POST RESULTS**. The public Winners page shows exactly what you posted. Post again after any change.',
       'League weeks: **LEAGUE WEEK** sits at the top. Pick who gets the **Lazy Boner Safety Vest** (tap **LEADER · PICK** for the low score, or choose on a tie), add an optional shout-out, tap **AWARD IT**. **Dubs week:** you pick the winning **team** and both partners wear it (a Cali alone).',
-      'Then **LOAD PHOTO**: snap the group photo on your phone and pick it. It shrinks itself and goes up with the week. Both show on the league\'s **vest page** (**VEST PAGE ↗**): this week\'s holders, the group photo, **Most vests** and every week. The holders also show on the league\'s card on the Leagues page.',
+      'Then **LOAD PHOTO**: snap the group photo on your phone and pick it. It shrinks itself and goes up with the week. Both show in the league\'s **trophy room** (**TROPHY ROOM ↗**): this week\'s holders, the group photo, **Most vests** and every week. The holders also show on the league\'s card on the Leagues page.',
+      'A **podium** league has nothing to hand out: the week\'s top 3 go up on the podium by themselves once every card is in. Tied for 1st? Pick the **playoff winner** and the podium follows.',
     ],
   },
   {
@@ -161,7 +162,7 @@ export const HELP: HelpSection[] = [
       '**WEEKS → + NEW WEEK**: pick the date (the name fills itself in), leave **Copy the player list** on, tap **CREATE WEEK**. It copies the newest week: course, CTP holes, divisions, payouts and players (nobody checked in). Never cards, scores, the vest or the photo.',
       'The very first week asks for the course and divisions instead. Every week after copies the one before.',
       'The week opens like any event: **PLAYERS**, **CARDS & QR** (PUBLISH & START), **WINNERS** (vest + photo), **TAGS**. **‹ BACK** returns to the league.',
-      '**SETUP** is what the Leagues page shows: name, tagline, who runs it, when, where, cost, the weekly award, and a banner or logo. **AWARD ART** is the picture on the award\'s page (e.g. the Safety Vest). Saves go live right away. **Show on the site** hides or shows the whole league.',
+      '**SETUP** is what the Leagues page shows: name, tagline, who runs it, when, where, cost, the trophy name, and a banner or logo. **AWARD ART** is the trophy\'s picture (e.g. the Safety Vest). **Trophy room** picks what the league celebrates: none, a **single prize** you hand out each week, or a **podium** of the top 3 straight from the results. Saves go live right away. **Show on the site** hides or shows the whole league.',
       '**TAGS** is the league\'s own tag set. **TDS** lists who runs it (Mike adds or removes them).',
     ],
   },

@@ -13,7 +13,7 @@ const MusicPage = lazy(() => pages().then((m) => ({ default: m.Music })));
 const GalleryPage = lazy(() => import('./routes/site/GalleryPage'));
 const LeaguesPage = lazy(() => import('./routes/site/LeaguesPage'));
 const StartPage = lazy(() => import('./routes/site/StartPage'));
-const VestPage = lazy(() => import('./routes/site/VestPage'));
+const TrophyRoomPage = lazy(() => import('./routes/site/TrophyRoomPage'));
 const CoursesPage = lazy(() => import('./routes/site/CoursesPage'));
 const DevReportsPage = lazy(() => import('./components/dev/DevReports').then((m) => ({ default: m.DevReportsPage })));
 const tagPages = () => import('./routes/site/TagsPages');
@@ -58,7 +58,8 @@ export default function App() {
           <Route path="/music" element={<MusicPage />} />
           <Route path="/start" element={<StartPage />} />
           <Route path="/leagues" element={<LeaguesPage />} />
-          <Route path="/leagues/:slug/vest" element={<VestPage />} />
+          <Route path="/leagues/:slug/trophy" element={<TrophyRoomPage />} />
+          <Route path="/leagues/:slug/vest" element={<TrophyRoomPage />} />
           <Route path="/tags" element={<TagsBoard />} />
           <Route path="/tags/:pool" element={<TagsBoard />} />
           <Route path="/tags/:pool/:number" element={<TagPage />} />

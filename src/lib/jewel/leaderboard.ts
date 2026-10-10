@@ -29,7 +29,19 @@ export function statusLine(r: LbRow): string {
   return 'Not started';
 }
 
-export function rankDivision(rows: LbRow[], mode: Mode): Ranked[] {
+/**
+ * A recorded playoff (playoffs table: the division's code, or 'TEAMS-R<round>' for a doubles pool) settles a tie for 1st:
+ * the winner shows 1, the rest of that tie show 2 (T2 if more than one). Ignored unless the winner is in the tie for 1st.
+ */
+export function settlePlayoff<T extends { pos: string; first: boolean }>(ranked: T[], isWinner: (r: T) => boolean): T[] {
+  const tie = ranked.filter((r) => r.pos === 'T1');
+  if (tie.length < 2 || !tie.some(isWinner)) return ranked;
+  const rest = tie.length - 1;
+  const out = ranked.map((r) => (r.pos !== 'T1' ? r : isWinner(r) ? { ...r, pos: '1', first: true } : { ...r, pos: rest > 1 ? 'T2' : '2', first: false }));
+  return [...out.filter((r) => r.pos === '1'), ...out.filter((r) => r.pos !== '1')];
+}
+
+export function rankDivision(rows: LbRow[], mode: Mode, playoffWinner?: string | null): Ranked[] {
   const scored = rows.map((r) => {
     const r1 = counts(r.r1_holes, r.r1_official, mode) ? r.r1_to_par ?? 0 : null;
     const r2 = counts(r.r2_holes, r.r2_official, mode) ? r.r2_to_par ?? 0 : null;
@@ -39,7 +51,7 @@ export function rankDivision(rows: LbRow[], mode: Mode): Ranked[] {
   scored.sort((a, b) =>
     (a.total == null ? 1 : 0) - (b.total == null ? 1 : 0) || (a.total ?? 0) - (b.total ?? 0) || a.r.name.localeCompare(b.r.name));
   const totals = scored.map((s) => s.total).filter((t): t is number => t != null);
-  return scored.map(({ r, r1, r2, total }) => {
+  const ranked = scored.map(({ r, r1, r2, total }) => {
     let pos = '–';
     if (total != null) {
       const n = 1 + totals.filter((t) => t < total).length;
@@ -47,6 +59,7 @@ export function rankDivision(rows: LbRow[], mode: Mode): Ranked[] {
     }
     return { id: r.player_id, name: r.name, div: r.div_code, pos, first: pos === '1' || pos === 'T1', r1, r2, total, status: statusLine(r) };
   });
+  return playoffWinner ? settlePlayoff(ranked, (p) => p.id === playoffWinner) : ranked;
 }
 
 /** Divisions that have players, in canonical order. */
@@ -82,11 +95,12 @@ export interface TeamRow {
 export interface RankedTeam { id: string; name: string; pos: string; first: boolean; total: number | null; status: string; cali: boolean }
 export const teamName = (t: Pick<TeamRow, 'a_name' | 'b_name'>) => (t.b_name ? `${t.a_name} & ${t.b_name}` : `${t.a_name} (Cali)`);
 
-export function rankTeams(rows: TeamRow[], mode: Mode): RankedTeam[] {
+/** playoffCaptain: the captain (player_a) of the team that won a playoff for 1st (playoffs 'TEAMS-R<round>'). */
+export function rankTeams(rows: TeamRow[], mode: Mode, playoffCaptain?: string | null): RankedTeam[] {
   const scored = rows.map((t) => ({ t, total: counts(t.holes_played, t.official, mode) ? t.to_par ?? 0 : null }));
   scored.sort((a, b) => (a.total == null ? 1 : 0) - (b.total == null ? 1 : 0) || (a.total ?? 0) - (b.total ?? 0) || teamName(a.t).localeCompare(teamName(b.t)));
   const totals = scored.map((s) => s.total).filter((x): x is number => x != null);
-  return scored.map(({ t, total }) => {
+  const ranked = scored.map(({ t, total }) => {
     let pos = '–';
     if (total != null) {
       const n = 1 + totals.filter((x) => x < total).length;
@@ -95,4 +109,7 @@ export function rankTeams(rows: TeamRow[], mode: Mode): RankedTeam[] {
     const status = t.holes_played === 0 ? 'Not started' : t.official ? '✓ signed' : `thru ${t.holes_played} · unofficial`;
     return { id: t.team_id, name: teamName(t), pos, first: pos === '1' || pos === 'T1', total, status, cali: !t.b_name };
   });
+  if (!playoffCaptain) return ranked;
+  const winner = rows.find((t) => t.player_a === playoffCaptain)?.team_id;
+  return winner ? settlePlayoff(ranked, (r) => r.id === winner) : ranked;
 }

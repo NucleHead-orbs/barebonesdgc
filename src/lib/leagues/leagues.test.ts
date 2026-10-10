@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boardPlaces, currentVest, teamLeader, currentHolder, leagueEvent, leagueSlug, nextPopUp, niceDate, validSlug, weekLeader, weekName, type LeagueWeek, type PublicEvent } from './leagues';
+import { entryName, podiumIsDubs, podiumStage, stepLabel, boardPlaces, currentVest, teamLeader, currentHolder, leagueEvent, leagueSlug, nextPopUp, niceDate, validSlug, weekLeader, weekName, type LeagueWeek, type PublicEvent } from './leagues';
 
 const ev = (slug: string, name: string, starts_on: string, archived = false, ends_on: string | null = null, league_id: string | null = null): PublicEvent => ({ slug, name, starts_on, ends_on, archived, league_id });
 
@@ -83,5 +83,23 @@ describe('vest page', () => {
   });
   it('board places share ties', () => {
     expect(boardPlaces([{ weeks: 3 }, { weeks: 2 }, { weeks: 2 }, { weeks: 1 }])).toEqual(['1', 'T2', 'T2', '4']);
+  });
+});
+
+describe('podium', () => {
+  const pod = [
+    { place: 1, to_par: -18, entries: [['Danny', 'Roger'], ['Saul', 'Jaden']] },
+    { place: 3, to_par: -13, entries: [['Megan']] },
+  ];
+  it('stages 2nd · 1st · 3rd; a place nobody holds stays an empty step', () => {
+    expect(podiumStage(pod).map((s) => [s.place, s.step?.to_par ?? null])).toEqual([[2, null], [1, -18], [3, -13]]);
+  });
+  it('labels a shared step T; names teams and Calis', () => {
+    expect(stepLabel(pod[0])).toBe('T1');
+    expect(stepLabel(pod[1])).toBe('3');
+    expect(podiumIsDubs(pod)).toBe(true);
+    expect(entryName(['Danny', 'Roger'], true)).toBe('Danny & Roger');
+    expect(entryName(['Megan'], true)).toBe('Megan (Cali)');
+    expect(entryName(['Ace'], false)).toBe('Ace');
   });
 });

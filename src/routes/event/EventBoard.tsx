@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import Leaderboard from '../../components/Leaderboard';
 import { supabase } from '../../lib/supabase';
 import { loadBoard, loadTeamBoard } from '../../lib/jewel/api';
+import { teamPlayoffKey } from '../../lib/prizes/winners';
 import TeamBoard from '../../components/TeamBoard';
 import { onlyRound, type LbRow, type TeamRow } from '../../lib/jewel/leaderboard';
 import { coursePar, dateRange, hasDoubles, roundFormat, type EventConfig, type HoleRow } from '../../lib/td/setup';
@@ -19,6 +20,7 @@ export default function EventBoard() {
   const [holes, setHoles] = useState<HoleRow[]>([]);
   const [board, setBoard] = useState<LbRow[] | null>(null);
   const [teams, setTeams] = useState<TeamRow[]>([]);
+  const [playoffs, setPlayoffs] = useState<Record<string, string>>({});
   const [pick, setPick] = useState<1 | 2 | null>(null);
   const [error, setError] = useState('');
   const [missing, setMissing] = useState(false);
@@ -26,8 +28,10 @@ export default function EventBoard() {
 
   const refresh = useCallback(async (id: string) => {
     try {
-      const [b, t] = await Promise.all([loadBoard(id), loadTeamBoard(id)]);
+      const [b, t, po] = await Promise.all([loadBoard(id), loadTeamBoard(id), supabase.from('playoffs').select('div_code, winner_player_id').eq('event_id', id)]);
       setBoard(b); setTeams(t);
+      // a playoff that settled a tie for 1st (TD → WINNERS); a failed load just leaves the tie showing
+      if (!po.error) setPlayoffs(Object.fromEntries((po.data ?? []).map((x) => [x.div_code as string, x.winner_player_id as string])));
       setError('');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -68,7 +72,7 @@ export default function EventBoard() {
       <main className="jw-body" style={{ paddingBottom: 32 }}>
         {error && <div className="jw-error" role="alert">{error}</div>}
         {ev && !board && !error && <p className="jw-note">Loading…</p>}
-        {ev && board && !hasDoubles(ev) && <Leaderboard board={board} rounds={ev.rounds} empty="No players yet." />}
+        {ev && board && !hasDoubles(ev) && <Leaderboard board={board} rounds={ev.rounds} empty="No players yet." playoffs={playoffs} />}
         {ev && board && hasDoubles(ev) && (() => {
           // Mixed formats: every round is its own board (never summed). Default = the round being played.
           const rounds = ev.rounds === 2 ? [1, 2] as const : [1] as const;
@@ -83,8 +87,8 @@ export default function EventBoard() {
                 </div>
               )}
               {roundFormat(ev, r) === 'doubles'
-                ? <TeamBoard rows={teams.filter((t) => t.round === r)} title={`Round ${r} · Doubles`} style={ev.dubs_style} />
-                : <Leaderboard board={onlyRound(board, r)} rounds={1} empty="No players yet." />}
+                ? <TeamBoard rows={teams.filter((t) => t.round === r)} title={`Round ${r} · Doubles`} style={ev.dubs_style} playoffCaptain={playoffs[teamPlayoffKey(r)]} />
+                : <Leaderboard board={onlyRound(board, r)} rounds={1} empty="No players yet." playoffs={playoffs} />}
             </>
           );
         })()}

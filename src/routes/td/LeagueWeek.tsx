@@ -1,12 +1,13 @@
 /**
  * League week (top of WINNERS on a league): hand out the league's weekly award (Lazy Boner Safety Vest) and load the
  * group photo. Singles week: one player. Dubs week: the winning team (both partners; a Cali alone).
- * Both show on the league's vest page (/leagues/<slug>/vest). Rules: migrations 20261023 (league_week) + 20261025 (league_vest).
+ * Both show in the league's trophy room (/leagues/<slug>/trophy). Rules: migrations 20261023 (league_week) + 20261025 (league_vest).
+ * A podium room (20261128) has nothing to hand out: the week's top 3 come from the results.
  */
 import { useEffect, useRef, useState } from 'react';
 import type { ExistingPlayer } from '../../lib/td/builder';
 import { teamName, type LbRow, type TeamRow } from '../../lib/jewel/leaderboard';
-import { teamLeader, weekLeader } from '../../lib/leagues/leagues';
+import { teamLeader, trophyPath, weekLeader } from '../../lib/leagues/leagues';
 import { clearGroupPhoto, loadWeekState, photoUrl, setVest, uploadGroupPhoto, type WeekState } from '../../lib/leagues/api';
 
 const why = (e: unknown): string => {
@@ -96,12 +97,18 @@ export default function LeagueWeek({ eventId, players, board, teamRows, doubles 
       <div className="td-row">
         <h2 className="td-h2">League week</h2>
         <div style={{ flex: 1 }} />
-        {st.league_slug && <a className="td-btn quiet" href={`/leagues/${st.league_slug}/vest`} target="_blank" rel="noreferrer">VEST PAGE ↗</a>}
+        {st.league_slug && st.trophy_room && <a className="td-btn quiet" href={trophyPath(st.league_slug)} target="_blank" rel="noreferrer">TROPHY ROOM ↗</a>}
       </div>
       {err && <div className="td-warn" role="alert">{err}</div>}
       {ok && <div className="td-ok" role="status">{ok}</div>}
 
       <div className="lw-grid">
+        {st.trophy_room === 'podium' ? (
+          <div className="lw-block">
+            <div className="td-label">PODIUM</div>
+            <p className="td-hint">Nothing to hand out: the top 3 go up in the trophy room by themselves once every card is in. A tie for 1st? Pick the playoff winner below and the podium follows.</p>
+          </div>
+        ) : st.trophy_room === 'single' ? (
         <div className="lw-block">
           <div className="td-label">{award.toUpperCase()}{doubles ? ' · DUBS: THE WINNING TEAM' : ''}</div>
           <p className="td-hint">{holders.length ? <>Wearing it this week: <b>{holders.join(' & ')}</b></> : 'Not awarded yet.'}</p>
@@ -119,12 +126,13 @@ export default function LeagueWeek({ eventId, players, board, teamRows, doubles 
           {pick && <input className="td-input" value={note} maxLength={120} placeholder="Shout-out (optional)" onChange={(e) => setNote(e.target.value)} aria-label="Shout-out" />}
           <div><button className="td-btn cta" onClick={() => void saveVest()} disabled={busy !== '' || !dirty}>{busy === 'vest' ? 'SAVING…' : pick ? 'AWARD IT' : 'SAVE'}</button></div>
         </div>
+        ) : null}
 
         <div className="lw-block">
           <div className="td-label">GROUP PHOTO</div>
           {st.group_photo
             ? <img className="lw-photo" src={photoUrl(st.group_photo)} alt="This week's group photo" />
-            : <p className="td-hint">Snap the crew after the round and load it here. It goes on the vest page with this week.</p>}
+            : <p className="td-hint">Snap the crew after the round and load it here. It goes in the trophy room with this week.</p>}
           <input ref={file} type="file" accept="image/*" hidden onChange={(e) => void upload(e.target.files?.[0])} />
           <div className="td-row">
             <button className="td-btn" onClick={() => file.current?.click()} disabled={busy !== ''}>{busy === 'photo' ? 'UPLOADING…' : st.group_photo ? 'REPLACE PHOTO' : 'LOAD PHOTO'}</button>
