@@ -49,12 +49,14 @@ export function newLiveIds(): { id: string; secret: string } {
 }
 
 // ---------- live reactions (migration 20261106) ----------
-export type LiveKind = 'skull' | 'choke' | 'trash' | 'cry' | 'clap' | 'fire' | 'goat' | 'cheers';
+export type LiveKind = 'skull' | 'choke' | 'trash' | 'cry' | 'eggplant' | 'pickle' | 'clap' | 'fire' | 'goat' | 'cheers';
 export const LIVE_REACTIONS: Array<{ kind: LiveKind; glyph: string; label: string; tone: 'razz' | 'congrats' }> = [
   { kind: 'skull', glyph: '\u{1F480}', label: 'Skull rain', tone: 'razz' },
   { kind: 'choke', glyph: '\u{1F414}', label: 'Choke', tone: 'razz' },
   { kind: 'trash', glyph: '\u{1F5D1}\u{FE0F}', label: 'Trash', tone: 'razz' },
   { kind: 'cry', glyph: '\u{1F62D}', label: 'Waaah', tone: 'razz' },
+  { kind: 'eggplant', glyph: '\u{1F346}', label: 'Eggplant', tone: 'razz' },
+  { kind: 'pickle', glyph: '\u{1F952}', label: 'Pickle', tone: 'razz' },
   { kind: 'clap', glyph: '\u{1F44F}', label: 'Golf clap', tone: 'congrats' },
   { kind: 'fire', glyph: '\u{1F525}', label: 'On fire', tone: 'congrats' },
   { kind: 'goat', glyph: '\u{1F410}', label: 'GOAT', tone: 'congrats' },

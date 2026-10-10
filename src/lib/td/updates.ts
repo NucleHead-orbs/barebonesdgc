@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'razz-produce', date: '2026-10-09', help: 'rounds', who: 'all',
+    title: 'Two new razzes: eggplant + pickle',
+    body: 'Watching a live round? The **Razz** row now has **Eggplant** and **Pickle** next to skull rain, choke, trash and waaah. Aim them at one player or everyone; they rain down on the scorer\'s card like the rest.',
+  },
+  {
     id: 'checkin-rounds', date: '2026-10-09', help: 'rounds', who: 'all',
     title: 'Check-in rounds: one night, many cards, every tag on the line',
     body: 'My Tag → **MATCHUPS** → **+ RUN A NIGHT** (anyone with a tag). Players **CHECK IN** when they get there (from 3 hours before), the host adds guests. Each scorer taps **START THE CARD** and picks their card from who\'s checked in. Every tag set swaps across the whole field once the last checked-in player is on a saved card, or the host hits **CLOSE THE NIGHT** (it closes itself 12 hours after the start). Everyone confirms their card in MY ROUNDS, same as always.',
@@ -99,7 +104,7 @@ export const UPDATES: Update[] = [
   {
     id: 'live-reactions', date: '2026-10-05', help: 'rounds', who: 'all',
     title: 'Live rounds: razz and congrats',
-    body: 'Anyone watching a live round can send a **razz** (skull rain, choke, trash, waaah) or a **congrats** (golf clap, on fire, GOAT, cheers) at one player or everyone. It plays over the scorer\'s card with who sent it. Viewers need their My Tag link on the phone; one every 15 seconds. The scorer can tap **Reactions on/off**.',
+    body: 'Anyone watching a live round can send a **razz** (skull rain, choke, trash, waaah, eggplant, pickle) or a **congrats** (golf clap, on fire, GOAT, cheers) at one player or everyone. It plays over the scorer\'s card with who sent it. Viewers need their My Tag link on the phone; one every 15 seconds. The scorer can tap **Reactions on/off**.',
   },
   {
     id: 'live-vouch', date: '2026-10-05', help: 'rounds', who: 'all',
