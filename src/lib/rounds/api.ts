@@ -94,7 +94,7 @@ export const lineOk = (poolId: string, memberIds: string[]) =>
   wrap(async (): Promise<boolean> => !!must(await supabase.rpc('tag_line_ok', { p_pool: poolId, p_members: memberIds })));
 export const tagsFor = (memberIds: string[]) => wrap(async (): Promise<{ pools: TagPool[]; tags: Array<{ pool_id: string; number: number; holder_id: string | null }> }> => {
   const [pools, tags] = await Promise.all([
-    supabase.from('tag_pools').select('id, slug, name, sort, invite_only').order('sort'),
+    supabase.from('tag_pools').select('id, slug, name, sort, invite_only').eq('hidden', false).order('sort'),
     memberIds.length ? supabase.from('tags').select('pool_id, number, holder_id').eq('status', 'held').in('holder_id', memberIds) : Promise.resolve({ data: [], error: null }),
   ]);
   return { pools: (must(pools) ?? []) as TagPool[], tags: (must(tags) ?? []) as Array<{ pool_id: string; number: number; holder_id: string | null }> };

@@ -65,3 +65,9 @@
 .lg-vest-note { font-family: var(--font-hand); font-size: 19px; color: var(--accent-a); }
 .lg-vest-none { font-size: 18px !important; color: var(--fg-3); }
 .lg-vest-more { margin-top: 4px; font-weight: 700; font-size: 14px; color: var(--accent-gold); }
+
+/* MVP board (doubles leagues, migration 20261126) */
+.lg-mvp { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; border: 3px solid var(--accent-gold); border-radius: var(--r-banner); }
+.lg-mvp ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 4px; }
+.lg-mvp li b { margin-right: 8px; }
+.lg-mvp li span { color: var(--fg-3); font-size: 14px; }

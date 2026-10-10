@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import { shrink } from '../gallery/api';
-import { LEAGUE_COLS, type League, type LeagueWeek, type PublicEvent, type VestPageData } from './leagues';
+import { LEAGUE_COLS, type League, type LeagueMvp, type LeagueWeek, type PublicEvent, type VestPageData } from './leagues';
 
 /** Every live event (public read). The page picks league scores and the next Pop Up from these. */
 export async function loadPublicEvents(): Promise<PublicEvent[]> {
@@ -42,10 +42,21 @@ export async function loadVestPage(slug: string): Promise<VestPageData | null> {
   return (data ?? null) as VestPageData | null;
 }
 
-/** The public page in one load: leagues + their walls. */
-export async function loadLeaguesPage(): Promise<{ leagues: League[]; weeks: Record<string, LeagueWeek[]> }> {
+/** A doubles league's MVP board (most wins). */
+export async function loadMvp(slug: string): Promise<LeagueMvp> {
+  const { data, error } = await supabase.rpc('league_mvp', { p_slug: slug });
+  if (error) throw error;
+  return (data ?? { weeks: 0, players: [] }) as LeagueMvp;
+}
+
+/** The public page in one load: leagues + their walls + MVP boards (a board that fails to load is just left off). */
+export async function loadLeaguesPage(): Promise<{ leagues: League[]; weeks: Record<string, LeagueWeek[]>; mvp: Record<string, LeagueMvp> }> {
   const leagues = await loadPublicLeagues();
-  return { leagues, weeks: await loadAllWeeks(leagues.filter((l) => l.award)) };
+  const [weeks, boards] = await Promise.all([
+    loadAllWeeks(leagues.filter((l) => l.award)),
+    Promise.all(leagues.map((l) => loadMvp(l.slug).catch(() => null))),
+  ]);
+  return { leagues, weeks, mvp: Object.fromEntries(leagues.flatMap((l, i) => (boards[i]?.players.length ? [[l.id, boards[i]!]] : []))) };
 }
 
 // ---------- TD side: leagues ----------
@@ -58,14 +69,14 @@ export async function myLeagues(): Promise<MyLeague[]> {
 }
 
 /** Super admin: a new league + its own tag set. Returns the league id. */
-export async function createLeague(name: string, slug: string): Promise<string> {
-  const { data, error } = await supabase.rpc('td_create_league', { p_name: name, p_slug: slug });
+export async function createLeague(name: string, slug: string, tags = true): Promise<string> {
+  const { data, error } = await supabase.rpc('td_create_league', { p_name: name, p_slug: slug, p_tags: tags });
   if (error) throw error;
   return data as string;
 }
 
 export type LeaguePatch = Partial<Pick<League, 'name' | 'subtitle' | 'title' | 'scrawl' | 'run_by' | 'started_by' | 'when_text' | 'where_text'
-  | 'where_note' | 'buy_in' | 'award' | 'banner' | 'logo' | 'award_image' | 'hidden' | 'sort'>>;
+  | 'where_note' | 'buy_in' | 'award' | 'banner' | 'logo' | 'award_image' | 'hidden' | 'sort' | 'tags' | 'week_format' | 'week_layout_id'>>;
 export async function saveLeague(id: string, patch: LeaguePatch): Promise<void> {
   const { error } = await supabase.rpc('td_save_league', { p_league: id, p: patch });
   if (error) throw error;

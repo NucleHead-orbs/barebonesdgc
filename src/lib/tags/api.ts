@@ -33,7 +33,7 @@ export interface HistoryLine { id: number; number: number; kind: 'issued' | 'mov
 
 // ---------- public ----------
 export const loadPools = () => wrap(async (): Promise<TagPool[]> =>
-  (must(await supabase.from('tag_pools').select('id, slug, name, sort, invite_only').order('sort')) ?? []) as TagPool[]);
+  (must(await supabase.from('tag_pools').select('id, slug, name, sort, invite_only').eq('hidden', false).order('sort')) ?? []) as TagPool[]);
 
 export interface Board { pool: TagPool; tags: Tag[]; members: Record<string, TagMember>; recent: Match[]; pending: PendingSwap[] }
 
@@ -101,7 +101,7 @@ export interface AdminMember extends TagMember { token: string; last_seen_at: st
 export const isTagAdmin = () => wrap(async (): Promise<boolean> => !!must(await supabase.rpc('is_tag_admin')));
 /** Pools this account runs (super admin: all). */
 export const myPools = () => wrap(async (): Promise<TagPool[]> => {
-  const pools = (must(await supabase.from('tag_pools').select('id, slug, name, sort, invite_only').order('sort')) ?? []) as TagPool[];
+  const pools = (must(await supabase.from('tag_pools').select('id, slug, name, sort, invite_only').eq('hidden', false).order('sort')) ?? []) as TagPool[];
   const ok = await Promise.all(pools.map(async (p) => !!must(await supabase.rpc('can_tag', { p_pool: p.id }))));
   return pools.filter((_, i) => ok[i]);
 });

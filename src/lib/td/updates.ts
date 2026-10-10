@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'league-tags-dubs', date: '2026-10-10', help: 'leagues', who: 'admin',
+    title: 'Leagues without tags, week defaults, MVP board',
+    body: 'New leagues can skip tags (toggle at **+ NEW LEAGUE**, or later in **SETUP → How the weeks run**). Set a league\'s **format** (singles or doubles) and **course layout** there and every **+ NEW WEEK** starts with them. Doubles leagues get an **MVP** board on the Leagues page: most wins, then podiums.',
+  },
+  {
     id: 'dubs-nights', date: '2026-10-09', help: 'rounds', who: 'all',
     title: 'Check-in nights can be dubs',
     body: 'Running a night? Pick **SINGLES** (Scorecard cards, every tag set swaps across the field) or **DUBS** (score it however you like, UDisc included). The host can flip it on My Tag → MATCHUPS until results are posted. On a dubs night the host taps **ENTER RESULTS**, adds each team (1 or 2 players, a Cali counts) and their score to par. That closes the night, posts the standings with a roast to the Board, flips the night to **FINAL** on Boner Rounds, and drops it into every player\'s MY ROUNDS. No tags move on dubs.',

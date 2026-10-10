@@ -5,7 +5,8 @@ import { CLUB } from '../../lib/jewel/content';
 import { Banner, Button, SectionHeading } from '../../components/ui';
 import { useLoad } from '../../lib/useLoad';
 import { imageSrc, loadLeaguesPage, loadPublicEvents } from '../../lib/leagues/api';
-import { POPUPS_PAST, POPUP_FORMAT, currentHolder, leagueEvent, localDate, nextPopUp, niceDate, type League, type LeagueWeek, type PublicEvent } from '../../lib/leagues/leagues';
+import { POPUPS_PAST, POPUP_FORMAT, currentHolder, leagueEvent, localDate, nextPopUp, niceDate, type League, type LeagueMvp, type LeagueWeek, type PublicEvent } from '../../lib/leagues/leagues';
+import { fmtToPar } from '../../lib/rounds/rounds';
 import '../../components/gallery.css';
 import './leagues.css';
 
@@ -36,7 +37,7 @@ export default function LeaguesPage() {
         <div className="sec-inner" style={{ gap: 24 }}>
           <SectionHeading kicker="Weekly damage" title="The Leagues" size="l" aside={page ? `${leagues.length} league${leagues.length === 1 ? '' : 's'}` : undefined} />
           <div className="lg-grid">
-            {leagues.map((l) => <LeagueCard key={l.id} league={l} event={events ? leagueEvent(l.id, events, today) : null} group={group} weeks={weeks?.[l.id] ?? []} />)}
+            {leagues.map((l) => <LeagueCard key={l.id} league={l} event={events ? leagueEvent(l.id, events, today) : null} group={group} weeks={weeks?.[l.id] ?? []} mvp={page?.mvp[l.id] ?? null} />)}
           </div>
           <span className="lg-scrawl lg-gold">I'll put you down for a 4 there...</span>
           <Banner>Scores run on our own scorecard: scan the QR on your card, score every hole, everybody signs, submit. Only signed &amp; submitted rounds count.</Banner>
@@ -79,7 +80,7 @@ export default function LeaguesPage() {
   );
 }
 
-function LeagueCard({ league: l, event, group, weeks }: { league: League; event: PublicEvent | null; group: string | undefined; weeks: LeagueWeek[] }) {
+function LeagueCard({ league: l, event, group, weeks, mvp }: { league: League; event: PublicEvent | null; group: string | undefined; weeks: LeagueWeek[]; mvp: LeagueMvp | null }) {
   const holder = l.award ? currentHolder(weeks) : null;
   return (
     <article id={l.slug} className="ds-card lg-card">
@@ -104,9 +105,19 @@ function LeagueCard({ league: l, event, group, weeks }: { league: League; event:
             <span className="lg-vest-more">The vest page ›</span>
           </Link>
         )}
+        {mvp && (
+          <div className="lg-mvp">
+            <span className="lg-vest-k">MVP · most wins · {mvp.weeks} week{mvp.weeks === 1 ? '' : 's'} of dubs</span>
+            <ol>
+              {mvp.players.slice(0, 5).map((p) => (
+                <li key={p.name}><b>{p.name}</b><span>{p.wins} win{p.wins === 1 ? '' : 's'} · {p.podiums} podium{p.podiums === 1 ? '' : 's'} · {p.weeks} wk{p.best != null ? ` · best ${fmtToPar(p.best)}` : ''}</span></li>
+              ))}
+            </ol>
+          </div>
+        )}
         <div className="row lg-card-actions">
           {event && <Button to={`/e/${event.slug}`}>This week's scores</Button>}
-          <Button to={`/tags/${l.slug}`} variant="outline-accent">Tag board</Button>
+          {l.tags && <Button to={`/tags/${l.slug}`} variant="outline-accent">Tag board</Button>}
           {group && <Button href={group} external variant="outline">Ask in the group ↗</Button>}
         </div>
       </div>

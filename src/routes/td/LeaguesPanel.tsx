@@ -24,6 +24,10 @@ const why = (e: unknown): string => {
   if (/invalid_name/.test(m)) return 'The name needs 1–40 characters.';
   if (/no_divisions/.test(m)) return 'Pick at least one division.';
   if (/_check|violates check/.test(m)) return 'One of the fields is too long or not allowed.';
+  if (/tags_held/.test(m)) return 'Players still hold this league\'s tags. Release them (TAGS) before turning tags off.';
+  if (/invalid_format/.test(m)) return 'Pick singles or doubles.';
+  if (/unknown_layout/.test(m)) return 'That course layout isn\'t in the library anymore. Pick another.';
+  if (/tags_off/.test(m)) return 'This league runs without tags. Turn tags on in SETUP first.';
   if (/row-level security|Unauthorized|403/i.test(m)) return 'Upload refused: you\'re not a TD of this league.';
   return m;
 };
@@ -78,6 +82,7 @@ function NewLeagueForm({ onCancel, onCreated }: { onCancel: () => void; onCreate
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [touched, setTouched] = useState(false);
+  const [tags, setTags] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const s = touched ? slug : leagueSlug(name);
@@ -86,17 +91,20 @@ function NewLeagueForm({ onCancel, onCreated }: { onCancel: () => void; onCreate
     if (!name.trim()) return setErr('The league needs a name.');
     if (!validSlug(s)) return setErr('Short name: 2–40 lowercase letters, numbers or dashes.');
     setBusy(true); setErr('');
-    try { await onCreated(await createLeague(name.trim(), s)); } catch (x) { setErr(why(x)); setBusy(false); }
+    try { await onCreated(await createLeague(name.trim(), s, tags)); } catch (x) { setErr(why(x)); setBusy(false); }
   };
   return (
     <form className="td-panel td-form" onSubmit={submit}>
       <h2>New league</h2>
-      <p className="td-hint">Creates the league and its own bag tag set (same name). Add its TDs, then they fill in the rest and add weeks.</p>
+      <p className="td-hint">{tags ? 'Creates the league and its own bag tag set (same name).' : 'Creates the league with no tags: nothing to issue, no tag board.'} Add its TDs, then they fill in the rest and add weeks.</p>
       <div className="td-fields">
         <Field label="LEAGUE NAME"><input className="td-input" required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} placeholder="Thursday Thumpers" /></Field>
         <Field label="SHORT NAME (LINKS, CAN'T CHANGE)"><input className="td-input" value={s} maxLength={40} onChange={(e) => { setTouched(true); setSlug(e.target.value.toLowerCase()); }} placeholder="thursday-thumpers" /></Field>
       </div>
-      {s && <p className="td-hint">Tag board: /tags/{s} · Leagues page: /leagues#{s}</p>}
+      <button type="button" className="td-toggle" aria-pressed={tags} onClick={() => setTags(!tags)}>
+        <span className="track"><span className="knob" /></span><span>{tags ? 'Its own bag tag set' : 'No tags (turn them on later in SETUP)'}</span>
+      </button>
+      {s && <p className="td-hint">{tags ? `Tag board: /tags/${s} · ` : ''}Leagues page: /leagues#{s}</p>}
       {err && <div className="td-warn" role="alert">{err}</div>}
       <div className="td-actions">
         <button className="td-btn cta" type="submit" disabled={busy}>{busy ? 'CREATING…' : 'CREATE LEAGUE'}</button>
@@ -124,13 +132,13 @@ function LeagueHome({ league, admin, onBack, onSaved, onOpenWeek }: {
         </div>
       </div>
       <nav className="td-tabs" aria-label="League sections">
-        {(Object.keys(LTAB_LABEL) as LTab[]).map((t) => (
+        {(Object.keys(LTAB_LABEL) as LTab[]).filter((t) => t !== 'tags' || league.tags).map((t) => (
           <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => setTab(t)}>{LTAB_LABEL[t]}</button>
         ))}
       </nav>
       {tab === 'weeks' && <WeeksTab league={league} onOpenWeek={onOpenWeek} />}
       {tab === 'setup' && <SetupTab league={league} onSaved={onSaved} />}
-      {tab === 'tags' && <Suspense fallback={<p className="td-empty">Loading tags…</p>}><TagsPanel admin={admin} onlyPool={league.tag_pool_id} /></Suspense>}
+      {tab === 'tags' && league.tags && <Suspense fallback={<p className="td-empty">Loading tags…</p>}><TagsPanel admin={admin} onlyPool={league.tag_pool_id} /></Suspense>}
       {tab === 'tds' && <TdsTab league={league} admin={admin} />}
     </>
   );
@@ -303,16 +311,49 @@ function SetupTab({ league, onSaved }: { league: MyLeague; onSaved: () => Promis
         {league.award && <p className="td-hint">The {league.award} page: <a href={`/leagues/${league.slug}/vest`} target="_blank" rel="noreferrer">/leagues/{league.slug}/vest ↗</a></p>}
       </section>
 
+      <WeeksSetup league={league} run={run} busy={busy} />
+
       <section className="td-panel td-form">
         <h2>Show on the site</h2>
         <button type="button" className="td-toggle" aria-pressed={!league.hidden} disabled={!!busy}
           onClick={() => void run('hidden', () => saveLeague(league.id, { hidden: !league.hidden }), league.hidden ? 'It\'s on the Leagues page now.' : 'Hidden from the Leagues page.')}>
           <span className="track"><span className="knob" /></span><span>{league.hidden ? 'Hidden from the Leagues page' : 'Showing on the Leagues page'}</span>
         </button>
-        <p className="td-hint">Tag board: /tags/{league.slug} · this league's link: /leagues#{league.slug}</p>
+        <p className="td-hint">{league.tags ? `Tag board: /tags/${league.slug} · ` : ''}this league's link: /leagues#{league.slug}</p>
       </section>
       {msg && <div className={msg.ok ? 'td-ok' : 'td-warn'} role={msg.ok ? 'status' : 'alert'}>{msg.text}</div>}
     </main>
+  );
+}
+
+/** How every NEW WEEK starts (format + course layout) and whether the league runs tags. Migration 20261126. */
+function WeeksSetup({ league, run, busy }: { league: MyLeague; run: (key: string, fn: () => Promise<unknown>, ok: string) => Promise<void>; busy: string }) {
+  const [lib, setLib] = useState<LibCourse[]>([]);
+  useEffect(() => { void (async () => { const r = await api.loadLibrary(); if (r.data) setLib(sortLibrary(r.data)); })(); }, []);
+  const layout = league.week_layout_id ? findLayout(lib, league.week_layout_id) : null;
+  return (
+    <section className="td-panel td-form">
+      <h2>How the weeks run</h2>
+      <p className="td-hint">Every <b>+ NEW WEEK</b> starts with these, the first week too. You can still change a single week in its SETUP.</p>
+      <Field label="FORMAT">
+        <select id="lg-week-format" className="td-input" value={league.week_format ?? ''} disabled={!!busy}
+          onChange={(e) => { const v = e.target.value as '' | 'singles' | 'doubles'; void run('format', () => saveLeague(league.id, { week_format: v || null }), v ? `Every new week is ${v}.` : 'New weeks copy the week before.'); }}>
+          <option value="">Copy the week before</option>
+          <option value="singles">Singles</option>
+          <option value="doubles">Doubles (random draw)</option>
+        </select>
+      </Field>
+      <Field label="COURSE LAYOUT">
+        <LayoutSelect lib={lib} value={league.week_layout_id ?? ''} label="Course layout" blankLabel="Copy the week before"
+          onChange={(id) => void run('layout', () => saveLeague(league.id, { week_layout_id: id || null }), id ? 'Every new week loads that layout.' : 'New weeks copy the week before.')} />
+      </Field>
+      {league.week_layout_id && !layout && lib.length > 0 && <p className="td-hint">That layout isn't in the library anymore; pick another.</p>}
+      <button type="button" className="td-toggle" aria-pressed={league.tags} disabled={!!busy}
+        onClick={() => void run('tags', () => saveLeague(league.id, { tags: !league.tags }), league.tags ? 'Tags off: no tag board, nothing to issue.' : 'Tags on: issue them from the TAGS tab.')}>
+        <span className="track"><span className="knob" /></span><span>{league.tags ? 'Runs its own bag tag set' : 'No tags'}</span>
+      </button>
+      <p className="td-hint">{league.week_format === 'doubles' ? 'Doubles leagues get an MVP board on the Leagues page: most wins, then podiums.' : 'Doubles leagues get an MVP board on the Leagues page (most wins).'}</p>
+    </section>
   );
 }
 

@@ -14,8 +14,14 @@ export interface League {
   banner: string | null; logo: string | null; // '/assets/...' (built in) or '<league_id>/...' in the league-photos bucket
   award_image?: string | null; // the award's art (e.g. the Safety Vest), same rules as banner/logo
   tag_pool_id: string; hidden: boolean; sort: number;
+  /** Runs its own tag set (false = no tags; the set stays hidden as the league's TD list). Migration 20261126. */
+  tags: boolean;
+  /** Every NEW WEEK starts with these (null = copy the week before). */
+  week_format: 'singles' | 'doubles' | null; week_layout_id: string | null;
 }
-export const LEAGUE_COLS = 'id, slug, name, subtitle, title, scrawl, run_by, started_by, when_text, where_text, where_note, buy_in, award, banner, logo, award_image, tag_pool_id, hidden, sort';
+/** The MVP board of a doubles league: most wins (a tie for first = a win for each), then podiums. */
+export interface LeagueMvp { weeks: number; players: Array<{ name: string; weeks: number; wins: number; podiums: number; best: number | null }> }
+export const LEAGUE_COLS = 'id, slug, name, subtitle, title, scrawl, run_by, started_by, when_text, where_text, where_note, buy_in, award, banner, logo, award_image, tag_pool_id, hidden, sort, tags, week_format, week_layout_id';
 
 /** Text fields a league TD edits (League setup), in screen order. */
 export const LEAGUE_FIELDS: Array<{ key: keyof League; label: string; max: number; hint?: string }> = [
