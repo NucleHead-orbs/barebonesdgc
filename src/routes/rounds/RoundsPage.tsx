@@ -9,7 +9,7 @@ import type { Round, RoundMe } from '../../lib/rounds/api';
 import { ME_KEY, confirmState, fmtToPar, roundMessage, toParClass } from '../../lib/rounds/rounds';
 import { niceDate } from '../../lib/leagues/leagues';
 import { Banner, Button, SectionHeading } from '../../components/ui';
-import { LiveStrip } from './LiveRounds';
+import { RoundsLive } from './LiveRounds';
 import { supabase } from '../../lib/supabase';
 import './rounds.css';
 
@@ -47,7 +47,7 @@ export function RoundsList() {
         </div>
         <p className="lead">Keep score on the scorecard, save it here with your My Tag link, and put your tags on the line if you want. Everyone on the round confirms from their own link.</p>
       </div>
-      <LiveStrip />
+      <RoundsLive />
       <div className="sec-inner br">
         {me && me.to_confirm.length > 0 && <Banner tone="warn">{me.to_confirm.length} round{me.to_confirm.length === 1 ? '' : 's'} waiting on your OK below.</Banner>}
         {err && <Banner tone="error">{err}</Banner>}

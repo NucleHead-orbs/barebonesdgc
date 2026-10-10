@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import * as api from '../../lib/rounds/api';
-import { LIVE_REACTIONS, agoLabel, groupThru, liveStandings, reactionLine, type LiveCard, type LiveKind, type LiveRound } from '../../lib/rounds/live';
+import { LIVE_REACTIONS, UPCOMING_KIND, agoLabel, groupThru, liveStandings, reactionLine, startsIn, whenLabel, type LiveCard, type LiveKind, type LiveRound, type UpcomingRound } from '../../lib/rounds/live';
 import { useLiveReactions } from '../../lib/rounds/useLiveReactions';
 import { LiveFx } from './LiveFx';
 import { ME_KEY, fmtToPar, roundMessage, running, toParClass } from '../../lib/rounds/rounds';
@@ -26,8 +26,9 @@ function usePoll<T>(load: () => Promise<{ data?: T; error?: unknown }>, ms: numb
   return { data, failed, now };
 }
 
-export function LiveStrip() {
-  const { data, now } = usePoll(api.liveRounds, 30_000);
+export function LiveStrip({ hide }: { hide?: Set<string> } = {}) {
+  const { data: all, now } = usePoll(api.liveRounds, 30_000);
+  const data = all?.filter((r) => !hide?.has(r.id));
   if (!data?.length) return null;
   return (
     <section className="sec lv-sec">
@@ -131,6 +132,53 @@ function ReactBar({ liveId, card, muted }: { liveId: string; card: LiveCard; mut
         )}
       {err && <p className="br-note" role="alert">{err}</p>}
       {fx.feed.length > 0 && <ul className="lv-feed">{fx.feed.slice(0, 6).map((x) => <li key={x.id}>{reactionLine(x)}</li>)}</ul>}
+    </div>
+  );
+}
+
+/**
+ * Boner Rounds: "Coming up live" (migration 20261123). Scheduled rounds (league nights, locked challenges, casual
+ * invites) advertised before tee-off; once a card started from one goes live the tile turns LIVE and links each card.
+ * Then the regular Live now strip, minus the cards already shown on a tile.
+ */
+export function RoundsLive() {
+  const { data, now } = usePoll(api.liveUpcoming, 30_000);
+  const shown = new Set((data ?? []).flatMap((u) => u.live.map((l) => l.id)));
+  return (
+    <>
+      {!!data?.length && (
+        <section className="sec lv-sec">
+          <div className="sec-inner">
+            <div className="lv-head"><b>Coming up live</b><span>Scheduled rounds you can watch hole by hole</span></div>
+            <div className="lv-grid">{data.map((u) => <UpcomingTile key={`${u.kind}-${u.id}`} u={u} now={now} />)}</div>
+          </div>
+        </section>
+      )}
+      <LiveStrip hide={shown} />
+    </>
+  );
+}
+
+function UpcomingTile({ u, now }: { u: UpcomingRound; now: number }) {
+  const live = u.live.length > 0;
+  const who = u.players.length > 8 ? `${u.players.slice(0, 8).join(', ')} +${u.players.length - 8} more` : u.players.join(', ');
+  return (
+    <div className={`lv-card lv-up${live ? ' is-live' : ''}`}>
+      <span className="lv-kind">{live ? <><span className="lv-dot" aria-hidden="true" />LIVE</> : UPCOMING_KIND[u.kind]}</span>
+      <b>{u.title}</b>
+      <span>{whenLabel(u.at, now)}{u.course ? ` · ${u.course}` : ''}</span>
+      {u.set && <span className="lv-meta">{u.set}{u.kind === 'challenge' ? ' tags on the line' : ''}</span>}
+      {u.kind === 'night' && <span className="lv-meta">Every tag set on the line{u.host ? ` · run by ${u.host}` : ''}</span>}
+      {who && <span className="lv-meta">{u.kind === 'night' ? `Checked in (${u.players.length}): ` : ''}{who}</span>}
+      {live ? (
+        <div className="lv-watch">
+          {u.live.map((l, i) => (
+            <Link key={l.id} to={`/rounds/live/${l.id}`} className="lv-watchlink">
+              Watch{u.live.length > 1 ? ` card ${i + 1}` : ''} · thru {groupThru(l.card)}
+            </Link>
+          ))}
+        </div>
+      ) : <span className="lv-soon">Goes live {startsIn(u.at, now) === 'teeing off' ? 'with the first score' : startsIn(u.at, now)}</span>}
     </div>
   );
 }

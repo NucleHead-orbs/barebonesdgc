@@ -5,7 +5,7 @@
 import { running, type Draft } from './rounds';
 
 export interface LivePlayer { name: string; member_id: string | null; scores: Array<number | null> }
-export interface LiveCard { course: string; pars: number[]; labels: string[] | null; players: LivePlayer[] }
+export interface LiveCard { course: string; pars: number[]; labels: string[] | null; players: LivePlayer[]; /** the scheduled round it was started from (migration 20261123) */ source?: string }
 export interface LiveRound { id: string; course: string; card: LiveCard; started_at: string; updated_at: string; ended: boolean; muted?: boolean }
 
 /** Live is on unless the scorer switched SHARE LIVE off. */
@@ -22,6 +22,7 @@ export function toLiveCard(d: Draft): LiveCard {
       while (s.length && s[s.length - 1] == null) s.pop();
       return { name: p.name.trim() || `Player ${i + 1}`, member_id: p.memberId, scores: s };
     }),
+    ...(d.source ? { source: d.source } : {}),
   };
 }
 
@@ -68,4 +69,30 @@ export function particles(seed: number, n = 14): Array<{ x: number; delay: numbe
   let s = (seed * 9301 + 49297) % 233280;
   const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
   return Array.from({ length: n }, () => ({ x: Math.round(rnd() * 92), delay: Math.round(rnd() * 900), size: 28 + Math.round(rnd() * 28) }));
+}
+
+// ---------- coming up live (migration 20261123): scheduled rounds, advertised before tee-off ----------
+export interface UpcomingRound {
+  kind: 'night' | 'challenge' | 'casual'; id: string; at: string; title: string; course: string | null;
+  host: string | null; set: string | null; players: string[]; live: LiveRound[];
+}
+export const UPCOMING_KIND: Record<UpcomingRound['kind'], string> = { night: 'LEAGUE NIGHT', challenge: 'TAG CHALLENGE', casual: 'CASUAL ROUND' };
+/** "Tonight 6:30 PM" / "Tomorrow 9:00 AM" / "Sat Oct 11, 9:00 AM" (Arizona time, like the club). */
+export function whenLabel(iso: string, now: number): string {
+  const tz = 'America/Phoenix';
+  const day = (t: number) => new Date(t).toLocaleDateString('en-CA', { timeZone: tz });
+  const time = new Date(iso).toLocaleTimeString('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit' });
+  const t = new Date(iso).getTime();
+  const hour = Number(new Date(t).toLocaleTimeString('en-US', { timeZone: tz, hour: 'numeric', hourCycle: 'h23' }));
+  if (day(t) === day(now)) return `${hour >= 17 ? 'Tonight' : 'Today'} ${time}`;
+  if (day(t) === day(now + 86_400_000)) return `Tomorrow ${time}`;
+  return `${new Date(t).toLocaleDateString('en-US', { timeZone: tz, weekday: 'short', month: 'short', day: 'numeric' })}, ${time}`;
+}
+/** "in 45 min" / "in 3 hr" / "teeing off" (started, nobody live yet). */
+export function startsIn(iso: string, now: number): string {
+  const m = Math.round((new Date(iso).getTime() - now) / 60000);
+  if (m <= 0) return 'teeing off';
+  if (m < 60) return `in ${m} min`;
+  if (m < 48 * 60) return `in ${Math.round(m / 60)} hr`;
+  return `in ${Math.round(m / 1440)} days`;
 }

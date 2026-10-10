@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { agoLabel, groupThru, liveOn, liveStandings, newLiveIds, toLiveCard } from './live';
+import { agoLabel, groupThru, liveOn, liveStandings, newLiveIds, startsIn, toLiveCard, whenLabel } from './live';
 import { newDraft, type Draft } from './rounds';
 
 const d: Draft = { ...newDraft('2026-10-05'), course: ' Papago ', pars: [3, 3, 4],
@@ -29,6 +29,25 @@ describe('live card', () => {
     const now = Date.parse('2026-10-05T12:00:00Z');
     expect(agoLabel('2026-10-05T11:59:50Z', now)).toBe('just now');
     expect(agoLabel('2026-10-05T11:56:00Z', now)).toBe('4 min ago');
+  });
+});
+
+describe('coming up live', () => {
+  it('the live card carries the scheduled round it came from (and nothing for a plain card)', () => {
+    expect(toLiveCard({ ...d, source: 'night:7b1e2c3d-4a5b-4c6d-8e9f-0a1b2c3d4e5f' }).source).toBe('night:7b1e2c3d-4a5b-4c6d-8e9f-0a1b2c3d4e5f');
+    expect('source' in toLiveCard(d)).toBe(false);
+  });
+  it('when, in Arizona time', () => {
+    const now = Date.parse('2026-10-09T19:00:00Z'); // Fri noon in Mesa
+    expect(whenLabel('2026-10-10T01:30:00Z', now)).toBe('Tonight 6:30 PM');
+    expect(whenLabel('2026-10-09T21:00:00Z', now)).toBe('Today 2:00 PM');
+    expect(whenLabel('2026-10-10T16:00:00Z', now)).toBe('Tomorrow 9:00 AM');
+    expect(whenLabel('2026-10-14T16:00:00Z', now)).toBe('Wed, Oct 14, 9:00 AM');
+  });
+  it('starts in', () => {
+    const now = Date.parse('2026-10-09T19:00:00Z');
+    expect([startsIn('2026-10-09T19:45:00Z', now), startsIn('2026-10-10T01:00:00Z', now), startsIn('2026-10-12T19:00:00Z', now), startsIn('2026-10-09T18:00:00Z', now)])
+      .toEqual(['in 45 min', 'in 6 hr', 'in 3 days', 'teeing off']);
   });
 });
 

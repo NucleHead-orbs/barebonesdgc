@@ -216,3 +216,15 @@
 .sc-pullout summary { cursor: pointer; font-weight: 700; }
 .sc-pullout .sc-row { align-items: center; border-top: 1px solid var(--border); padding-top: 8px; }
 .sc-picks { display: flex; flex-wrap: wrap; gap: 8px; }
+/* coming up live (RoundsLive) */
+.lv-up { gap: 4px; }
+.lv-up.is-live { border-color: #ff4f6e; box-shadow: 4px 4px 0 #ff4f6e; }
+.lv-kind { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-size: 11px !important; font-weight: 800; letter-spacing: 1px; padding: 2px 8px; border-radius: 999px; border: 2px solid currentColor; }
+.lv-up.is-live .lv-kind { color: #ff4f6e; }
+.lv-soon { font-weight: 700; margin-top: 4px; }
+.lv-watch { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.lv-watchlink { font-weight: 800; color: #ff4f6e; text-decoration: none; }
+.lv-watchlink:hover { text-decoration: underline; }
+.lv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.lv-grid .lv-card { max-width: none; min-width: 0; }
+.lv-up a.lv-watchlink { color: #ff4f6e; }
