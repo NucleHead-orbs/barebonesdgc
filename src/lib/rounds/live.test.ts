@@ -54,7 +54,8 @@ describe('coming up live', () => {
 describe('live reactions', () => {
   it('lines and particles', async () => {
     const { reactionLine, particles, LIVE_REACTIONS } = await import('./live');
-    expect(LIVE_REACTIONS.filter((r) => r.tone === 'razz').length).toBe(4);
+    expect(LIVE_REACTIONS.filter((r) => r.tone === 'razz').map((r) => r.kind)).toEqual(['skull', 'choke', 'trash', 'cry', 'eggplant', 'pickle']);
+    expect(reactionLine({ who: 'Woody', kind: 'eggplant', target: 'Blake' })).toBe('Woody sent Eggplant to Blake');
     expect(reactionLine({ who: 'Woody', kind: 'skull', target: 'Blake' })).toBe('Woody sent Skull rain to Blake');
     expect(reactionLine({ who: 'Woody', kind: 'clap', target: null })).toBe('Woody sent Golf clap to everyone');
     expect(particles(7)).toEqual(particles(7));
