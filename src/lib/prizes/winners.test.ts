@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { LbRow, TeamRow } from '../jewel/leaderboard';
 import { defaultConfig } from './payout';
-import { computeTeamWinners, computeWinners, defaultTeamConfig, teamPayload, toPayload } from './winners';
+import { computeTeamWinners, computeWinners, defaultTeamConfig, teamPayload, teamPlayoffKey, toPayload } from './winners';
 
 const row = (id: string, div: string, toPar: number, official = true, holes = 9): LbRow => ({
   player_id: id, name: id, div_code: div, div_sort: 1, r1_holes: holes, r1_to_par: toPar, r1_official: official,
@@ -70,5 +70,19 @@ describe('computeTeamWinners (doubles)', () => {
     const p = teamPayload(computeTeamWinners(rows, cfg, 5, 'official'), 'credit');
     expect(p.div).toBe('DUBS · R1');
     expect(p.rows.map((x) => x.name)).toEqual(['Ann & Bob · $13 each', 'Cal & Dee · $4 each', 'Eve (Cali)']);
+  });
+});
+
+describe('doubles playoff (migration 20261127)', () => {
+  const t = (id: string, cap: string, a: string, b: string, toPar: number): TeamRow =>
+    ({ team_id: id, round: 1, team_no: 1, player_a: cap, a_name: a, b_name: b, holes_played: 9, hole_count: 9, to_par: toPar, official: true, card_label: '1' });
+  const rows = [t('t1', 'p-saul', 'Saul', 'Jaden', -18), t('t2', 'p-danny', 'Danny', 'Roger', -18), t('t3', 'p-blake', 'Blake', 'Matt', -13)];
+  it('a tie for 1st needs a playoff; the captain picked takes 1st, the other team is 2nd', () => {
+    const open = computeTeamWinners(rows, defaultTeamConfig(1), 5, 'official');
+    expect(open.result.needsPlayoff).toBe(true);
+    const done = computeTeamWinners(rows, defaultTeamConfig(1), 5, 'official', 'p-danny');
+    expect(done.result.needsPlayoff).toBe(false);
+    expect(done.result.rows.map((r) => `${r.place} ${r.name}`)).toEqual(['1 Danny & Roger', '2 Saul & Jaden', '3 Blake & Matt']);
+    expect(teamPlayoffKey(1)).toBe('TEAMS-R1');
   });
 });

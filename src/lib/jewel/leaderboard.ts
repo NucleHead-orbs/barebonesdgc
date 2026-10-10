@@ -76,6 +76,8 @@ export function onlyRound(rows: LbRow[], round: 1 | 2): LbRow[] {
 export interface TeamRow {
   team_id: string; round: number; team_no: number; a_name: string; b_name: string | null;
   holes_played: number; hole_count: number; to_par: number | null; official: boolean; card_label: string | null;
+  /** the captain (scores live on their rows); a doubles playoff is recorded against them */
+  player_a?: string;
 }
 export interface RankedTeam { id: string; name: string; pos: string; first: boolean; total: number | null; status: string; cali: boolean }
 export const teamName = (t: Pick<TeamRow, 'a_name' | 'b_name'>) => (t.b_name ? `${t.a_name} & ${t.b_name}` : `${t.a_name} (Cali)`);

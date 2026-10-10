@@ -5,7 +5,7 @@ import { onlyRound, type LbRow, type TeamRow } from '../../lib/jewel/leaderboard
 import { toPar } from '../../lib/jewel/leaderboard';
 import { rpcError, type ExistingPlayer } from '../../lib/td/builder';
 import { defaultPcts, money, type DivisionConfig, type FinishStatus, type Mode, type PrizeSettings } from '../../lib/prizes/payout';
-import { computeTeamWinners, computeWinners, defaultTeamConfig, teamPayload, toPayload, type DivisionResult, type TeamPayoutConfig, type TeamResult } from '../../lib/prizes/winners';
+import { computeTeamWinners, computeWinners, defaultTeamConfig, teamPayload, teamPlayoffKey, toPayload, type DivisionResult, type TeamPayoutConfig, type TeamResult } from '../../lib/prizes/winners';
 import { hasDoubles, roundFormat } from '../../lib/td/setup';
 import { raffleTotals } from '../../lib/crew/crew';
 import LeagueWeek from './LeagueWeek';
@@ -62,7 +62,7 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
     board: mixed && singles.length ? onlyRound(board, singles[singles.length - 1]) : board, configs: prize.configs, settings: prize.settings,
     playoffs: prize.playoffs, rounds: mixed ? 1 : ev.rounds, mode,
   }), [prize, setup.divisions, players, board, ev.rounds, mode, mixed, singles]);
-  const teamResults = useMemo(() => (prize ? dubsRounds.map((r) => computeTeamWinners(teamRows.filter((t) => t.round === r), prize.teamConfigs[r] ?? defaultTeamConfig(r), prize.settings.creditRound, mode)) : []),
+  const teamResults = useMemo(() => (prize ? dubsRounds.map((r) => computeTeamWinners(teamRows.filter((t) => t.round === r), prize.teamConfigs[r] ?? defaultTeamConfig(r), prize.settings.creditRound, mode, prize.playoffs[teamPlayoffKey(r)] ?? null)) : []),
     [prize, dubsRounds, teamRows, mode]);
 
   if (!prize || !w) return <main className="td-main">{err ? <div className="td-warn" role="alert">{err}</div> : <p className="td-empty">Loading…</p>}</main>;
@@ -111,7 +111,7 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
     if (r.error) setErr(rpcError(r.error).message);
   };
   const post = async () => {
-    const open = w.divisions.filter((d) => d.result.needsPlayoff).map((d) => d.config.div);
+    const open = [...w.divisions.filter((d) => d.result.needsPlayoff).map((d) => d.config.div), ...teamResults.filter((t) => t.result.needsPlayoff).map((t) => `Doubles R${t.config.round}`)];
     if (open.length && !window.confirm(`${open.join(', ')}: tie for 1st with no playoff winner picked. Post anyway (they'll show as tied)?`)) return;
     setBusy(true); setErr('');
     const r = await api.postWinners(ev.id, payload);
@@ -173,7 +173,9 @@ export default function WinnersPanel({ setup, players, onPlayers }: {
       </section>
 
       {mixed && <div className="td-hint">{singles.length ? `Divisions are paid from Round ${singles[singles.length - 1]} (singles). ` : 'No singles round, so no division payouts. '}Each doubles round is its own team pool, and every prize is split between partners.</div>}
-      {teamResults.map((t) => <TeamCard key={t.config.round} t={t} label={label} onConfig={(c) => void saveTeamConfig(c)} />)}
+      {teamResults.map((t) => <TeamCard key={t.config.round} t={t} label={label} onConfig={(c) => void saveTeamConfig(c)}
+        captains={Object.fromEntries(teamRows.filter((x) => x.round === t.config.round && x.player_a).map((x) => [x.team_id, x.player_a!]))}
+        playoffCaptain={prize?.playoffs[teamPlayoffKey(t.config.round)] ?? null} onPlayoff={(id) => void setPlayoff(teamPlayoffKey(t.config.round), id)} />)}
       {!w.divisions.length && !teamResults.length && <div className="td-empty">No players yet.</div>}
       {w.divisions.map((d) => (
         <DivisionCard key={d.config.div} d={d} label={label} players={players}
@@ -305,8 +307,16 @@ function DivisionCard({ d, label, players, playoffWinner, onConfig, onStatus, on
   );
 }
 
-function TeamCard({ t, label, onConfig }: { t: TeamResult; label: string; onConfig: (c: TeamPayoutConfig) => void }) {
+function TeamCard({ t, label, onConfig, captains, playoffCaptain, onPlayoff }: {
+  t: TeamResult; label: string; onConfig: (c: TeamPayoutConfig) => void;
+  /** team id -> captain player id (the playoff is recorded against the captain) */ captains: Record<string, string>;
+  playoffCaptain: string | null; onPlayoff: (captainId: string | null) => void;
+}) {
   const c = t.config;
+  const winnerTeam = playoffCaptain ? Object.keys(captains).find((k) => captains[k] === playoffCaptain) ?? null : null;
+  // the teams tied for 1st (before the playoff, the T1 rows; after it, the winner + the rest of that tie, now T2)
+  const tiedTop = t.result.rows.filter((r) => r.pos === 1 || (winnerTeam && r.pos === 2 && r.total === t.result.rows.find((x) => x.id === winnerTeam)?.total));
+  const showPlayoff = t.result.needsPlayoff || !!winnerTeam;
   const [open, setOpen] = useState(false);
   const cur = c.currency;
   const pctOk = Math.abs(t.result.pctTotal - 100) < 0.05 || t.paid === 0;
@@ -340,13 +350,24 @@ function TeamCard({ t, label, onConfig }: { t: TeamResult; label: string; onConf
           <button className="td-btn quiet" onClick={() => onConfig({ ...c, paidPlaces: null, pcts: null })}>RESET TO STANDARD</button>
         </div>
       )}
-      {t.result.needsPlayoff && <div className="td-warn soft">Tie for 1st: those teams split 1st and 2nd. Settle it on the course first if you want a single winner.</div>}
+      {showPlayoff && (
+        <div className={t.result.needsPlayoff ? 'td-warn soft' : 'td-ok'}>
+          {t.result.needsPlayoff ? 'Tie for 1st. Who won the playoff? ' : 'Playoff winner: '}
+          <span className="td-chips">
+            {tiedTop.map((r) => (
+              <button key={r.id} className="td-chip" aria-pressed={winnerTeam === r.id} disabled={!captains[r.id]}
+                onClick={() => onPlayoff(winnerTeam === r.id ? null : captains[r.id] ?? null)}>{r.name}</button>
+            ))}
+          </span>
+          {t.result.needsPlayoff && <span className="td-hint"> Not settled: those teams split 1st and 2nd.</span>}
+        </div>
+      )}
       <table className="td-table td-results">
         <thead><tr><th>PLACE</th><th>TEAM</th><th>SCORE</th><th style={{ textAlign: 'right' }}>PRIZE</th><th style={{ textAlign: 'right' }}>EACH</th></tr></thead>
         <tbody>
           {t.result.rows.map((r) => (
             <tr key={r.id} className={r.amount > 0 ? 'is-paid' : ''}>
-              <td>{r.place}</td><td>{r.name}</td><td>{toPar(r.total)}</td>
+              <td>{r.place}</td><td>{r.name}{winnerTeam === r.id ? ' (playoff)' : ''}</td><td>{toPar(r.total)}</td>
               <td style={{ textAlign: 'right' }}>{r.amount > 0 ? money(r.amount, cur, label) : '–'}</td>
               <td style={{ textAlign: 'right' }}>{r.amount > 0 ? money(t.each[r.id], cur, label) : ''}</td>
             </tr>

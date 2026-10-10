@@ -50,7 +50,7 @@ export async function loadBoard(eventId: string): Promise<LbRow[]> {
 /** Doubles rounds: one row per team (team_rounds view, public). */
 export async function loadTeamBoard(eventId: string): Promise<TeamRow[]> {
   const r = await supabase.from('team_rounds')
-    .select('team_id, round, team_no, a_name, b_name, holes_played, hole_count, to_par, official, card_label')
+    .select('team_id, round, team_no, player_a, a_name, b_name, holes_played, hole_count, to_par, official, card_label')
     .eq('event_id', eventId);
   return need(r, 'the doubles board') as TeamRow[];
 }

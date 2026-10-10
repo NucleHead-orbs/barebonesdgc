@@ -83,6 +83,14 @@ select pg_temp.ok((select array_agg((x ->> 'name') || ':' || (x ->> 'wins') || '
 select pg_temp.ok((select (x ->> 'best')::int = -18 from jsonb_array_elements(league_mvp('friday-glow') -> 'players') x where x ->> 'name' = 'Danny'), 'best score to par per player');
 reset role;
 
+-- a playoff settles week 2's tie: Danny + Jaden won it, so Blake + Saul's week is a 2nd
+insert into playoffs (event_id, div_code, winner_player_id) values (pg_temp.v('w2')::uuid, 'TEAMS-R1', pg_temp.pid(pg_temp.v('w2'), 'Danny'));
+set role anon;
+select pg_temp.ok((select array_agg((x ->> 'name') || ':' || (x ->> 'wins') || '/' || (x ->> 'podiums') order by n)
+  from jsonb_array_elements(league_mvp('friday-glow') -> 'players') with ordinality t(x, n)) =
+  '{Danny:2/2,Jaden:1/2,Roger:1/1,Blake:0/2,Cole:0/2,Saul:0/2}', 'a recorded playoff winner takes the win; the rest of the tie count as 2nd');
+reset role;
+
 -- tags back on works (nobody holds one); tags off is refused while someone holds a tag
 select pg_temp.claims('00000000-0000-4000-8000-0000000d0b02', false); set role authenticated;
 select td_save_league(pg_temp.v('lg')::uuid, '{"tags": true}');

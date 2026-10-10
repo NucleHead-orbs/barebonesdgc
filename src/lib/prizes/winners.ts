@@ -74,7 +74,10 @@ export interface TeamResult {
 }
 
 /** Rank finished teams, pay the pool with the division rules (ties split, rounding down), then split each prize between partners. */
-export function computeTeamWinners(rows: TeamRow[], config: TeamPayoutConfig, creditRound: 1 | 5, mode: Mode): TeamResult {
+/** The playoffs row for a doubles round's pool (migration 20261127): winner = the winning team's captain. */
+export const teamPlayoffKey = (round: 1 | 2) => `TEAMS-R${round}`;
+
+export function computeTeamWinners(rows: TeamRow[], config: TeamPayoutConfig, creditRound: 1 | 5, mode: Mode, playoffCaptain?: string | null): TeamResult {
   const members: Record<string, number> = Object.fromEntries(rows.map((t) => [t.team_id, t.b_name ? 2 : 1]));
   const players = rows.reduce((a, t) => a + members[t.team_id], 0);
   const entryPart = cents(players * config.entryFee * config.paybackPct / 100);
@@ -86,7 +89,8 @@ export function computeTeamWinners(rows: TeamRow[], config: TeamPayoutConfig, cr
   const asDiv: DivisionConfig = { div: 'DUBS', currency: config.currency, entryFee: config.entryFee, paybackPct: config.paybackPct, addedOverride: config.addedOverride, paidPlaces: config.paidPlaces, pcts: config.pcts };
   const paid = effectivePaid(asDiv, rows.length);
   const pcts = effectivePcts(asDiv, paid);
-  const result = payout(ranked, pool.total, pcts, config.currency, creditRound);
+  const playoffTeam = playoffCaptain ? rows.find((t) => t.player_a === playoffCaptain)?.team_id ?? null : null;
+  const result = payout(ranked, pool.total, pcts, config.currency, creditRound, playoffTeam);
   const unit = config.currency === 'cash' ? 1 : creditRound;
   const each: Record<string, number> = {};
   let splitLeft = 0;
