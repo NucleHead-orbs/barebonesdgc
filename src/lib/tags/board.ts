@@ -215,3 +215,38 @@ export function casualMessage(err: unknown): string | null {
   if (/note_too_long/.test(m)) return 'Keep the note under 200 characters.';
   return null;
 }
+
+// ---------- check-in rounds (migration 20261122): one night, many cards, every tag set swaps across the field ----------
+export interface NightPerson { id: string | null; name: string; nickname: string | null; guest: boolean; carded: boolean }
+export interface Night {
+  id: string; title: string; starts_at: string; course_id: string | null; course: string | null; note: string | null;
+  host: { id: string; name: string; nickname: string | null }; host_me: boolean; closed: boolean; closed_at: string | null;
+  /** Check-in is open (from 3 h before the start until it closes). */
+  open: boolean; me_in: boolean; cards: number; my_card: string | null; players: NightPerson[];
+  swaps: Array<{ pool_name: string; status: 'pending' | 'applied' | 'disputed' | 'void' }>;
+}
+/** Checked-in members who aren't on a saved card yet (what's holding the night open). */
+export const nightWaiting = (n: Night) => n.players.filter((p) => !p.guest && !p.carded);
+/** Who's left for a new card: everyone checked in (members + guests) not on a saved card yet. */
+export const nightFree = (n: Night) => n.players.filter((p) => !p.carded);
+export function nightMessage(err: unknown): string | null {
+  const m = (err && typeof err === 'object' && 'message' in err ? String((err as { message?: string }).message) : String(err ?? ''));
+  if (/no_tag\b/.test(m)) return 'Hosting a check-in round takes a tag in any set.';
+  if (/title_required/.test(m)) return 'Give the night a name (up to 60 characters).';
+  if (/slot_too_soon/.test(m)) return 'Pick a start time that isn\'t already over.';
+  if (/slot_too_far/.test(m)) return 'Pick a start within the next 30 days.';
+  if (/unknown_course/.test(m)) return 'Pick a course.';
+  if (/too_many_nights/.test(m)) return 'You already have 2 check-in rounds open. Close or call one off first.';
+  if (/night_not_open/.test(m)) return 'Check-in opens 3 hours before the start.';
+  if (/night_closed/.test(m)) return 'That night is closed: the tags already went up.';
+  if (/night_off|not_found/.test(m)) return 'That night was called off.';
+  if (/host_stays/.test(m)) return "You're the host: you stay checked in (call it off instead).";
+  if (/already_on_card/.test(m)) return "They're on a saved card already, so they stay in.";
+  if (/not_your_night/.test(m)) return 'Only the host can do that.';
+  if (/guest_taken/.test(m)) return 'There\'s already a guest by that name. Add a last initial.';
+  if (/name_too_long/.test(m)) return 'Guest names run up to 40 characters.';
+  if (/no_cards_yet/.test(m)) return 'No cards are in yet, so there\'s nothing to close. Call it off instead?';
+  if (/cards_saved/.test(m)) return 'Cards are in already. Close the night instead.';
+  if (/night_full/.test(m)) return 'That\'s 120 people. The night is full.';
+  return null;
+}

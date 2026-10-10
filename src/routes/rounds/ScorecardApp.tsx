@@ -126,6 +126,8 @@ export default function ScorecardApp() {
   const [pendingFrom, setPendingFrom] = useState<Draft | null>(null);
   const draftRef = useRef(d);
   useEffect(() => { draftRef.current = d; }, [d]);
+  const meRef = useRef(me);
+  useEffect(() => { meRef.current = me; }, [me]);
   useEffect(() => {
     if (!from || !courses.length) return;
     let live = true;
@@ -135,7 +137,8 @@ export default function ScorecardApp() {
       if (!live) return;
       nav('/scorecard', { replace: true });
       if (typeof src === 'string') { setErr(src); return; }
-      const next = draftFromRound(src, localDate(), courses);
+      const who = meRef.current?.me;
+      const next = draftFromRound(src, localDate(), courses, who ? { id: who.id, name: who.nickname || who.name } : null);
       const cur = draftRef.current;
       if (cur.source === src.source && cur.players.length) { setView('card'); return; }   // already on this card
       if (started(cur)) { setPendingFrom(next); return; }
@@ -219,7 +222,8 @@ function Setup({ d, setD, me, members, courses, swapSets, onStart, top }: {
       {top}
       <section className="sc-panel">
         <h1>{d.sourceLabel ?? 'New round'}</h1>
-        {d.source && <p className="sc-hint">Started from your scheduled round: course and players are filled in. One scorer per card: if someone else on it already saved this round, saving tells you so.</p>}
+        {d.night ? <p className="sc-hint">A card for {d.sourceLabel}: pick who's on it from who's checked in (below). Tags don't go on the line here: every set swaps across the whole field when the night closes. <button className="sc-link" onClick={() => setD((x) => ({ ...x, night: null, pick: undefined, source: null, sourceLabel: null }))}>Leave the night</button></p>
+          : d.source && <p className="sc-hint">Started from your scheduled round: course and players are filled in. One scorer per card: if someone else on it already saved this round, saving tells you so.</p>}
         <label className="sc-field"><span>Course</span>
           <select id="sc-course" value={d.courseId ?? ''} onChange={(e) => pickCourse(e.target.value)}>
             <option value="">Other / not listed…</option>
@@ -249,6 +253,7 @@ function Setup({ d, setD, me, members, courses, swapSets, onStart, top }: {
         </label>
       </section>
 
+      {d.night && <NightPick d={d} onAdd={addPlayer} />}
       <section className="sc-panel">
         <h2>Who's playing</h2>
         <ul className="sc-players">
@@ -271,10 +276,16 @@ function Setup({ d, setD, me, members, courses, swapSets, onStart, top }: {
             </form>
           </div>
         )}
-        <p className="sc-hint">Guests just get a score. Members can put tags on the line below, before you tee off.</p>
+        <p className="sc-hint">{d.night ? 'Guests just get a score. Members on this card are checked in to the night when it saves.' : 'Guests just get a score. Members can put tags on the line below, before you tee off.'}</p>
       </section>
 
-      {me && swapSets.length > 0 && (
+      {d.night && (
+        <section className="sc-panel">
+          <h2>Tags: the whole field</h2>
+          <p className="sc-hint">Every tag set is on the line tonight, ranked across every card. They go up when the last checked-in player is on a saved card (or the host closes the night), then everyone confirms their card in My Tag → MY ROUNDS.</p>
+        </section>
+      )}
+      {me && !d.night && swapSets.length > 0 && (
         <section className="sc-panel">
           <h2>Tags on the line?</h2>
           <div className="sc-swaps">
@@ -301,6 +312,28 @@ function Setup({ d, setD, me, members, courses, swapSets, onStart, top }: {
       </section>
       <button className="sc-btn cta big" disabled={!ready} onClick={onStart}>{d.scores.some((s) => s.some((x) => x != null)) ? 'Back to the card' : 'Tee off'}</button>
     </main>
+  );
+}
+
+/** A check-in round: add players from who's checked in and not on a saved card yet. */
+function NightPick({ d, onAdd }: { d: Draft; onAdd: (memberId: string | null, name: string) => void }) {
+  const onCard = new Set(d.players.map((p) => p.memberId ?? `g:${p.name.trim().toLowerCase()}`));
+  const left = (d.pick ?? []).filter((p) => !onCard.has(p.memberId ?? `g:${p.name.trim().toLowerCase()}`));
+  const full = d.players.length >= MAX_PLAYERS;
+  return (
+    <section className="sc-panel">
+      <h2>Who's on your card?</h2>
+      {left.length ? (
+        <div className="sc-picks">
+          {left.map((p) => (
+            <button key={p.memberId ?? `g-${p.name}`} type="button" className="sc-btn" disabled={full} onClick={() => onAdd(p.memberId, p.name)}>
+              + {p.name}{p.guest ? ' (guest)' : ''}
+            </button>
+          ))}
+        </div>
+      ) : <p className="sc-hint">Everyone checked in is on a card (or this one). Late arrival? They can check in on My Tag, or add them below.</p>}
+      <p className="sc-hint">Checked in at {d.sourceLabel} and not on a saved card yet. Tap to add. Somebody missing can still be added below (members get checked in when the card saves).</p>
+    </section>
   );
 }
 
@@ -335,6 +368,7 @@ function Card({ d, setD, onSetup, me, busy, swapSets, poolNames, onSave, onConne
     <main className="sc-main">
       <div className="sc-course"><b>{d.course}</b><span>{d.sourceLabel ? `${d.sourceLabel} · ` : ''}{d.pars.length} holes · par {d.pars.reduce((a, b) => a + b, 0)}</span><button className="sc-link" onClick={onSetup}>Edit round</button></div>
       {declared.length > 0 && <div className="sc-online">On the line: {declared.map((o) => o.pool.name).join(' + ')}</div>}
+      {d.night && <div className="sc-online">On the line: every tag set, across the whole field tonight</div>}
       {liveOn(d) && started(d) && <LiveBadge />}
       <div className="sc-stand">
         {d.players.map((p, i) => (

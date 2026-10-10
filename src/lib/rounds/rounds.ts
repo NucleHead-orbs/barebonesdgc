@@ -20,6 +20,10 @@ export interface Draft {
   source?: string | null;
   /** What to call that round on the card ("Danny vs Nick", "April's round"). */
   sourceLabel?: string | null;
+  /** A check-in round (migration 20261122): the night's id. Tags swap across the whole field, not on this card. */
+  night?: string | null;
+  /** Who's checked in to the night and not on a saved card yet (the scorer picks this card from them). */
+  pick?: Array<{ memberId: string | null; name: string; guest: boolean }>;
 }
 
 /** The round has started (any score in): tags on the line are locked. */
@@ -98,18 +102,22 @@ export function teeOrder(d: Pick<Draft, 'players' | 'scores' | 'out'>, h: number
 export interface RoundSource {
   source: string; label: string; course: string | null; courseId: string | null;
   players: Array<{ memberId: string; name: string }>; onLine?: string[];
+  night?: string; pick?: Array<{ memberId: string | null; name: string; guest: boolean }>;
 }
-export function draftFromRound(src: RoundSource, today: string, courses: Array<{ id: string; name: string; layouts: Array<{ id: string; pars: number[]; labels: string[] | null; ft: Array<number | null> }> }>): Draft {
+export function draftFromRound(src: RoundSource, today: string, courses: Array<{ id: string; name: string; layouts: Array<{ id: string; pars: number[]; labels: string[] | null; ft: Array<number | null> }> }>,
+  me?: { id: string; name: string } | null): Draft {
   const c = src.courseId ? courses.find((x) => x.id === src.courseId) : undefined;
   const l = c?.layouts[0];
   const base = newDraft(today);
   const seen = new Set<string>();
-  const players = src.players.filter((p) => !seen.has(p.memberId) && seen.add(p.memberId)).slice(0, MAX_PLAYERS)
+  const people = src.night && me ? [{ memberId: me.id, name: me.name }, ...src.players] : src.players;
+  const players = people.filter((p) => !seen.has(p.memberId) && seen.add(p.memberId)).slice(0, MAX_PLAYERS)
     .map((p) => ({ key: p.memberId, memberId: p.memberId, name: p.name }));
   return {
     ...base, course: c?.name ?? src.course ?? '', courseId: c?.id ?? null, layoutId: l?.id ?? null,
     ...(l ? { pars: l.pars.slice(), labels: l.labels, ft: l.ft } : {}),
     players, scores: players.map(() => []), onLine: src.onLine ?? [], source: src.source, sourceLabel: src.label,
+    ...(src.night ? { night: src.night, pick: src.pick ?? [], onLine: [] } : {}),
   };
 }
 
@@ -180,7 +188,8 @@ export function toPayload(d: Draft) {
   return {
     course: d.course.trim(), course_id: d.courseId, layout_id: d.layoutId, played_on: d.playedOn, pars: d.pars,
     ...(d.labels && d.labels.length === d.pars.length ? { labels: d.labels } : {}),
-    ...(d.source ? { source: d.source } : {}),
+    ...(d.night ? { night: d.night } : {}),
+    ...(!d.night && d.source ? { source: d.source } : {}),
     players: d.players.map((p, i) => {
       const dnf = d.out?.[p.key];
       const scores = d.pars.map((par, h) => (dnf != null && h >= dnf ? par + DNF_OVER : d.scores[i]?.[h] ?? null));
@@ -242,6 +251,12 @@ export function roundMessage(err: unknown): string {
   if (/invalid_reaction/.test(m)) return "That reaction isn't on the menu.";
   if (/invalid_card|invalid_live/.test(m)) return 'The live view didn\'t take that update. Your card is safe on this phone.';
   if (/forbidden/.test(m)) return 'Only that tag set\'s league admins can vouch for a round.';
+  const dup = /already_on_card:([^"\n]+)/.exec(m);
+  if (dup) return `${dup[1].trim()} is already on a saved card tonight. Take them off this card.`;
+  if (/night_closed/.test(m)) return 'The night closed and the tags already went up, so this card can\'t join it. Edit round → Leave the night, then save it as a regular round.';
+  if (/night_off/.test(m)) return 'That night was called off. Edit round → Leave the night, then save it as a regular round.';
+  if (/night_not_open/.test(m)) return 'The night hasn\'t opened yet (3 hours before the start).';
+  if (/night_tags_field/.test(m)) return 'Night cards don\'t put tags on the line themselves: the whole field swaps when the night closes.';
   if (/already_saved/.test(m)) return 'Someone on your card already saved this round. Check Boner Rounds (or your My Tag) and confirm your score there.';
   if (/needs_challenge/.test(m)) return 'Early Access tags need 3 Jewel players on the card, or 2 with a challenge you\'ve accepted (My Tag → MATCHUPS). Untick that set and save again.';
   if (/need_two_holders/.test(m)) return 'A tag exchange needs at least two tag holders from that set on the round.';

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import * as tagApi from './api';
 import type { HeatRow } from './heat';
-import type { CasualRound, ChallengeRound, Mention } from './board';
+import type { CasualRound, ChallengeRound, Mention, Night } from './board';
 
 /** Loads tag_heat for this link (again whenever `rev` changes). */
 export function useHeat(token: string, rev: number): HeatRow[] | null {
@@ -64,6 +64,17 @@ export function useCasuals(token: string, rev: number): CasualRound[] {
   useEffect(() => {
     let live = true;
     void (async () => { const r = await tagApi.casuals(token); if (live && r.data) setRows(r.data); })();
+    return () => { live = false; };
+  }, [token, rev]);
+  return rows;
+}
+
+/** Check-in rounds (open, or closed in the last 12 h). */
+export function useNights(token: string, rev: number): Night[] {
+  const [rows, setRows] = useState<Night[]>([]);
+  useEffect(() => {
+    let live = true;
+    void (async () => { const r = await tagApi.nights(token); if (live && r.data) setRows(r.data); })();
     return () => { live = false; };
   }, [token, rev]);
   return rows;

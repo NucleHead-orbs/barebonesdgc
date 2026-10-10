@@ -143,4 +143,13 @@ describe('tee order, pull out, cards from scheduled rounds', () => {
     expect([d.onLine, d.source, d.sourceLabel, d.scores]).toEqual([['p1'], 'challenge:x', 'Danny vs Nick', [[], []]]);
     expect(toPayload({ ...d, scores: [[3, 3, 4], [3, 3, 4]] }).source).toBe('challenge:x');
   });
+  it('a card for a check-in night: just the scorer, the pick list, no tags on the card, sends the night (not a source)', () => {
+    const d = draftFromRound({ source: 'night:n1', label: 'Glow League', course: 'Freestone', courseId: null, night: 'n1', players: [],
+      pick: [{ memberId: 'b', name: 'Blake', guest: false }, { memberId: null, name: 'Glow Guest', guest: true }] }, '2026-10-09', [], { id: 'm1', name: 'YT' });
+    expect(d.players.map((p) => p.memberId)).toEqual(['m1']);
+    expect([d.night, d.onLine, d.pick?.length]).toEqual(['n1', [], 2]);
+    const pay = toPayload({ ...d, scores: [[3, 3, 3]] });
+    expect(pay.night).toBe('n1');
+    expect(pay.source).toBeUndefined();
+  });
 });

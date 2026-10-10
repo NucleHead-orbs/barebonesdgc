@@ -15,7 +15,8 @@ import { MyRounds } from '../../components/tags/MyRounds';
 import { PhoneAlerts } from '../../components/tags/PhoneAlerts';
 import { TagLeaderboard } from '../../components/tags/TagLeaderboard';
 import { asTab, type MyTagTab } from '../../lib/tags/board';
-import { chatSeenKey, readSeen, useCasuals, useHeat, useMentions, useRounds, welcomeSeen, type HeatFocus } from '../../lib/tags/useHeat';
+import { chatSeenKey, readSeen, useCasuals, useHeat, useMentions, useNights, useRounds, welcomeSeen, type HeatFocus } from '../../lib/tags/useHeat';
+import { cardLink } from '../../lib/rounds/fromRound';
 import { localDate, niceDate } from '../../lib/leagues/leagues';
 import { useTheme } from '../../lib/theme';
 import { NewVersionNote } from '../../components/dev/DevReports';
@@ -50,6 +51,7 @@ export default function MyTagApp() {
   const rounds = useRounds(token, rev);
   const mentions = useMentions(token, rev);
   const casuals = useCasuals(token, rev);
+  const nights = useNights(token, rev);
   // a phone alert opens ?tab=board&pool=<set>&chat=<id>: land on that message
   const [focusChat, setFocusChat] = useState<number | null>(() => Number(new URLSearchParams(window.location.search).get('chat')) || null);
   const [focus, setFocus] = useState<HeatFocus | null>(null);
@@ -139,7 +141,7 @@ export default function MyTagApp() {
       </header>
       <nav className="td-tabs mt-tabs" aria-label="My Tag">
         {([['tags', 'MY TAGS'], ['board', 'BOARD'], ['matchups', 'MATCHUPS'], ['rounds', 'MY ROUNDS']] as Array<[MyTagTab, string]>).map(([t, label]) => {
-          const n = t === 'board' ? Object.values(unread).reduce((a, b) => a + b, 0) : t === 'matchups' ? casuals.filter((c) => c.open && c.mine === 'invited').length : t === 'rounds' ? waitingOk : 0;
+          const n = t === 'board' ? Object.values(unread).reduce((a, b) => a + b, 0) : t === 'matchups' ? casuals.filter((c) => c.open && c.mine === 'invited').length + nights.filter((x) => x.open && !x.me_in).length : t === 'rounds' ? waitingOk : 0;
           return <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => go(t)}>{label}{n > 0 && <b>{n > 99 ? '99+' : n}</b>}</button>;
         })}
       </nav>
@@ -151,7 +153,7 @@ export default function MyTagApp() {
         {!home.holdings.length && <div className="td-warn soft">You don't hold a tag right now. Ask your league TD to issue you one.</div>}
         {tab === 'board' && <TagBoard token={token} meId={meId} rows={heatRows} names={names} pool={boardPool} onPool={setBoardPool}
           unread={unread} seenKey={seenKey} onSeen={onSeen} rosters={home.rosters} focusId={focusChat} />}
-        {tab === 'matchups' && <Matchups token={token} act={act} rev={rev} rounds={rounds} casuals={casuals} meId={meId} holdings={home.holdings} rosters={home.rosters} />}
+        {tab === 'matchups' && <Matchups token={token} act={act} rev={rev} rounds={rounds} casuals={casuals} nights={nights} meId={meId} holdings={home.holdings} rosters={home.rosters} />}
         {tab === 'rounds' && <>
         {tagNeeds.length > 0 && (
           <section className="td-panel mt-needs">
@@ -171,6 +173,28 @@ export default function MyTagApp() {
         <MyRounds token={token} meId={meId} rev={rev} act={act} focus={focusRound} />
         </>}
         {tab === 'tags' && <>
+        {nights.filter((x) => x.open).map((x) => (
+          <section key={x.id} className="td-panel mt-needs mt-night">
+            <h2>{x.title}{x.course ? ` · ${x.course}` : ''}</h2>
+            {!x.me_in ? <>
+              <p className="td-hint">Check-in is open. Every tag set is on the line across the whole field tonight.</p>
+              <div className="td-row">
+                <button className="td-btn cta" onClick={() => void act(tagApi.nightCheckin(token, x.id, true), `Checked in: ${x.title}.`)}>CHECK IN</button>
+                <button className="td-btn quiet" onClick={() => go('matchups')}>WHO'S HERE</button>
+              </div>
+            </> : x.my_card ? <>
+              <p className="td-hint">Your card is in. Tags go up when the last card is in{x.host_me ? ' or you close the night (MATCHUPS)' : ''}.</p>
+              <div className="td-row"><button className="td-btn quiet" onClick={() => go('matchups')}>THE NIGHT</button></div>
+            </> : <>
+              <p className="td-hint">You're checked in ({x.players.length} so far). Ready to tee off? Start your card and pick who's on it.</p>
+              <div className="td-row">
+                <Link className="td-btn cta" to={cardLink('night', x.id)}>START THE CARD</Link>
+                <button className="td-btn quiet" onClick={() => go('matchups')}>WHO'S HERE</button>
+              </div>
+            </>}
+          </section>
+        ))}
+
         <div className="mt-tags">
           {home.holdings.map((h) => TAG_ART[h.pool] ? (
             <div key={h.pool} className="mt-dtag">

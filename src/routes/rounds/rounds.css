@@ -215,3 +215,4 @@
 .sc-st.is-out { opacity: .55; }
 .sc-pullout summary { cursor: pointer; font-weight: 700; }
 .sc-pullout .sc-row { align-items: center; border-top: 1px solid var(--border); padding-top: 8px; }
+.sc-picks { display: flex; flex-wrap: wrap; gap: 8px; }

@@ -120,3 +120,13 @@
 .bd-more { align-self: flex-start; background: none; border: 0; color: var(--cyan); font: inherit; font-size: 12px; letter-spacing: 1px; padding: 4px 0; cursor: pointer; }
 .bd-replybox { margin-left: 18px; }
 .bd-gone { margin: 0; font-size: 13px; opacity: .6; font-style: italic; }
+
+/* check-in rounds (NightRounds) */
+.nr-night.is-closed { opacity: .85; }
+.nr-flag-closed { background: var(--muted, #8a8a8a); }
+.nr-people { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.nr-person { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); font-size: 13px; }
+.nr-person.is-carded { border-color: var(--under, #c6ff3d); color: var(--under, #c6ff3d); }
+.nr-person.is-guest small { opacity: .7; }
+.nr-x { border: 0; background: none; color: inherit; font-size: 16px; line-height: 1; padding: 0 2px; cursor: pointer; opacity: .7; }
+.nr-add { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }

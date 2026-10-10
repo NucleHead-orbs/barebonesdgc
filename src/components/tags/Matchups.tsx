@@ -8,17 +8,18 @@ import { DAYS, MAX_COURSES, daysSummary, hasDay, pickReasons, toggleDay, type Ma
 import { display, tagMessage } from '../../lib/tags/tags';
 import { JumpIns } from './ChallengeRounds';
 import { CasualRounds } from './CasualRounds';
+import { NightRounds } from './NightRounds';
 import type { Holding, RosterEntry } from '../../lib/tags/api';
-import type { CasualRound } from '../../lib/tags/board';
+import type { CasualRound, Night } from '../../lib/tags/board';
 import type { ChallengeRound } from '../../lib/tags/board';
 import { useNow } from '../../lib/tags/useHeat';
 import './board.css';
 
 type Act = (p: Promise<{ error?: unknown }>, ok?: string) => Promise<boolean>;
 
-export function Matchups({ token, act, rev, rounds, casuals, meId, holdings, rosters }: {
+export function Matchups({ token, act, rev, rounds, casuals, nights, meId, holdings, rosters }: {
   token: string; act: Act; rev: number; rounds: ChallengeRound[];
-  casuals: CasualRound[]; meId: string; holdings: Holding[]; rosters: Record<string, RosterEntry[]>;
+  casuals: CasualRound[]; nights: Night[]; meId: string; holdings: Holding[]; rosters: Record<string, RosterEntry[]>;
 }) {
   const now = useNow();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -40,6 +41,7 @@ export function Matchups({ token, act, rev, rounds, casuals, meId, holdings, ros
 
   return (
     <div className="mu">
+      <NightRounds token={token} canHost={holdings.length > 0} nights={nights} act={act} now={now} />
       <CasualRounds token={token} meId={meId} holdings={holdings} rosters={rosters} rounds={casuals} act={act} now={now} />
       <JumpIns rounds={rounds} token={token} act={act} now={now} />
       {open

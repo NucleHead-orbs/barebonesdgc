@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'checkin-rounds', date: '2026-10-09', help: 'rounds', who: 'all',
+    title: 'Check-in rounds: one night, many cards, every tag on the line',
+    body: 'My Tag → **MATCHUPS** → **+ RUN A NIGHT** (anyone with a tag). Players **CHECK IN** when they get there (from 3 hours before), the host adds guests. Each scorer taps **START THE CARD** and picks their card from who\'s checked in. Every tag set swaps across the whole field once the last checked-in player is on a saved card, or the host hits **CLOSE THE NIGHT** (it closes itself 12 hours after the start). Everyone confirms their card in MY ROUNDS, same as always.',
+  },
+  {
     id: 'confirm-in-my-rounds', date: '2026-10-09', help: 'rounds', who: 'all',
     title: 'Confirm cards in MY ROUNDS + DNF roast',
     body: 'Players confirm Scorecard rounds right in My Tag → **MY ROUNDS** now (the card opens with **CONFIRM** / **DISPUTE**; the confirm alert lands there and the tab shows a count). Manual tag rounds confirm there too. A settled challenge now reads "took #5 from …, who drops to #7" (no more "higher tag"), and anyone who pulled out gets their own line in the round story.',

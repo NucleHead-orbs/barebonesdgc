@@ -5,7 +5,7 @@
 import { supabase } from '../supabase';
 import type { MatchStatus, PendingSwap, Tag, TagMember, TagPool } from './tags';
 import type { BoardHeat, ChatLine, HeatRow } from './heat';
-import type { BoardRead, CasualRound, ChallengeRound, MatchupSet, Mention, Profile, ReactionKind } from './board';
+import type { BoardRead, CasualRound, ChallengeRound, MatchupSet, Mention, Night, Profile, ReactionKind } from './board';
 import type { TdRound, TdRoundKind } from './tdRounds';
 import type { MyRoundsPage } from './myRounds';
 
@@ -191,6 +191,18 @@ export const casualCreate = (token: string, poolId: string, teeAt: string, cours
   wrap(async (): Promise<string> => must(await supabase.rpc('tag_casual_create', { p_token: token, p_pool: poolId, p_tee: teeAt, p_course: courseId, p_members: members, p_note: note || null })) as string);
 export const casualAnswer = (token: string, id: string, inRound: boolean) => wrap(async () => { must(await supabase.rpc('tag_casual_answer', { p_token: token, p_invite: id, p_in: inRound })); });
 export const casualCancel = (token: string, id: string) => wrap(async () => { must(await supabase.rpc('tag_casual_cancel', { p_token: token, p_invite: id })); });
+
+/** Check-in rounds (migration 20261122): check in, cards across the field, one swap per set when the night closes. */
+export const nights = (token: string) => wrap(async (): Promise<Night[]> => (must(await supabase.rpc('tag_nights', { p_token: token })) ?? []) as Night[]);
+export const nightCreate = (token: string, title: string, startsAt: string, courseId: string, note: string) =>
+  wrap(async (): Promise<string> => must(await supabase.rpc('tag_night_create', { p_token: token, p_title: title, p_start: startsAt, p_course: courseId, p_note: note || null })) as string);
+export const nightCheckin = (token: string, id: string, checkIn: boolean) => wrap(async () => { must(await supabase.rpc('tag_night_checkin', { p_token: token, p_night: id, p_in: checkIn })); });
+export const nightAdd = (token: string, id: string, memberId: string | null, guest: string | null) =>
+  wrap(async () => { must(await supabase.rpc('tag_night_add', { p_token: token, p_night: id, p_member: memberId, p_guest: guest })); });
+export const nightRemove = (token: string, id: string, memberId: string | null, guest: string | null) =>
+  wrap(async () => { must(await supabase.rpc('tag_night_remove', { p_token: token, p_night: id, p_member: memberId, p_guest: guest })); });
+export const nightClose = (token: string, id: string) => wrap(async (): Promise<number> => must(await supabase.rpc('tag_night_close', { p_token: token, p_night: id })) as number);
+export const nightCancel = (token: string, id: string) => wrap(async () => { must(await supabase.rpc('tag_night_cancel', { p_token: token, p_night: id })); });
 /** My @mentions, newest first (last 14 days). */
 export const mentions = (token: string) => wrap(async (): Promise<Mention[]> => (must(await supabase.rpc('tag_mentions', { p_token: token })) ?? []) as Mention[]);
 export const react = (token: string, chatId: number, kind: ReactionKind) =>
