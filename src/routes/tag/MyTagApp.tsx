@@ -177,11 +177,14 @@ export default function MyTagApp() {
           <section key={x.id} className="td-panel mt-needs mt-night">
             <h2>{x.title}{x.course ? ` · ${x.course}` : ''}</h2>
             {!x.me_in ? <>
-              <p className="td-hint">Check-in is open. Every tag set is on the line across the whole field tonight.</p>
+              <p className="td-hint">Check-in is open. {x.format === 'dubs' ? 'Dubs tonight: no tags on the line, results posted at the end.' : 'Every tag set is on the line across the whole field tonight.'}</p>
               <div className="td-row">
                 <button className="td-btn cta" onClick={() => void act(tagApi.nightCheckin(token, x.id, true), `Checked in: ${x.title}.`)}>CHECK IN</button>
                 <button className="td-btn quiet" onClick={() => go('matchups')}>WHO'S HERE</button>
               </div>
+            </> : x.format === 'dubs' ? <>
+              <p className="td-hint">You're checked in ({x.players.length} so far). Dubs tonight, scored off the Scorecard. {x.host_me ? 'Post the team results from MATCHUPS when you finish.' : 'Results land in MY ROUNDS when the host posts them.'}</p>
+              <div className="td-row"><button className="td-btn quiet" onClick={() => go('matchups')}>{x.host_me ? 'ENTER RESULTS' : "WHO'S HERE"}</button></div>
             </> : x.my_card ? <>
               <p className="td-hint">Your card is in. Tags go up when the last card is in{x.host_me ? ' or you close the night (MATCHUPS)' : ''}.</p>
               <div className="td-row"><button className="td-btn quiet" onClick={() => go('matchups')}>THE NIGHT</button></div>

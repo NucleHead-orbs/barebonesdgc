@@ -224,6 +224,25 @@ export interface Night {
   /** Check-in is open (from 3 h before the start until it closes). */
   open: boolean; me_in: boolean; cards: number; my_card: string | null; players: NightPerson[];
   swaps: Array<{ pool_name: string; status: 'pending' | 'applied' | 'disputed' | 'void' }>;
+  /** singles = Scorecard cards + field-wide tag swap; dubs = scored elsewhere, the host posts team results (migration 20261125). */
+  format: NightFormat; results_at: string | null; results_note: string | null; results: NightTeam[];
+}
+export type NightFormat = 'singles' | 'dubs';
+export interface NightTeam { team: number; place: number; to_par: number; players: Array<{ id: string | null; name: string }> }
+/** One team as the host types it: up to 2 players (member or guest) and a score to par. */
+export interface TeamDraft { players: Array<{ memberId: string | null; name: string }>; toPar: number }
+/** Places from scores to par: ties share the place (1, 2, 2, 4). */
+export function teamPlaces(scores: number[]): number[] {
+  return scores.map((s) => 1 + scores.filter((x) => x < s).length);
+}
+/** What's wrong with the teams before posting, or null when they're good to go. */
+export function teamsProblem(teams: TeamDraft[]): string | null {
+  if (teams.length < 2) return 'Add at least 2 teams.';
+  if (teams.some((t) => !t.players.length || t.players.some((p) => !p.name.trim()))) return 'Every team needs at least one player.';
+  const keys = teams.flatMap((t) => t.players.map((p) => p.memberId ?? `g:${p.name.trim().toLowerCase()}`));
+  if (new Set(keys).size !== keys.length) return 'Someone is on two teams.';
+  if (teams.some((t) => !Number.isInteger(t.toPar) || t.toPar < -99 || t.toPar > 99)) return 'Scores to par run -99 to +99.';
+  return null;
 }
 /** Checked-in members who aren't on a saved card yet (what's holding the night open). */
 export const nightWaiting = (n: Night) => n.players.filter((p) => !p.guest && !p.carded);
@@ -247,6 +266,14 @@ export function nightMessage(err: unknown): string | null {
   if (/name_too_long/.test(m)) return 'Guest names run up to 40 characters.';
   if (/no_cards_yet/.test(m)) return 'No cards are in yet, so there\'s nothing to close. Call it off instead?';
   if (/cards_saved/.test(m)) return 'Cards are in already. Close the night instead.';
+  if (/night_dubs/.test(m)) return 'It\'s a dubs night: no Scorecard cards or tag swap. The host posts the results at the end.';
+  if (/not_dubs/.test(m)) return 'Results are for dubs nights. Singles nights close from their cards.';
+  if (/teams_2_to_60/.test(m)) return 'Post 2 to 60 teams.';
+  if (/team_1_or_2/.test(m)) return 'A team is 1 or 2 players.';
+  if (/player_twice/.test(m)) return 'Someone is on two teams.';
+  if (/invalid_score/.test(m)) return 'Scores to par run -99 to +99.';
+  if (/name_required/.test(m)) return 'Every guest needs a name.';
+  if (/cards_saved/.test(m)) return 'Scorecard cards are already in, so it stays singles.';
   if (/night_full/.test(m)) return 'That\'s 120 people. The night is full.';
   return null;
 }

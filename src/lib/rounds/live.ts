@@ -77,6 +77,8 @@ export function particles(seed: number, n = 14): Array<{ x: number; delay: numbe
 export interface UpcomingRound {
   kind: 'night' | 'challenge' | 'casual'; id: string; at: string; title: string; course: string | null;
   host: string | null; set: string | null; players: string[]; live: LiveRound[];
+  /** nights only (migration 20261125) */
+  format?: 'singles' | 'dubs'; results?: Array<{ team: number; place: number; to_par: number; players: Array<{ id: string | null; name: string }> }> | null;
 }
 export const UPCOMING_KIND: Record<UpcomingRound['kind'], string> = { night: 'LEAGUE NIGHT', challenge: 'TAG CHALLENGE', casual: 'CASUAL ROUND' };
 /** "Tonight 6:30 PM" / "Tomorrow 9:00 AM" / "Sat Oct 11, 9:00 AM" (Arizona time, like the club). */

@@ -7,6 +7,11 @@ export interface Update { id: string; date: string; title: string; body: string;
 
 export const UPDATES: Update[] = [
   {
+    id: 'dubs-nights', date: '2026-10-09', help: 'rounds', who: 'all',
+    title: 'Check-in nights can be dubs',
+    body: 'Running a night? Pick **SINGLES** (Scorecard cards, every tag set swaps across the field) or **DUBS** (score it however you like, UDisc included). The host can flip it on My Tag → MATCHUPS until results are posted. On a dubs night the host taps **ENTER RESULTS**, adds each team (1 or 2 players, a Cali counts) and their score to par. That closes the night, posts the standings with a roast to the Board, flips the night to **FINAL** on Boner Rounds, and drops it into every player\'s MY ROUNDS. No tags move on dubs.',
+  },
+  {
     id: 'razz-produce', date: '2026-10-09', help: 'rounds', who: 'all',
     title: 'Two new razzes: eggplant + pickle',
     body: 'Watching a live round? The **Razz** row now has **Eggplant** and **Pickle** next to skull rain, choke, trash and waaah. Aim them at one player or everyone; they rain down on the scorer\'s card like the rest.',

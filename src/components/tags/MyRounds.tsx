@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as tagApi from '../../lib/tags/api';
 import * as roundsApi from '../../lib/rounds/api';
-import { holeCounts, myPlace, ordinal, tagMove, type MyCardRound, type MyRound, type MyTagRound } from '../../lib/tags/myRounds';
+import { holeCounts, myPlace, myTeam, ordinal, tagMove, type MyCardRound, type MyNightRound, type MyPlayRound, type MyRound, type MyTagRound } from '../../lib/tags/myRounds';
 import { fmtToPar, toParClass } from '../../lib/rounds/rounds';
 import { niceDate } from '../../lib/leagues/leagues';
 import { display, tagMessage } from '../../lib/tags/tags';
@@ -55,7 +55,9 @@ export function MyRounds({ token, meId, rev, act, focus }: { token: string; meId
           <span className="td-hint">Someone saved a card you played. Check your scores, then CONFIRM. Wrong? DISPUTE and the scorer or a league TD sorts it out.</span>
         </div>
       )}
-      {[...waiting, ...done].map((r) => (
+      {[...waiting, ...done].map((r) => r.kind === 'night' ? (
+        <NightRow key={`night-${r.id}`} r={r} meId={meId} open={open === `night-${r.id}`} onToggle={() => setOpen((o) => (o === `night-${r.id}` ? null : `night-${r.id}`))} />
+      ) : (
         <RoundRow key={`${r.kind}-${r.id}`} r={r} meId={meId} open={open === `${r.kind}-${r.id}` || waitsOnMe(r, meId)} needsOk={waitsOnMe(r, meId)}
           onToggle={() => setOpen((o) => (o === `${r.kind}-${r.id}` ? null : `${r.kind}-${r.id}`))}
           onConfirm={(ok) => void act(roundsApi.confirmRound(token, r.id, ok), ok ? 'Confirmed. Thanks.' : 'Disputed. The scorer or a league TD will sort it out.')} />
@@ -65,7 +67,7 @@ export function MyRounds({ token, meId, rev, act, focus }: { token: string; meId
   );
 }
 
-function RoundRow({ r, meId, open, needsOk, onToggle, onConfirm }: { r: MyRound; meId: string; open: boolean; needsOk: boolean; onToggle: () => void; onConfirm: (ok: boolean) => void }) {
+function RoundRow({ r, meId, open, needsOk, onToggle, onConfirm }: { r: MyPlayRound; meId: string; open: boolean; needsOk: boolean; onToggle: () => void; onConfirm: (ok: boolean) => void }) {
   const place = myPlace(r, meId);
   const meCard = r.kind === 'card' ? r.players.find((p) => p.member_id === meId) : null;
   const meTag = r.kind === 'tag' ? r.players.find((p) => p.member_id === meId) : null;
@@ -138,6 +140,42 @@ function CardDetail({ r, meId }: { r: MyCardRound; meId: string }) {
       {r.note && <p className="td-hint">“{r.note}”</p>}
       <Link className="mr-link" to={`/rounds/${r.id}`}>Open on Boner Rounds ›</Link>
     </div>
+  );
+}
+
+/** A dubs night: my team's finish; open for the full standings. */
+function NightRow({ r, meId, open, onToggle }: { r: MyNightRound; meId: string; open: boolean; onToggle: () => void }) {
+  const mine = myTeam(r.teams, meId);
+  return (
+    <article id={`mr-${r.id}`} className={`mr-round${open ? ' is-open' : ''}`}>
+      <button type="button" className="mr-sum" aria-expanded={open} onClick={onToggle}>
+        <span className="mr-l">
+          <b>{r.title}</b>
+          <small>{niceDate(r.played_on)}{r.course ? ` · ${r.course}` : ''} · {r.format === 'dubs' ? 'dubs' : 'singles'} · {r.teams.length} teams</small>
+          <span className="mr-chips">
+            {mine && <span className={`mr-chip${mine.team.place === 1 ? ' win' : ''}`}>{mine.tied ? 'T-' : ''}{ordinal(mine.team.place)} of {mine.of}</span>}
+            {mine && <span className="mr-chip">with {mine.team.players.filter((p) => p.id !== meId).map((p) => p.name).join(' & ') || 'nobody (Cali)'}</span>}
+          </span>
+        </span>
+        <span className="mr-r">
+          {mine && <b className={toParClass(mine.team.to_par)}>{fmtToPar(mine.team.to_par)}</b>}
+          <i aria-hidden="true">{open ? '–' : '+'}</i>
+        </span>
+      </button>
+      {open && (
+        <div className="mr-detail">
+          <ol className="mr-players">
+            {r.teams.map((t) => (
+              <li key={t.team} className={t.players.some((p) => p.id === meId) ? 'is-me' : undefined}>
+                <span>{t.place}. {t.players.map((p) => p.name).join(' & ')}</span><b className={toParClass(t.to_par)}>{fmtToPar(t.to_par)}</b><span />
+              </li>
+            ))}
+          </ol>
+          {r.note && <p className="td-hint">“{r.note}”</p>}
+          <p className="td-hint">Scored off the Scorecard; the host posted the results. No tags on the line.</p>
+        </div>
+      )}
+    </article>
   );
 }
 

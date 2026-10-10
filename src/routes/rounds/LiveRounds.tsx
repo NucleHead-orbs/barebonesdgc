@@ -161,16 +161,25 @@ export function RoundsLive() {
 
 function UpcomingTile({ u, now }: { u: UpcomingRound; now: number }) {
   const live = u.live.length > 0;
+  const final = u.results && u.results.length ? u.results : null;
+  const dubs = u.format === 'dubs';
   const who = u.players.length > 8 ? `${u.players.slice(0, 8).join(', ')} +${u.players.length - 8} more` : u.players.join(', ');
   return (
-    <div className={`lv-card lv-up${live ? ' is-live' : ''}`}>
-      <span className="lv-kind">{live ? <><span className="lv-dot" aria-hidden="true" />LIVE</> : UPCOMING_KIND[u.kind]}</span>
+    <div className={`lv-card lv-up${live ? ' is-live' : ''}${final ? ' is-final' : ''}`}>
+      <span className="lv-kind">{final ? 'FINAL' : live ? <><span className="lv-dot" aria-hidden="true" />LIVE</> : `${UPCOMING_KIND[u.kind]}${dubs ? ' · DUBS' : ''}`}</span>
       <b>{u.title}</b>
       <span>{whenLabel(u.at, now)}{u.course ? ` · ${u.course}` : ''}</span>
       {u.set && <span className="lv-meta">{u.set}{u.kind === 'challenge' ? ' tags on the line' : ''}</span>}
-      {u.kind === 'night' && <span className="lv-meta">Every tag set on the line{u.host ? ` · run by ${u.host}` : ''}</span>}
-      {who && <span className="lv-meta">{u.kind === 'night' ? `Checked in (${u.players.length}): ` : ''}{who}</span>}
-      {live ? (
+      {u.kind === 'night' && <span className="lv-meta">{dubs ? 'Dubs, no tags on the line' : 'Every tag set on the line'}{u.host ? ` · run by ${u.host}` : ''}</span>}
+      {final ? (
+        <ol className="lv-final-list">
+          {final.slice(0, 5).map((t) => (
+            <li key={t.team}><span>{final.filter((x) => x.place === t.place).length > 1 ? 'T' : ''}{t.place}.</span> {t.players.map((p) => p.name).join(' & ')} <b className={toParClass(t.to_par)}>{fmtToPar(t.to_par)}</b></li>
+          ))}
+          {final.length > 5 && <li className="lv-meta">+{final.length - 5} more teams</li>}
+        </ol>
+      ) : who && <span className="lv-meta">{u.kind === 'night' ? `Checked in (${u.players.length}): ` : ''}{who}</span>}
+      {final ? null : dubs && !live ? <span className="lv-soon">Dubs, scored off the Scorecard. Results land here when {u.host ?? 'the host'} posts them.</span> : live ? (
         <div className="lv-watch">
           {u.live.map((l, i) => (
             <Link key={l.id} to={`/rounds/live/${l.id}`} className="lv-watchlink">

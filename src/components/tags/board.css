@@ -130,3 +130,14 @@
 .nr-person.is-guest small { opacity: .7; }
 .nr-x { border: 0; background: none; color: inherit; font-size: 16px; line-height: 1; padding: 0 2px; cursor: pointer; opacity: .7; }
 .nr-add { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.nr-flag-format { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); }
+.nr-standings { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.nr-standings b { margin-left: 4px; }
+.nr-results { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; padding: 10px; border-radius: 10px; border: 1px dashed var(--border); }
+.nr-team { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.nr-place { font-weight: 800; min-width: 22px; }
+.nr-team-who { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 200px; align-items: center; }
+.nr-team-add { display: flex; flex-wrap: wrap; gap: 6px; }
+.nr-team-add .td-input { max-width: 170px; }
+.nr-par { display: flex; align-items: center; gap: 6px; }
+.nr-par b { min-width: 34px; text-align: center; font-size: 18px; }

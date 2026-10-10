@@ -5,7 +5,7 @@
 import { supabase } from '../supabase';
 import type { MatchStatus, PendingSwap, Tag, TagMember, TagPool } from './tags';
 import type { BoardHeat, ChatLine, HeatRow } from './heat';
-import type { BoardRead, CasualRound, ChallengeRound, MatchupSet, Mention, Night, Profile, ReactionKind } from './board';
+import type { BoardRead, CasualRound, ChallengeRound, MatchupSet, Mention, Night, NightFormat, Profile, ReactionKind, TeamDraft } from './board';
 import type { TdRound, TdRoundKind } from './tdRounds';
 import type { MyRoundsPage } from './myRounds';
 
@@ -194,8 +194,13 @@ export const casualCancel = (token: string, id: string) => wrap(async () => { mu
 
 /** Check-in rounds (migration 20261122): check in, cards across the field, one swap per set when the night closes. */
 export const nights = (token: string) => wrap(async (): Promise<Night[]> => (must(await supabase.rpc('tag_nights', { p_token: token })) ?? []) as Night[]);
-export const nightCreate = (token: string, title: string, startsAt: string, courseId: string, note: string) =>
-  wrap(async (): Promise<string> => must(await supabase.rpc('tag_night_create', { p_token: token, p_title: title, p_start: startsAt, p_course: courseId, p_note: note || null })) as string);
+export const nightCreate = (token: string, title: string, startsAt: string, courseId: string, note: string, format: NightFormat = 'singles') =>
+  wrap(async (): Promise<string> => must(await supabase.rpc('tag_night_create', { p_token: token, p_title: title, p_start: startsAt, p_course: courseId, p_note: note || null, p_format: format })) as string);
+export const nightFormat = (token: string, id: string, format: NightFormat) => wrap(async () => { must(await supabase.rpc('tag_night_format', { p_token: token, p_night: id, p_format: format })); });
+/** Dubs night results (migration 20261125): teams of 1–2 with a score to par; places come from the scores. */
+export const nightResults = (token: string, id: string, teams: TeamDraft[], note: string) =>
+  wrap(async () => { must(await supabase.rpc('tag_night_results', { p_token: token, p_night: id, p_note: note || null,
+    p_teams: teams.map((t) => ({ to_par: t.toPar, players: t.players.map((p) => (p.memberId ? { member_id: p.memberId } : { guest_name: p.name.trim() })) })) })); });
 export const nightCheckin = (token: string, id: string, checkIn: boolean) => wrap(async () => { must(await supabase.rpc('tag_night_checkin', { p_token: token, p_night: id, p_in: checkIn })); });
 export const nightAdd = (token: string, id: string, memberId: string | null, guest: string | null) =>
   wrap(async () => { must(await supabase.rpc('tag_night_add', { p_token: token, p_night: id, p_member: memberId, p_guest: guest })); });

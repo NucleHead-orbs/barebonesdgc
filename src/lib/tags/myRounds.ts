@@ -15,11 +15,15 @@ export interface MyCardRound {
 }
 export interface MyTagPlayer { member_id: string; name: string; nickname: string | null; score: number; before: number | null; after: number | null }
 export interface MyTagRound { kind: 'tag'; id: string; course: string | null; played_on: string; pool_name: string; source: 'casual' | 'event'; players: MyTagPlayer[] }
-export type MyRound = MyCardRound | MyTagRound;
+/** A dubs night (migration 20261125): team standings the host posted. */
+export interface NightTeam { team: number; place: number; to_par: number; players: Array<{ id: string | null; name: string }> }
+export interface MyNightRound { kind: 'night'; id: string; title: string; course: string | null; played_on: string; format: 'singles' | 'dubs'; note: string | null; teams: NightTeam[] }
+export type MyPlayRound = MyCardRound | MyTagRound;
+export type MyRound = MyPlayRound | MyNightRound;
 export interface MyRoundsPage { rounds: MyRound[]; more: boolean }
 
 /** Where I finished: 1 = best (ties share the place), out of how many. */
-export function myPlace(r: MyRound, meId: string): { place: number; of: number; tied: boolean } | null {
+export function myPlace(r: MyPlayRound, meId: string): { place: number; of: number; tied: boolean } | null {
   const scores = r.kind === 'card' ? r.players.map((p) => ({ id: p.member_id, s: p.strokes + (p.dnf_after != null ? 100000 : 0) })) : r.players.map((p) => ({ id: p.member_id, s: p.score }));
   const me = scores.find((x) => x.id === meId);
   if (!me) return null;
@@ -45,4 +49,11 @@ export function holeCounts(pars: number[], scores: number[] | null): { under: nu
   let under = 0, over = 0;
   scores.forEach((s, i) => { if (s == null || pars[i] == null) return; if (s < pars[i]) under++; else if (s > pars[i]) over++; });
   return { under, over };
+}
+
+/** My team on a night: its place, out of how many teams, tied or not. */
+export function myTeam(teams: NightTeam[], meId: string): { team: NightTeam; of: number; tied: boolean } | null {
+  const t = teams.find((x) => x.players.some((p) => p.id === meId));
+  if (!t) return null;
+  return { team: t, of: teams.length, tied: teams.filter((x) => x.place === t.place).length > 1 };
 }

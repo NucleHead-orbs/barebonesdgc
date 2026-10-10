@@ -20,6 +20,7 @@ export async function loadRoundSource(token: string, from: string): Promise<Roun
     if (!n) return "That night isn't on My Tag anymore (called off, or it's been a while).";
     if (n.closed) return `${n.title} is closed: the tags already went up. Start a regular card instead.`;
     if (!n.open) return `Check-in for ${n.title} opens 3 hours before the start.`;
+    if (n.format === 'dubs') return `${n.title} is dubs tonight: no Scorecard cards. ${n.host_me ? 'Post the team results on My Tag → MATCHUPS at the end.' : 'The host posts the results at the end.'}`;
     if (!n.me_in) return `Check in to ${n.title} first (My Tag → MATCHUPS), then start the card.`;
     if (n.my_card) return "You're already on a saved card tonight. Confirm it in My Tag → MY ROUNDS.";
     return {
